@@ -1,3 +1,4 @@
+// client/src/pages/dashboard/projects/index.tsx
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -29,10 +30,10 @@ export default function Projects() {
   });
 
   const filtered = data.filter((p) => {
-    const matchesSearch =
+    const byName =
       !search || p.name.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = status === "all" || p.status === status;
-    return matchesSearch && matchesStatus;
+    const byStatus = status === "all" || p.status === status;
+    return byName && byStatus;
   });
 
   return (
@@ -41,15 +42,14 @@ export default function Projects() {
         <h1 className="text-3xl font-bold">ניהול פרויקטים</h1>
         <Link href="/dashboard/projects/new">
           <Button size="lg">
-            <Plus className="h-5 w-5" />
-            פרויקט חדש
+            <Plus className="h-5 w-5" /> פרויקט חדש
           </Button>
         </Link>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
         <Input
-          placeholder="חפש פרויקטים..."
+          placeholder="חפש..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1"
@@ -67,30 +67,26 @@ export default function Projects() {
       </div>
 
       {isLoading ? (
-        <p className="text-center py-12">טוען פרויקטים…</p>
+        <p className="text-center py-12">טוען…</p>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12">
-          <p>אין פרויקטים להצגה.</p>
-        </div>
+        <p className="text-center py-12">אין פרויקטים.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((p) => (
-            <Card key={p.id} className="h-full flex flex-col justify-between">
-              <CardHeader className="pb-2">
+            <Card key={p.id} className="flex flex-col justify-between">
+              <CardHeader>
                 <h2 className="text-xl font-semibold">{p.name}</h2>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground">
                   {p.client?.name ?? "—"}
                 </p>
               </CardHeader>
-              <CardContent className="flex-1">
-                <div className="space-y-1">
-                  <p>
-                    <strong>סטטוס:</strong> {p.status}
-                  </p>
-                  <p>
-                    <strong>סוג:</strong> {p.type}
-                  </p>
-                </div>
+              <CardContent className="flex-1 space-y-1">
+                <p>
+                  <strong>סטטוס:</strong> {p.status}
+                </p>
+                <p>
+                  <strong>סוג:</strong> {p.type}
+                </p>
               </CardContent>
               <div className="p-4 pt-0">
                 <Link href={`/dashboard/projects/${p.id}`}>
