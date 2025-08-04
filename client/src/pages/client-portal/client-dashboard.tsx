@@ -83,7 +83,7 @@ export default function ClientDashboard() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center space-x-reverse space-x-2 p-2" data-testid="client-user-menu">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.avatar} alt={user?.fullName} />
+                      <AvatarImage src={user?.avatar || undefined} alt={user?.fullName} />
                       <AvatarFallback className="font-medium">
                         {getUserInitials()}
                       </AvatarFallback>

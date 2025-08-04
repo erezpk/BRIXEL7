@@ -11,7 +11,7 @@ import {
   type ActivityLog
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, asc, like, gte, lte, isNull, or } from "drizzle-orm";
+import { eq, and, desc, asc, like, gte, lte, isNull, or, sql } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 export interface IStorage {
@@ -124,17 +124,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAgency(insertAgency: InsertAgency): Promise<Agency> {
+    const agencyData = {
+      ...insertAgency,
+      settings: insertAgency.settings || {}
+    };
+    
     const [agency] = await db
       .insert(agencies)
-      .values(insertAgency)
+      .values([agencyData])
       .returning();
     return agency;
   }
 
   async updateAgency(id: string, updateAgency: Partial<InsertAgency>): Promise<Agency> {
+    const updateData: any = { ...updateAgency, updatedAt: new Date() };
+    
+    // Handle settings properly
+    if (updateAgency.settings) {
+      updateData.settings = updateAgency.settings;
+    }
+    
     const [agency] = await db
       .update(agencies)
-      .set({ ...updateAgency, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(agencies.id, id))
       .returning();
     return agency;
@@ -233,22 +245,22 @@ export class DatabaseStorage implements IStorage {
     clientId?: string;
     projectId?: string;
   }): Promise<Task[]> {
-    let query = db.select().from(tasks).where(eq(tasks.agencyId, agencyId));
+    const conditions = [eq(tasks.agencyId, agencyId)];
     
     if (filters?.status) {
-      query = query.where(and(eq(tasks.agencyId, agencyId), eq(tasks.status, filters.status)));
+      conditions.push(eq(tasks.status, filters.status));
     }
     if (filters?.assignedTo) {
-      query = query.where(and(eq(tasks.agencyId, agencyId), eq(tasks.assignedTo, filters.assignedTo)));
+      conditions.push(eq(tasks.assignedTo, filters.assignedTo));
     }
     if (filters?.clientId) {
-      query = query.where(and(eq(tasks.agencyId, agencyId), eq(tasks.clientId, filters.clientId)));
+      conditions.push(eq(tasks.clientId, filters.clientId));
     }
     if (filters?.projectId) {
-      query = query.where(and(eq(tasks.agencyId, agencyId), eq(tasks.projectId, filters.projectId)));
+      conditions.push(eq(tasks.projectId, filters.projectId));
     }
     
-    return query.orderBy(desc(tasks.createdAt));
+    return db.select().from(tasks).where(and(...conditions)).orderBy(desc(tasks.createdAt));
   }
 
   async getTasksByUser(userId: string): Promise<Task[]> {
@@ -256,17 +268,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTask(insertTask: InsertTask): Promise<Task> {
+    const taskData = {
+      ...insertTask,
+      tags: insertTask.tags || []
+    };
+    
     const [task] = await db
       .insert(tasks)
-      .values(insertTask)
+      .values([taskData])
       .returning();
     return task;
   }
 
   async updateTask(id: string, updateTask: Partial<InsertTask>): Promise<Task> {
+    const updateData: any = { ...updateTask, updatedAt: new Date() };
+    
+    // Handle tags array properly
+    if (updateTask.tags) {
+      updateData.tags = Array.isArray(updateTask.tags) ? updateTask.tags : [];
+    }
+    
     const [task] = await db
       .update(tasks)
-      .set({ ...updateTask, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(tasks.id, id))
       .returning();
     return task;
@@ -331,9 +355,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAgencyTemplate(insertTemplate: InsertAgencyTemplate): Promise<AgencyTemplate> {
+    const templateData = {
+      ...insertTemplate,
+      template: {
+        clientFields: insertTemplate.template?.clientFields || [],
+        projectFields: insertTemplate.template?.projectFields || [],
+        taskFields: insertTemplate.template?.taskFields || [],
+        workflows: insertTemplate.template?.workflows || []
+      }
+    };
+    
     const [template] = await db
       .insert(agencyTemplates)
-      .values(insertTemplate)
+      .values([templateData])
       .returning();
     return template;
   }

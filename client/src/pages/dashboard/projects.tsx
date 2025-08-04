@@ -12,7 +12,7 @@ import { type Project, type Client, type User as UserType } from "@shared/schema
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 
-interface ProjectWithRelations extends Project {
+interface ProjectWithRelations extends Omit<Project, 'createdBy'> {
   client?: Client;
   assignedUser?: UserType;
   createdBy?: UserType;

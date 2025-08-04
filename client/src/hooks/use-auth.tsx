@@ -6,7 +6,8 @@ interface User {
   email: string;
   fullName: string;
   role: string;
-  agencyId: string;
+  agencyId: string | null;
+  avatar?: string | null;
 }
 
 interface LoginData {

@@ -7,16 +7,17 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema } from "@shared/schema";
 import { z } from "zod";
 
-// Extend Express Session
-declare module 'express-session' {
-  interface SessionData {
-    user?: {
+// Extend Express types
+declare global {
+  namespace Express {
+    interface User {
       id: string;
       email: string;
       fullName: string;
       role: string;
-      agencyId: string;
-    };
+      agencyId: string | null;
+      avatar?: string | null;
+    }
   }
 }
 
@@ -73,7 +74,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Middleware to check authentication
   const requireAuth = (req: any, res: any, next: any) => {
-    if (req.isAuthenticated()) {
+    if (req.isAuthenticated() && req.user) {
       return next();
     }
     res.status(401).json({ message: 'נדרשת התחברות' });
@@ -81,10 +82,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Middleware to check agency access
   const requireAgencyAccess = (req: any, res: any, next: any) => {
-    const userAgencyId = req.user?.agencyId;
+    if (!req.user) {
+      return res.status(401).json({ message: 'נדרשת התחברות' });
+    }
+    
+    const userAgencyId = req.user.agencyId;
     const requestedAgencyId = req.params.agencyId || req.body.agencyId;
     
-    if (req.user?.role === 'super_admin' || userAgencyId === requestedAgencyId) {
+    if (req.user.role === 'super_admin' || userAgencyId === requestedAgencyId) {
       return next();
     }
     res.status(403).json({ message: 'אין הרשאה לגשת לנתונים אלה' });
@@ -92,7 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Middleware to check if user is client
   const requireClientRole = (req: any, res: any, next: any) => {
-    if (req.user?.role === 'client') {
+    if (req.user && req.user.role === 'client') {
       return next();
     }
     res.status(403).json({ message: 'גישה מוגבלת ללקוחות בלבד' });
@@ -178,7 +183,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard routes
   app.get('/api/dashboard/stats', requireAuth, async (req, res) => {
     try {
-      const stats = await storage.getDashboardStats(req.user.agencyId);
+      const user = req.user!;
+      if (!user.agencyId) {
+        return res.status(400).json({ message: 'משתמש לא שויך לסוכנות' });
+      }
+      const stats = await storage.getDashboardStats(user.agencyId);
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בטעינת סטטיסטיקות' });
@@ -187,8 +196,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/dashboard/activity', requireAuth, async (req, res) => {
     try {
+      const user = req.user!;
+      if (!user.agencyId) {
+        return res.status(400).json({ message: 'משתמש לא שויך לסוכנות' });
+      }
       const limit = parseInt(req.query.limit as string) || 20;
-      const activity = await storage.getActivityLog(req.user.agencyId, limit);
+      const activity = await storage.getActivityLog(user.agencyId, limit);
       res.json(activity);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בטעינת פעילות' });
@@ -198,9 +211,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Client Portal routes
   app.get('/api/client/stats', requireAuth, requireClientRole, async (req, res) => {
     try {
+      const user = req.user!;
       // Get client's projects and tasks stats
-      const projects = await storage.getProjectsByClient(req.user.id);
-      const tasks = await storage.getTasksByUser(req.user.id);
+      const projects = await storage.getProjectsByClient(user.id);
+      const tasks = await storage.getTasksByUser(user.id);
       
       const activeProjects = projects.filter(p => p.status === 'active').length;
       const tasksInProgress = tasks.filter(t => t.status === 'in_progress').length;
@@ -218,7 +232,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/client/projects', requireAuth, requireClientRole, async (req, res) => {
     try {
-      const projects = await storage.getProjectsByClient(req.user.id);
+      const user = req.user!;
+      const projects = await storage.getProjectsByClient(user.id);
       res.json(projects);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בטעינת פרויקטים של הלקוח' });
@@ -248,7 +263,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Clients routes
   app.get('/api/clients', requireAuth, async (req, res) => {
     try {
-      const clients = await storage.getClientsByAgency(req.user.agencyId);
+      const user = req.user!;
+      if (!user.agencyId) {
+        return res.status(400).json({ message: 'משתמש לא שויך לסוכנות' });
+      }
+      const clients = await storage.getClientsByAgency(user.agencyId);
       res.json(clients);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בטעינת לקוחות' });
@@ -257,17 +276,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/clients', requireAuth, async (req, res) => {
     try {
+      const user = req.user!;
+      if (!user.agencyId) {
+        return res.status(400).json({ message: 'משתמש לא שויך לסוכנות' });
+      }
+      
       const clientData = insertClientSchema.parse({
         ...req.body,
-        agencyId: req.user.agencyId,
+        agencyId: user.agencyId,
       });
       
       const client = await storage.createClient(clientData);
       
       // Log activity
       await storage.logActivity({
-        agencyId: req.user.agencyId,
-        userId: req.user.id,
+        agencyId: user.agencyId,
+        userId: user.id,
         action: 'created',
         entityType: 'client',
         entityId: client.id,
