@@ -29,9 +29,9 @@ export default function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
     description: "",
     status: "new" as const,
     priority: "medium" as const,
-    clientId: "",
-    projectId: "",
-    assignedTo: "",
+    clientId: "none",
+    projectId: "none",
+    assignedTo: "none",
     dueDate: null as Date | null,
     estimatedHours: "",
   });
@@ -45,7 +45,7 @@ export default function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
   const { data: projects } = useQuery<Project[]>({
     queryKey: ['/api/projects', formData.clientId],
     queryFn: async () => {
-      const url = formData.clientId ? `/api/projects?clientId=${formData.clientId}` : '/api/projects';
+      const url = formData.clientId && formData.clientId !== "none" ? `/api/projects?clientId=${formData.clientId}` : '/api/projects';
       const response = await fetch(url, { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch projects');
       return response.json();
@@ -86,9 +86,9 @@ export default function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
       description: "",
       status: "new",
       priority: "medium",
-      clientId: "",
-      projectId: "",
-      assignedTo: "",
+      clientId: "none",
+      projectId: "none",
+      assignedTo: "none",
       dueDate: null,
       estimatedHours: "",
     });
@@ -96,8 +96,8 @@ export default function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
 
   // Reset project when client changes
   useEffect(() => {
-    if (formData.clientId) {
-      setFormData(prev => ({ ...prev, projectId: "" }));
+    if (formData.clientId && formData.clientId !== "none") {
+      setFormData(prev => ({ ...prev, projectId: "none" }));
     }
   }, [formData.clientId]);
 
@@ -117,9 +117,9 @@ export default function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
       description: formData.description || undefined,
       status: formData.status,
       priority: formData.priority,
-      clientId: formData.clientId || undefined,
-      projectId: formData.projectId || undefined,
-      assignedTo: formData.assignedTo || undefined,
+      clientId: formData.clientId === "none" ? undefined : formData.clientId || undefined,
+      projectId: formData.projectId === "none" ? undefined : formData.projectId || undefined,
+      assignedTo: formData.assignedTo === "none" ? undefined : formData.assignedTo || undefined,
       dueDate: formData.dueDate ? formData.dueDate.toISOString().split('T')[0] : undefined,
       estimatedHours: formData.estimatedHours ? parseInt(formData.estimatedHours) : undefined,
     };
@@ -204,7 +204,7 @@ export default function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                 <SelectValue placeholder="בחר לקוח" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">ללא לקוח</SelectItem>
+                <SelectItem value="none">ללא לקוח</SelectItem>
                 {clients?.map((client) => (
                   <SelectItem key={client.id} value={client.id}>
                     {client.name}
@@ -214,7 +214,7 @@ export default function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
             </Select>
           </div>
           
-          {formData.clientId && (
+          {formData.clientId && formData.clientId !== "none" && (
             <div className="space-y-2">
               <Label htmlFor="projectId" className="text-right">פרויקט</Label>
               <Select value={formData.projectId} onValueChange={(value) => handleInputChange('projectId', value)}>
@@ -222,7 +222,7 @@ export default function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                   <SelectValue placeholder="בחר פרויקט" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">ללא פרויקט</SelectItem>
+                  <SelectItem value="none">ללא פרויקט</SelectItem>
                   {projects?.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
@@ -240,7 +240,7 @@ export default function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                 <SelectValue placeholder="בחר חבר צוות" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">ללא הקצאה</SelectItem>
+                <SelectItem value="none">ללא הקצאה</SelectItem>
                 {teamMembers?.map((member) => (
                   <SelectItem key={member.id} value={member.id}>
                     {member.fullName}
