@@ -124,14 +124,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAgency(insertAgency: InsertAgency): Promise<Agency> {
-    const agencyData = {
-      ...insertAgency,
-      settings: insertAgency.settings || {}
-    };
-    
     const [agency] = await db
       .insert(agencies)
-      .values(agencyData)
+      .values({
+        ...insertAgency,
+        settings: insertAgency.settings || {}
+      })
       .returning();
     return agency;
   }
@@ -268,14 +266,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTask(insertTask: InsertTask): Promise<Task> {
-    const taskData = {
-      ...insertTask,
-      tags: insertTask.tags || []
-    };
-    
     const [task] = await db
       .insert(tasks)
-      .values(taskData)
+      .values({
+        ...insertTask,
+        tags: insertTask.tags || []
+      })
       .returning();
     return task;
   }
@@ -355,19 +351,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAgencyTemplate(insertTemplate: InsertAgencyTemplate): Promise<AgencyTemplate> {
-    const templateData = {
-      ...insertTemplate,
-      template: {
-        clientFields: insertTemplate.template?.clientFields || [],
-        projectFields: insertTemplate.template?.projectFields || [],
-        taskFields: insertTemplate.template?.taskFields || [],
-        workflows: insertTemplate.template?.workflows || []
-      }
-    };
-    
     const [template] = await db
       .insert(agencyTemplates)
-      .values(templateData)
+      .values({
+        ...insertTemplate,
+        template: {
+          clientFields: insertTemplate.template?.clientFields || {},
+          projectFields: insertTemplate.template?.projectFields || {},
+          taskFields: insertTemplate.template?.taskFields || {},
+          workflows: insertTemplate.template?.workflows || {}
+        }
+      })
       .returning();
     return template;
   }

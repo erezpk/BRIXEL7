@@ -10,16 +10,25 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { 
   Menu, 
   Search, 
   Bell, 
   Settings, 
   LogOut,
-  User
+  User,
+  Check,
+  Clock,
+  AlertCircle
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -30,6 +39,13 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  // Fetch recent activity for notifications
+  const { data: notifications } = useQuery({
+    queryKey: ['/api/dashboard/activity'],
+    staleTime: 60000, // 1 minute
+  });
 
   const handleLogout = () => {
     logout(undefined, {
@@ -89,17 +105,86 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
             </div>
 
             {/* Notifications */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="relative p-2"
-              data-testid="notifications-button"
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute -top-1 -left-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                3
-              </span>
-            </Button>
+            <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="relative p-2"
+                  data-testid="notifications-button"
+                >
+                  <Bell className="h-5 w-5" />
+                  {notifications && notifications.length > 0 && (
+                    <span className="absolute -top-1 -left-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {notifications.length > 9 ? '9+' : notifications.length}
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="end" data-testid="notifications-panel">
+                <div className="p-4 border-b">
+                  <h3 className="font-medium text-right">התראות</h3>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {!notifications || notifications.length === 0 ? (
+                    <div className="p-6 text-center text-gray-500">
+                      <Bell className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p>אין התראות חדשות</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {notifications.slice(0, 10).map((notification: any, index: number) => (
+                        <div
+                          key={notification.id || index}
+                          className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                          data-testid={`notification-${index}`}
+                        >
+                          <div className="flex items-start space-x-reverse space-x-3">
+                            <div className="flex-shrink-0 mt-1">
+                              {notification.action === 'created' ? (
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              ) : notification.action === 'updated' ? (
+                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              ) : (
+                                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                              )}
+                            </div>
+                            <div className="flex-1 text-right">
+                              <p className="text-sm text-gray-900">
+                                {notification.action === 'created' && 'נוצר '}
+                                {notification.action === 'updated' && 'עודכן '}
+                                {notification.action === 'deleted' && 'נמחק '}
+                                {notification.entityType === 'client' && 'לקוח'}
+                                {notification.entityType === 'project' && 'פרויקט'}
+                                {notification.entityType === 'task' && 'משימה'}
+                                {notification.details?.clientName && `: ${notification.details.clientName}`}
+                                {notification.details?.projectName && `: ${notification.details.projectName}`}
+                                {notification.details?.taskTitle && `: ${notification.details.taskTitle}`}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {new Date(notification.createdAt).toLocaleDateString('he-IL', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  day: 'numeric',
+                                  month: 'short'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {notifications && notifications.length > 10 && (
+                  <div className="p-3 border-t text-center">
+                    <Button variant="ghost" size="sm" className="text-xs">
+                      הצג עוד התראות
+                    </Button>
+                  </div>
+                )}
+              </PopoverContent>
+            </Popover>
 
             {/* User Menu */}
             <DropdownMenu>
