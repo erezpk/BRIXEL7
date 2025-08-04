@@ -13,12 +13,15 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Plus, Projector } from "lucide-react";
+import { Link } from "wouter";
 import { type Project, type Client } from "@shared/schema";
+
+type ProjectType = "web" | "marketing" | "video";
 
 interface ProjectWithRelations extends Omit<Project, "createdBy"> {
   client?: Client;
   status: string;
-  type: "web" | "marketing" | "video";
+  type: ProjectType;
 }
 
 export default function Projects() {
@@ -27,10 +30,10 @@ export default function Projects() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [selectedClientId, setSelectedClientId] = useState("");
-  const [projectType, setProjectType] = useState<"web" | "marketing" | "video">("web");
+  const [projectType, setProjectType] = useState<ProjectType>("web");
   const queryClient = useQueryClient();
 
-  const { data: projects = [], isLoading } = useQuery<ProjectWithRelations[]>({
+  const { data: projects = [], isLoading: loadingProjects } = useQuery<ProjectWithRelations[]>({
     queryKey: ["/api/projects"],
     queryFn: () => fetch("/api/projects").then(res => res.json()),
   });
@@ -40,26 +43,26 @@ export default function Projects() {
     queryFn: () => fetch("/api/clients").then(res => res.json()),
   });
 
-  const createProject = useMutation<ProjectWithRelations, Error, {
-    name: string;
-    clientId: string;
-    type: string;
-  }>({
-    mutationFn: payload =>
-      fetch("/api/projects", {
+  const createProject = useMutation<
+    ProjectWithRelations,
+    Error,
+    { name: string; clientId: string; type: ProjectType }
+  >({
+    mutationFn: async (payload) => {
+      const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      }).then(res => {
-        if (!res.ok) throw new Error("Failed to create project");
-        return res.json();
-      }),
+      });
+      if (!res.ok) throw new Error("Failed to create project");
+      return res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
     },
   });
 
-  const isCreating = createProject.status === "loading";
+  const isCreating = createProject.status === "pending";
 
   const filtered = projects.filter(p => {
     const bySearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -69,7 +72,7 @@ export default function Projects() {
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <div className="flex justify-between items-center mb-6" data-testid="projects-page">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">ניהול פרויקטים</h1>
         <DialogTrigger asChild>
           <Button disabled={isCreating} data-testid="button-new-project">
@@ -98,15 +101,13 @@ export default function Projects() {
         </Select>
       </div>
 
-      {isLoading ? (
+      {loadingProjects ? (
         <p>טוען פרויקטים…</p>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12">
           <Projector className="h-16 w-16 mx-auto mb-4 text-gray-400" />
           <p className="mb-4">
-            {searchQuery || statusFilter !== "all"
-              ? "לא נמצאו פרויקטים"
-              : "אין פרויקטים עדיין"}
+            {searchQuery || statusFilter !== "all" ? "לא נמצאו פרויקטים" : "אין פרויקטים עדיין"}
           </p>
           <DialogTrigger asChild>
             <Button disabled={isCreating} data-testid="button-add-first-project">
@@ -131,6 +132,11 @@ export default function Projects() {
                     ? "פרויקט שיווק"
                     : "פרויקט סרטונים"}
                 </p>
+                <div className="mt-4">
+                  <Link href={`/dashboard/projects/${p.id}`}>
+                    <Button variant="outline">פתח כרטיסיית פרויקט</Button>
+                  </Link>
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -147,8 +153,8 @@ export default function Projects() {
           onChange={e => setNewName(e.target.value)}
           className="w-full mb-4"
         />
-        <Select onValueChange={v => setSelectedClientId(v)}>
-          <SelectTrigger className="mb-4">בחר לקוח</SelectTrigger>
+        <Select value={selectedClientId} onValueChange={v => setSelectedClientId(v)}>
+          <SelectTrigger>בחר לקוח</SelectTrigger>
           <SelectContent>
             {clients.map(c => (
               <SelectItem key={c.id} value={c.id}>
@@ -157,8 +163,8 @@ export default function Projects() {
             ))}
           </SelectContent>
         </Select>
-        <Select onValueChange={v => setProjectType(v as "web" | "marketing" | "video")}>
-          <SelectTrigger className="mb-4">סוג פרויקט</SelectTrigger>
+        <Select value={projectType} onValueChange={v => setProjectType(v as ProjectType)}>
+          <SelectTrigger>סוג פרויקט</SelectTrigger>
           <SelectContent>
             <SelectItem value="web">בניית אתרים</SelectItem>
             <SelectItem value="marketing">פרויקט שיווק</SelectItem>
@@ -171,7 +177,11 @@ export default function Projects() {
           </Button>
           <Button
             onClick={() => {
-              mutate({ name: newName, clientId: selectedClientId, type: projectType });
+              createProject.mutate({
+                name: newName,
+                clientId: selectedClientId,
+                type: projectType,
+              });
               setNewName("");
               setSelectedClientId("");
               setProjectType("web");
