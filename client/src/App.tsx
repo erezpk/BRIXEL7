@@ -11,6 +11,7 @@ import DashboardLayout from "@/components/layout/dashboard-layout";
 import Dashboard from "@/pages/dashboard/dashboard";
 import Clients from "@/pages/dashboard/clients";
 import Projects from "@/pages/dashboard/projects";
+import ProjectDetails from "@/pages/dashboard/projects/ProjectDetails";
 import Tasks from "@/pages/dashboard/tasks";
 import Assets from "@/pages/dashboard/assets";
 import Team from "@/pages/dashboard/team";
@@ -29,7 +30,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    window.location.href = '/login';
+    window.location.href = "/login";
     return null;
   }
 
@@ -42,8 +43,8 @@ function Router() {
       <Route path="/" component={Homepage} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
-      
-      {/* Dashboard Routes */}
+
+      {/* Dashboard */}
       <Route path="/dashboard">
         <ProtectedRoute>
           <DashboardLayout>
@@ -51,7 +52,7 @@ function Router() {
           </DashboardLayout>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/dashboard/clients">
         <ProtectedRoute>
           <DashboardLayout>
@@ -59,7 +60,18 @@ function Router() {
           </DashboardLayout>
         </ProtectedRoute>
       </Route>
-      
+
+      {/* Dynamic project details route must come before the static list */}
+      <Route path="/dashboard/projects/:projectId">
+        {(params) => (
+          <ProtectedRoute>
+            <DashboardLayout>
+              <ProjectDetails projectId={params.projectId!} />
+            </DashboardLayout>
+          </ProtectedRoute>
+        )}
+      </Route>
+
       <Route path="/dashboard/projects">
         <ProtectedRoute>
           <DashboardLayout>
@@ -67,7 +79,7 @@ function Router() {
           </DashboardLayout>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/dashboard/tasks">
         <ProtectedRoute>
           <DashboardLayout>
@@ -75,7 +87,7 @@ function Router() {
           </DashboardLayout>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/dashboard/assets">
         <ProtectedRoute>
           <DashboardLayout>
@@ -83,7 +95,7 @@ function Router() {
           </DashboardLayout>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/dashboard/team">
         <ProtectedRoute>
           <DashboardLayout>
@@ -91,15 +103,13 @@ function Router() {
           </DashboardLayout>
         </ProtectedRoute>
       </Route>
-      
-      {/* Client Portal */}
+
       <Route path="/client-portal">
         <ProtectedRoute>
           <ClientDashboard />
         </ProtectedRoute>
       </Route>
-      
-      {/* Fallback to 404 */}
+
       <Route component={NotFound} />
     </Switch>
   );
