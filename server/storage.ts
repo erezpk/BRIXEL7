@@ -131,7 +131,7 @@ export class DatabaseStorage implements IStorage {
     
     const [agency] = await db
       .insert(agencies)
-      .values([agencyData])
+      .values(agencyData)
       .returning();
     return agency;
   }
@@ -275,7 +275,7 @@ export class DatabaseStorage implements IStorage {
     
     const [task] = await db
       .insert(tasks)
-      .values([taskData])
+      .values(taskData)
       .returning();
     return task;
   }
@@ -367,7 +367,7 @@ export class DatabaseStorage implements IStorage {
     
     const [template] = await db
       .insert(agencyTemplates)
-      .values([templateData])
+      .values(templateData)
       .returning();
     return template;
   }

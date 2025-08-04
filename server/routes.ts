@@ -80,6 +80,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(401).json({ message: 'נדרשת התחברות' });
   };
 
+  // Middleware to ensure user and agency exist
+  const requireUserWithAgency = (req: any, res: any, next: any) => {
+    if (!req.user || !req.user.agencyId) {
+      return res.status(400).json({ message: 'משתמש לא שויך לסוכנות' });
+    }
+    next();
+  };
+
   // Middleware to check agency access
   const requireAgencyAccess = (req: any, res: any, next: any) => {
     if (!req.user) {
@@ -130,7 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const agencySlug = data.agencyName.toLowerCase()
         .replace(/[^a-z0-9\u0590-\u05FF]/g, '-')
         .replace(/-+/g, '-')
-        .trim('-');
+        .replace(/^-+|-+$/g, '');
       
       const agency = await storage.createAgency({
         name: data.agencyName,
@@ -181,27 +189,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard routes
-  app.get('/api/dashboard/stats', requireAuth, async (req, res) => {
+  app.get('/api/dashboard/stats', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
-      if (!user.agencyId) {
-        return res.status(400).json({ message: 'משתמש לא שויך לסוכנות' });
-      }
-      const stats = await storage.getDashboardStats(user.agencyId);
+      const stats = await storage.getDashboardStats(user.agencyId!);
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בטעינת סטטיסטיקות' });
     }
   });
 
-  app.get('/api/dashboard/activity', requireAuth, async (req, res) => {
+  app.get('/api/dashboard/activity', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
-      if (!user.agencyId) {
-        return res.status(400).json({ message: 'משתמש לא שויך לסוכנות' });
-      }
       const limit = parseInt(req.query.limit as string) || 20;
-      const activity = await storage.getActivityLog(user.agencyId, limit);
+      const activity = await storage.getActivityLog(user.agencyId!, limit);
       res.json(activity);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בטעינת פעילות' });
@@ -261,36 +263,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Clients routes
-  app.get('/api/clients', requireAuth, async (req, res) => {
+  app.get('/api/clients', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
-      if (!user.agencyId) {
-        return res.status(400).json({ message: 'משתמש לא שויך לסוכנות' });
-      }
-      const clients = await storage.getClientsByAgency(user.agencyId);
+      const clients = await storage.getClientsByAgency(user.agencyId!);
       res.json(clients);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בטעינת לקוחות' });
     }
   });
 
-  app.post('/api/clients', requireAuth, async (req, res) => {
+  app.post('/api/clients', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
-      if (!user.agencyId) {
-        return res.status(400).json({ message: 'משתמש לא שויך לסוכנות' });
-      }
       
       const clientData = insertClientSchema.parse({
         ...req.body,
-        agencyId: user.agencyId,
+        agencyId: user.agencyId!,
       });
       
       const client = await storage.createClient(clientData);
       
       // Log activity
       await storage.logActivity({
-        agencyId: user.agencyId,
+        agencyId: user.agencyId!,
         userId: user.id,
         action: 'created',
         entityType: 'client',
@@ -307,10 +303,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/clients/:id', requireAuth, async (req, res) => {
+  app.get('/api/clients/:id', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const client = await storage.getClient(req.params.id);
-      if (!client || client.agencyId !== req.user.agencyId) {
+      if (!client || client.agencyId !== req.user!.agencyId) {
         return res.status(404).json({ message: 'לקוח לא נמצא' });
       }
       res.json(client);
@@ -319,10 +315,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/clients/:id', requireAuth, async (req, res) => {
+  app.put('/api/clients/:id', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const client = await storage.getClient(req.params.id);
-      if (!client || client.agencyId !== req.user.agencyId) {
+      if (!client || client.agencyId !== req.user!.agencyId) {
         return res.status(404).json({ message: 'לקוח לא נמצא' });
       }
 
@@ -330,8 +326,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedClient = await storage.updateClient(req.params.id, updateData);
       
       await storage.logActivity({
-        agencyId: req.user.agencyId,
-        userId: req.user.id,
+        agencyId: req.user!.agencyId!,
+        userId: req.user!.id,
         action: 'updated',
         entityType: 'client',
         entityId: updatedClient.id,
@@ -347,18 +343,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/clients/:id', requireAuth, async (req, res) => {
+  app.delete('/api/clients/:id', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const client = await storage.getClient(req.params.id);
-      if (!client || client.agencyId !== req.user.agencyId) {
+      if (!client || client.agencyId !== req.user!.agencyId) {
         return res.status(404).json({ message: 'לקוח לא נמצא' });
       }
 
       await storage.deleteClient(req.params.id);
       
       await storage.logActivity({
-        agencyId: req.user.agencyId,
-        userId: req.user.id,
+        agencyId: req.user!.agencyId!,
+        userId: req.user!.id,
         action: 'deleted',
         entityType: 'client',
         entityId: req.params.id,
@@ -372,7 +368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Projects routes
-  app.get('/api/projects', requireAuth, async (req, res) => {
+  app.get('/api/projects', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const clientId = req.query.clientId as string;
       let projects;
@@ -381,11 +377,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         projects = await storage.getProjectsByClient(clientId);
         // Verify client belongs to user's agency
         const client = await storage.getClient(clientId);
-        if (!client || client.agencyId !== req.user.agencyId) {
+        if (!client || client.agencyId !== req.user!.agencyId) {
           return res.status(403).json({ message: 'אין הרשאה' });
         }
       } else {
-        projects = await storage.getProjectsByAgency(req.user.agencyId);
+        projects = await storage.getProjectsByAgency(req.user!.agencyId!);
       }
       
       res.json(projects);
@@ -394,19 +390,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/projects', requireAuth, async (req, res) => {
+  app.post('/api/projects', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const projectData = insertProjectSchema.parse({
         ...req.body,
-        agencyId: req.user.agencyId,
-        createdBy: req.user.id,
+        agencyId: req.user!.agencyId!,
+        createdBy: req.user!.id,
       });
       
       const project = await storage.createProject(projectData);
       
       await storage.logActivity({
-        agencyId: req.user.agencyId,
-        userId: req.user.id,
+        agencyId: req.user!.agencyId!,
+        userId: req.user!.id,
         action: 'created',
         entityType: 'project',
         entityId: project.id,
@@ -423,7 +419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Tasks routes
-  app.get('/api/tasks', requireAuth, async (req, res) => {
+  app.get('/api/tasks', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const filters = {
         status: req.query.status as string,
@@ -432,26 +428,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         projectId: req.query.projectId as string,
       };
       
-      const tasks = await storage.getTasksByAgency(req.user.agencyId, filters);
+      const tasks = await storage.getTasksByAgency(req.user!.agencyId!, filters);
       res.json(tasks);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בטעינת משימות' });
     }
   });
 
-  app.post('/api/tasks', requireAuth, async (req, res) => {
+  app.post('/api/tasks', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const taskData = insertTaskSchema.parse({
         ...req.body,
-        agencyId: req.user.agencyId,
-        createdBy: req.user.id,
+        agencyId: req.user!.agencyId!,
+        createdBy: req.user!.id,
       });
       
       const task = await storage.createTask(taskData);
       
       await storage.logActivity({
-        agencyId: req.user.agencyId,
-        userId: req.user.id,
+        agencyId: req.user!.agencyId!,
+        userId: req.user!.id,
         action: 'created',
         entityType: 'task',
         entityId: task.id,
@@ -467,10 +463,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/tasks/:id', requireAuth, async (req, res) => {
+  app.put('/api/tasks/:id', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const task = await storage.getTask(req.params.id);
-      if (!task || task.agencyId !== req.user.agencyId) {
+      if (!task || task.agencyId !== req.user!.agencyId) {
         return res.status(404).json({ message: 'משימה לא נמצאה' });
       }
 
@@ -478,8 +474,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedTask = await storage.updateTask(req.params.id, updateData);
       
       await storage.logActivity({
-        agencyId: req.user.agencyId,
-        userId: req.user.id,
+        agencyId: req.user!.agencyId!,
+        userId: req.user!.id,
         action: 'updated',
         entityType: 'task',
         entityId: updatedTask.id,
@@ -496,10 +492,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Task Comments routes
-  app.get('/api/tasks/:id/comments', requireAuth, async (req, res) => {
+  app.get('/api/tasks/:id/comments', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const task = await storage.getTask(req.params.id);
-      if (!task || task.agencyId !== req.user.agencyId) {
+      if (!task || task.agencyId !== req.user!.agencyId) {
         return res.status(404).json({ message: 'משימה לא נמצאה' });
       }
 
@@ -510,24 +506,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/tasks/:id/comments', requireAuth, async (req, res) => {
+  app.post('/api/tasks/:id/comments', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const task = await storage.getTask(req.params.id);
-      if (!task || task.agencyId !== req.user.agencyId) {
+      if (!task || task.agencyId !== req.user!.agencyId) {
         return res.status(404).json({ message: 'משימה לא נמצאה' });
       }
 
       const commentData = insertTaskCommentSchema.parse({
         ...req.body,
         taskId: req.params.id,
-        userId: req.user.id,
+        userId: req.user!.id,
       });
       
       const comment = await storage.createTaskComment(commentData);
       
       await storage.logActivity({
-        agencyId: req.user.agencyId,
-        userId: req.user.id,
+        agencyId: req.user!.agencyId!,
+        userId: req.user!.id,
         action: 'commented',
         entityType: 'task',
         entityId: task.id,
@@ -544,7 +540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Digital Assets routes
-  app.get('/api/assets', requireAuth, async (req, res) => {
+  app.get('/api/assets', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const clientId = req.query.clientId as string;
       let assets;
@@ -553,11 +549,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         assets = await storage.getDigitalAssetsByClient(clientId);
         // Verify client belongs to user's agency
         const client = await storage.getClient(clientId);
-        if (!client || client.agencyId !== req.user.agencyId) {
+        if (!client || client.agencyId !== req.user!.agencyId) {
           return res.status(403).json({ message: 'אין הרשאה' });
         }
       } else {
-        assets = await storage.getDigitalAssetsByAgency(req.user.agencyId);
+        assets = await storage.getDigitalAssetsByAgency(req.user!.agencyId!);
       }
       
       res.json(assets);
@@ -566,18 +562,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/assets', requireAuth, async (req, res) => {
+  app.post('/api/assets', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const assetData = insertDigitalAssetSchema.parse({
         ...req.body,
-        agencyId: req.user.agencyId,
+        agencyId: req.user!.agencyId!,
       });
       
       const asset = await storage.createDigitalAsset(assetData);
       
       await storage.logActivity({
-        agencyId: req.user.agencyId,
-        userId: req.user.id,
+        agencyId: req.user!.agencyId!,
+        userId: req.user!.id,
         action: 'created',
         entityType: 'asset',
         entityId: asset.id,
@@ -594,9 +590,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Team routes
-  app.get('/api/team', requireAuth, async (req, res) => {
+  app.get('/api/team', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
-      const teamMembers = await storage.getUsersByAgency(req.user.agencyId);
+      const teamMembers = await storage.getUsersByAgency(req.user!.agencyId!);
       // Remove password from response
       const safeTeamMembers = teamMembers.map(({ password, ...member }) => member);
       res.json(safeTeamMembers);
