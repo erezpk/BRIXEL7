@@ -2,7 +2,7 @@ import {
   agencies, users, clients, projects, tasks, taskComments, digitalAssets, agencyTemplates, activityLog, passwordResetTokens,
   adAccounts, leads, chatConversations, chatMessages, teamInvitations, notifications,
   type Agency, type InsertAgency,
-  type User, type InsertUser,
+  type User, type InsertUser, type UpsertUser,
   type Client, type InsertClient,
   type Project, type InsertProject,
   type Task, type InsertTask,
@@ -23,11 +23,15 @@ import bcrypt from "bcrypt";
 import crypto from 'crypto';
 
 export interface IStorage {
-  // Auth
+  // Auth (standard CRM auth)
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   validatePassword(password: string, hash: string): Promise<boolean>;
   hashPassword(password: string): Promise<string>;
+
+  // Replit Auth required methods
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
 
   // Agencies
   getAgency(id: string): Promise<Agency | undefined>;
@@ -157,6 +161,21 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .insert(users)
       .values({ ...insertUser, password: hashedPassword })
+      .returning();
+    return user;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
       .returning();
     return user;
   }
