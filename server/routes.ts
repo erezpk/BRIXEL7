@@ -17,25 +17,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'נתונים חסרים' });
       }
 
+      console.log('Google auth attempt for:', email);
+
       // Verify Google token (for production - currently bypassed for development)
       const verified = await verifyGoogleToken(idToken);
       if (!verified && process.env.NODE_ENV === 'production') {
         return res.status(401).json({ message: 'טוקן Google לא תקין' });
       }
 
-      // Create or get user
+      // Check if user exists in local database
       let user = await storage.getUserByEmail(email);
       
       if (!user) {
-        // Create new user
+        console.log('Creating new user from Google auth:', email);
+        // Create new user in local database
         user = await storage.createOrUpdateUserFromGoogle(email, name, avatar);
       } else {
-        // Update existing user
+        console.log('Updating existing user from Google auth:', email);
+        // Update existing user with latest Google info
         user = await storage.createOrUpdateUserFromGoogle(email, name, avatar);
       }
 
-      // Create session or token for the user
-      req.login = req.login || ((user: any, callback: any) => callback(null));
+      // Update last login
+      await storage.updateUser(user.id, { lastLogin: new Date() });
+
+      console.log('Google auth successful for user:', email);
       
       res.json({ 
         success: true, 
@@ -84,18 +90,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('User found:', user.email, 'has password:', !!user.password);
 
-      // For development - if no password is set, allow any password
-      if (!user.password && process.env.NODE_ENV === 'development') {
-        console.log('Development mode: allowing login without password verification');
-      } else {
-        // Verify password with bcrypt
-        const bcrypt = require('bcryptjs');
-        const isValidPassword = await bcrypt.compare(password, user.password || '');
-        
-        if (!isValidPassword) {
-          console.log('Invalid password for user:', email);
-          return res.status(401).json({ message: 'פרטי התחברות שגויים' });
-        }
+      // Check if user has a password (regular signup) or was created via Google
+      if (!user.password) {
+        console.log('User has no password (Google sign-in user):', email);
+        return res.status(401).json({ 
+          message: 'משתמש זה נרשם דרך Google. אנא התחבר דרך Google.',
+          requiresGoogleAuth: true 
+        });
+      }
+
+      // Verify password with bcrypt
+      const bcrypt = require('bcryptjs');
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      
+      if (!isValidPassword) {
+        console.log('Invalid password for user:', email);
+        return res.status(401).json({ message: 'פרטי התחברות שגויים' });
       }
 
       // Update last login

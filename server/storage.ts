@@ -614,7 +614,7 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async getLeadsByAgency(agencyId: string): Promise<Lead[]> {
+  async getLeadsByAgency(agencyId: string): Promise<Lead[]>{
     return this.db.query.leads.findMany({
       where: eq(leads.agencyId, agencyId),
       orderBy: [desc(leads.createdAt)]

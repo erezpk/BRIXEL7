@@ -98,14 +98,23 @@ export default function Login() {
         }, 100);
       }
     },
-    onError: (error: Error) => {
-      toast({
-        title: "שגיאה בהתחברות",
-        description: error.message || "אימייל או סיסמה שגויים",
-        variant: "destructive",
-      });
-      console.error('Login error:', error);
-    },
+    onError: (error: any) => {
+          console.error("Login error:", error);
+          const errorMessage = error.response?.data?.message || error.message || "שגיאה לא צפויה";
+          const requiresGoogleAuth = error.response?.data?.requiresGoogleAuth;
+
+          toast({
+            title: "שגיאה בהתחברות",
+            description: errorMessage,
+            variant: "destructive",
+          });
+
+          // If user requires Google auth, show Google login button
+          if (requiresGoogleAuth) {
+            // You could add a state here to show only Google login for this user
+            console.log("User must use Google authentication");
+          }
+        },
   });
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -260,7 +269,7 @@ export default function Login() {
               {authLoginMutation.isPending ? "מתחבר..." : "כניסה"}
             </Button>
 
-            
+
           </form>
 
           <div className="mt-4">
