@@ -83,6 +83,9 @@ export default function App() {
               </ProtectedRoute>
             )}
           />
+          {/* PROJECT DETAILS */}
+          <Route path="/dashboard/project-details/:projectId" component={ProjectDetails} />
+          <Route path="/dashboard/assets" component={Assets} />
 
           {/* NEW PROJECT */}
           <Route

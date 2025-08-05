@@ -242,9 +242,9 @@ export default function Projects() {
                 </div>
               </CardContent>
               <div className="p-4 pt-0">
-                <Link href={`/dashboard/projects/${p.id}`}>
+                <Link href={`/dashboard/project-details/${p.id}`}>
                   <Button variant="outline" className="w-full">
-                    פתח כרטיסיה
+                    פתח פרטי פרויקט
                   </Button>
                 </Link>
               </div>
