@@ -159,6 +159,118 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Ad Accounts (Facebook Ads & Google Ads)
+export const adAccounts = pgTable("ad_accounts", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  clientId: uuid("client_id").notNull().references(() => clients.id),
+  platform: text("platform").notNull(), // facebook, google
+  accountId: text("account_id").notNull(),
+  accountName: text("account_name").notNull(),
+  accessToken: text("access_token"), // encrypted
+  refreshToken: text("refresh_token"), // encrypted
+  isActive: boolean("is_active").default(true).notNull(),
+  lastSyncAt: timestamp("last_sync_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Leads from Ad Platforms
+export const leads = pgTable("leads", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  clientId: uuid("client_id").notNull().references(() => clients.id),
+  adAccountId: uuid("ad_account_id").notNull().references(() => adAccounts.id),
+  externalId: text("external_id").notNull(), // Lead ID from ad platform
+  platform: text("platform").notNull(), // facebook, google
+  campaignId: text("campaign_id"),
+  campaignName: text("campaign_name"),
+  adSetId: text("ad_set_id"),
+  adSetName: text("ad_set_name"),
+  adId: text("ad_id"),
+  adName: text("ad_name"),
+  formName: text("form_name"),
+  leadData: jsonb("lead_data").$type<{
+    name?: string;
+    email?: string;
+    phone?: string;
+    [key: string]: any;
+  }>().notNull(),
+  status: text("status").default("new").notNull(), // new, contacted, qualified, converted, rejected
+  assignedTo: uuid("assigned_to").references(() => users.id),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Chat Conversations
+export const chatConversations = pgTable("chat_conversations", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  clientId: uuid("client_id").references(() => clients.id),
+  projectId: uuid("project_id").references(() => projects.id),
+  title: text("title").notNull(),
+  type: text("type").default("support").notNull(), // support, project, general
+  status: text("status").default("active").notNull(), // active, closed, archived
+  participants: json("participants").$type<string[]>().default([]), // Array of user IDs
+  assignedTo: uuid("assigned_to").references(() => users.id),
+  lastMessageAt: timestamp("last_message_at"),
+  unreadCount: integer("unread_count").default(0).notNull(),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Chat Messages
+export const chatMessages = pgTable("chat_messages", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: uuid("conversation_id").notNull().references(() => chatConversations.id),
+  senderId: uuid("sender_id").notNull().references(() => users.id),
+  content: text("content").notNull(),
+  messageType: text("message_type").default("text").notNull(), // text, file, image, system
+  attachments: json("attachments").$type<{
+    filename: string;
+    url: string;
+    type: string;
+    size: number;
+  }[]>().default([]),
+  readBy: json("read_by").$type<{
+    userId: string;
+    readAt: string;
+  }[]>().default([]),
+  isEdited: boolean("is_edited").default(false).notNull(),
+  editedAt: timestamp("edited_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Team Member Invitations
+export const teamInvitations = pgTable("team_invitations", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  email: text("email").notNull(),
+  role: text("role").notNull(), // team_member, client
+  token: text("token").notNull().unique(),
+  invitedBy: uuid("invited_by").notNull().references(() => users.id),
+  clientId: uuid("client_id").references(() => clients.id), // For client invitations
+  status: text("status").default("pending").notNull(), // pending, accepted, expired
+  expiresAt: timestamp("expires_at").notNull(),
+  acceptedAt: timestamp("accepted_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Notifications
+export const notifications = pgTable("notifications", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  type: text("type").notNull(), // chat_message, task_assigned, lead_received, etc.
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  data: jsonb("data").$type<Record<string, any>>().default({}),
+  isRead: boolean("is_read").default(false).notNull(),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 
 // Relations
 export const agenciesRelations = relations(agencies, ({ many }) => ({
@@ -169,6 +281,10 @@ export const agenciesRelations = relations(agencies, ({ many }) => ({
   digitalAssets: many(digitalAssets),
   templates: many(agencyTemplates),
   activityLog: many(activityLog),
+  adAccounts: many(adAccounts),
+  leads: many(leads),
+  chatConversations: many(chatConversations),
+  teamInvitations: many(teamInvitations),
 }));
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -182,6 +298,11 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   comments: many(taskComments),
   createdTemplates: many(agencyTemplates),
   activityLog: many(activityLog),
+  assignedLeads: many(leads),
+  assignedConversations: many(chatConversations),
+  sentMessages: many(chatMessages),
+  sentInvitations: many(teamInvitations),
+  notifications: many(notifications),
 }));
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -192,6 +313,9 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   projects: many(projects),
   tasks: many(tasks),
   digitalAssets: many(digitalAssets),
+  adAccounts: many(adAccounts),
+  leads: many(leads),
+  chatConversations: many(chatConversations),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -282,6 +406,95 @@ export const activityLogRelations = relations(activityLog, ({ one }) => ({
   }),
 }));
 
+// New table relations
+export const adAccountsRelations = relations(adAccounts, ({ one, many }) => ({
+  agency: one(agencies, {
+    fields: [adAccounts.agencyId],
+    references: [agencies.id],
+  }),
+  client: one(clients, {
+    fields: [adAccounts.clientId],
+    references: [clients.id],
+  }),
+  leads: many(leads),
+}));
+
+export const leadsRelations = relations(leads, ({ one }) => ({
+  agency: one(agencies, {
+    fields: [leads.agencyId],
+    references: [agencies.id],
+  }),
+  client: one(clients, {
+    fields: [leads.clientId],
+    references: [clients.id],
+  }),
+  adAccount: one(adAccounts, {
+    fields: [leads.adAccountId],
+    references: [adAccounts.id],
+  }),
+  assignedUser: one(users, {
+    fields: [leads.assignedTo],
+    references: [users.id],
+  }),
+}));
+
+export const chatConversationsRelations = relations(chatConversations, ({ one, many }) => ({
+  agency: one(agencies, {
+    fields: [chatConversations.agencyId],
+    references: [agencies.id],
+  }),
+  client: one(clients, {
+    fields: [chatConversations.clientId],
+    references: [clients.id],
+  }),
+  project: one(projects, {
+    fields: [chatConversations.projectId],
+    references: [projects.id],
+  }),
+  assignedUser: one(users, {
+    fields: [chatConversations.assignedTo],
+    references: [users.id],
+  }),
+  createdBy: one(users, {
+    fields: [chatConversations.createdBy],
+    references: [users.id],
+  }),
+  messages: many(chatMessages),
+}));
+
+export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+  conversation: one(chatConversations, {
+    fields: [chatMessages.conversationId],
+    references: [chatConversations.id],
+  }),
+  sender: one(users, {
+    fields: [chatMessages.senderId],
+    references: [users.id],
+  }),
+}));
+
+export const teamInvitationsRelations = relations(teamInvitations, ({ one }) => ({
+  agency: one(agencies, {
+    fields: [teamInvitations.agencyId],
+    references: [agencies.id],
+  }),
+  invitedBy: one(users, {
+    fields: [teamInvitations.invitedBy],
+    references: [users.id],
+  }),
+  client: one(clients, {
+    fields: [teamInvitations.clientId],
+    references: [clients.id],
+  }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertAgencySchema = createInsertSchema(agencies).omit({
   id: true,
@@ -338,6 +551,39 @@ export const insertAgencyTemplateSchema = createInsertSchema(agencyTemplates).om
 export const insertActivityLogSchema = createInsertSchema(activityLog);
 export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens);
 
+export const insertAdAccountSchema = createInsertSchema(adAccounts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertLeadSchema = createInsertSchema(leads).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertChatConversationSchema = createInsertSchema(chatConversations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTeamInvitationSchema = createInsertSchema(teamInvitations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type Agency = typeof agencies.$inferSelect;
 export type InsertAgency = z.infer<typeof insertAgencySchema>;
@@ -366,3 +612,21 @@ export type InsertAgencyTemplate = z.infer<typeof insertAgencyTemplateSchema>;
 export type ActivityLog = typeof activityLog.$inferSelect;
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
+
+export type AdAccount = typeof adAccounts.$inferSelect;
+export type InsertAdAccount = z.infer<typeof insertAdAccountSchema>;
+
+export type Lead = typeof leads.$inferSelect;
+export type InsertLead = z.infer<typeof insertLeadSchema>;
+
+export type ChatConversation = typeof chatConversations.$inferSelect;
+export type InsertChatConversation = z.infer<typeof insertChatConversationSchema>;
+
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+
+export type TeamInvitation = typeof teamInvitations.$inferSelect;
+export type InsertTeamInvitation = z.infer<typeof insertTeamInvitationSchema>;
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;

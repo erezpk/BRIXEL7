@@ -9,7 +9,9 @@ import {
   Globe, 
   BarChart3, 
   Layers,
-  X
+  X,
+  Target,
+  MessageCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +26,8 @@ const navigation = [
   { name: "לקוחות", href: "/dashboard/clients", icon: Users },
   { name: "פרויקטים", href: "/dashboard/projects", icon: Projector },
   { name: "משימות", href: "/dashboard/tasks", icon: CheckSquare },
+  { name: "לידים", href: "/dashboard/leads", icon: Target },
+  { name: "דשבורד צוות", href: "/dashboard/team-dashboard", icon: MessageCircle },
   { name: "צוות", href: "/dashboard/team", icon: UserCheck },
   { name: "נכסים דיגיטליים", href: "/dashboard/assets", icon: Globe },
   { name: "דוחות", href: "/dashboard/reports", icon: BarChart3 },

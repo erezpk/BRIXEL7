@@ -4,11 +4,12 @@ import { storage } from "./storage";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema } from "@shared/schema";
+import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema, insertChatConversationSchema, insertChatMessageSchema, insertTeamInvitationSchema } from "@shared/schema";
 import { z } from "zod";
 import express from "express"; // Import express to use its Router
 import { emailService } from "./email-service"; // Import from email-service.ts
 import crypto from 'crypto'; // Import crypto for token generation
+import { verifyGoogleToken } from "./google-auth";
 
 // Extend Express types
 declare global {
@@ -288,6 +289,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Password reset confirm error:', error);
       res.status(500).json({ message: 'שגיאת שרת' });
+    }
+  });
+
+  // Google OAuth route
+  router.post('/api/auth/google', async (req, res) => {
+    try {
+      const { idToken, email, name, avatar } = req.body;
+
+      if (!idToken || !email || !name) {
+        return res.status(400).json({ message: 'נתונים חסרים' });
+      }
+
+      // Verify Google token
+      const googleUser = await verifyGoogleToken(idToken);
+      if (!googleUser || !googleUser.verified) {
+        return res.status(401).json({ message: 'אימות Google נכשל' });
+      }
+
+      // Create or update user
+      const user = await storage.createOrUpdateUserFromGoogle(email, name, avatar);
+
+      // Log user in
+      req.login(user, (err) => {
+        if (err) {
+          console.error('Login error:', err);
+          return res.status(500).json({ message: 'שגיאה בהתחברות' });
+        }
+
+        const { password, ...safeUser } = user;
+        res.json({ user: safeUser, message: 'התחברות מוצלחת' });
+      });
+    } catch (error) {
+      console.error('Google auth error:', error);
+      res.status(500).json({ message: 'שגיאה באימות Google' });
     }
   });
 
@@ -1165,6 +1200,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mount the router to the app
+  // Chat routes
+  router.get('/api/chat/conversations', requireAuth, async (req, res) => {
+    try {
+      const conversations = await storage.getChatConversationsByUser(req.user!.id);
+      res.json(conversations);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת שיחות' });
+    }
+  });
+
+  router.post('/api/chat/conversations', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const conversationData = insertChatConversationSchema.parse({
+        ...req.body,
+        agencyId: req.user!.agencyId!,
+        createdBy: req.user!.id
+      });
+
+      const conversation = await storage.createChatConversation(conversationData);
+      res.json(conversation);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
+      }
+      res.status(500).json({ message: 'שגיאה ביצירת שיחה' });
+    }
+  });
+
+  router.get('/api/chat/conversations/:id/messages', requireAuth, async (req, res) => {
+    try {
+      const conversation = await storage.getChatConversation(req.params.id);
+      if (!conversation) {
+        return res.status(404).json({ message: 'שיחה לא נמצאה' });
+      }
+
+      const messages = await storage.getChatMessages(req.params.id);
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת הודעות' });
+    }
+  });
+
+  router.post('/api/chat/conversations/:id/messages', requireAuth, async (req, res) => {
+    try {
+      const conversation = await storage.getChatConversation(req.params.id);
+      if (!conversation) {
+        return res.status(404).json({ message: 'שיחה לא נמצאה' });
+      }
+
+      const messageData = insertChatMessageSchema.parse({
+        ...req.body,
+        conversationId: req.params.id,
+        senderId: req.user!.id
+      });
+
+      const message = await storage.createChatMessage(messageData);
+      res.json(message);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
+      }
+      res.status(500).json({ message: 'שגיאה בשליחת הודעה' });
+    }
+  });
+
+  router.put('/api/chat/conversations/:id/read', requireAuth, async (req, res) => {
+    try {
+      await storage.markMessagesAsRead(req.params.id, req.user!.id);
+      res.json({ message: 'הודעות סומנו כנקראו' });
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בעדכון סטטוס קריאה' });
+    }
+  });
+
+  // Leads routes
+  router.get('/api/leads', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const leads = await storage.getLeadsByAgency(req.user!.agencyId!);
+      res.json(leads);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת לידים' });
+    }
+  });
+
+  router.get('/api/leads/client/:clientId', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const client = await storage.getClient(req.params.clientId);
+      if (!client || client.agencyId !== req.user!.agencyId) {
+        return res.status(404).json({ message: 'לקוח לא נמצא' });
+      }
+
+      const leads = await storage.getLeadsByClient(req.params.clientId);
+      res.json(leads);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת לידים של לקוח' });
+    }
+  });
+
+  // Team invitation routes
+  router.post('/api/team/invite', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      
+      if (user.role !== 'agency_admin') {
+        return res.status(403).json({ message: 'רק מנהלי סוכנות יכולים להזמין חברי צוות' });
+      }
+
+      const { email, role, clientId } = req.body;
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7); // Expires in 7 days
+
+      const invitationData = insertTeamInvitationSchema.parse({
+        agencyId: user.agencyId!,
+        email,
+        role,
+        token,
+        invitedBy: user.id,
+        clientId: clientId || null,
+        expiresAt
+      });
+
+      const invitation = await storage.createTeamInvitation(invitationData);
+
+      // Send invitation email (placeholder for now)
+      const inviteUrl = `${req.protocol}://${req.get('host')}/invite?token=${token}`;
+      
+      res.json({ 
+        invitation, 
+        inviteUrl,
+        message: 'הזמנה נשלחה בהצלחה'
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
+      }
+      res.status(500).json({ message: 'שגיאה בשליחת הזמנה' });
+    }
+  });
+
+  router.get('/api/notifications', requireAuth, async (req, res) => {
+    try {
+      const notifications = await storage.getUserNotifications(req.user!.id);
+      res.json(notifications);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת התראות' });
+    }
+  });
+
+  router.put('/api/notifications/:id/read', requireAuth, async (req, res) => {
+    try {
+      await storage.markNotificationAsRead(req.params.id);
+      res.json({ message: 'התראה סומנה כנקראה' });
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בעדכון התראה' });
+    }
+  });
+
   app.use('/', router);
 
   const httpServer = createServer(app);

@@ -1,5 +1,6 @@
 import { 
   agencies, users, clients, projects, tasks, taskComments, digitalAssets, agencyTemplates, activityLog, passwordResetTokens,
+  adAccounts, leads, chatConversations, chatMessages, teamInvitations, notifications,
   type Agency, type InsertAgency,
   type User, type InsertUser,
   type Client, type InsertClient,
@@ -8,7 +9,13 @@ import {
   type TaskComment, type InsertTaskComment,
   type DigitalAsset, type InsertDigitalAsset,
   type AgencyTemplate, type InsertAgencyTemplate,
-  type ActivityLog
+  type ActivityLog,
+  type AdAccount, type InsertAdAccount,
+  type Lead, type InsertLead,
+  type ChatConversation, type InsertChatConversation,
+  type ChatMessage, type InsertChatMessage,
+  type TeamInvitation, type InsertTeamInvitation,
+  type Notification, type InsertNotification
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, like, gte, lte, isNull, or, sql, gt } from "drizzle-orm";
@@ -97,6 +104,38 @@ export interface IStorage {
   validatePasswordResetToken(token: string): Promise<string | null>;
   markPasswordResetTokenAsUsed(token: string): Promise<void>;
   updateUserPassword(userId: string, hashedPassword: string): Promise<void>;
+
+  // Google OAuth
+  createOrUpdateUserFromGoogle(email: string, name: string, avatar?: string): Promise<User>;
+  
+  // Ad Accounts
+  getAdAccountsByClient(clientId: string): Promise<AdAccount[]>;
+  createAdAccount(adAccount: InsertAdAccount): Promise<AdAccount>;
+  updateAdAccount(id: string, adAccount: Partial<InsertAdAccount>): Promise<AdAccount>;
+  
+  // Leads
+  getLeadsByClient(clientId: string): Promise<Lead[]>;
+  getLeadsByAgency(agencyId: string): Promise<Lead[]>;
+  createLead(lead: InsertLead): Promise<Lead>;
+  updateLead(id: string, lead: Partial<InsertLead>): Promise<Lead>;
+  
+  // Chat
+  getChatConversationsByUser(userId: string): Promise<ChatConversation[]>;
+  getChatConversation(id: string): Promise<ChatConversation | undefined>;
+  createChatConversation(conversation: InsertChatConversation): Promise<ChatConversation>;
+  getChatMessages(conversationId: string): Promise<ChatMessage[]>;
+  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  markMessagesAsRead(conversationId: string, userId: string): Promise<void>;
+  
+  // Team Invitations
+  createTeamInvitation(invitation: InsertTeamInvitation): Promise<TeamInvitation>;
+  getTeamInvitation(token: string): Promise<TeamInvitation | undefined>;
+  acceptTeamInvitation(token: string): Promise<void>;
+  
+  // Notifications
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  getUserNotifications(userId: string): Promise<Notification[]>;
+  markNotificationAsRead(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -474,6 +513,207 @@ export class DatabaseStorage implements IStorage {
     await db.update(users)
       .set({ password: hashedPassword })
       .where(eq(users.id, userId));
+  }
+
+  async createOrUpdateUserFromGoogle(email: string, name: string, avatar?: string): Promise<User> {
+    const existingUser = await this.getUserByEmail(email);
+    
+    if (existingUser) {
+      // Update avatar if provided
+      if (avatar && existingUser.avatar !== avatar) {
+        const updatedUser = await this.updateUser(existingUser.id, { avatar });
+        return updatedUser;
+      }
+      return existingUser;
+    }
+    
+    // Create new user
+    const userData = {
+      email,
+      fullName: name,
+      avatar: avatar || null,
+      password: '', // No password for Google users
+      role: 'client' as const,
+      isActive: true,
+      agencyId: null, // Will be set when they join an agency
+    };
+    
+    return this.createUser(userData);
+  }
+
+  // Google OAuth
+  async createOrUpdateUserFromGoogle(email: string, name: string, avatar?: string): Promise<User> {
+    const existingUser = await this.getUserByEmail(email);
+    
+    if (existingUser) {
+      // Update existing user's avatar and last login
+      const [updatedUser] = await db.update(users)
+        .set({ 
+          avatar: avatar || existingUser.avatar,
+          lastLogin: new Date()
+        })
+        .where(eq(users.id, existingUser.id))
+        .returning();
+      return updatedUser;
+    } else {
+      // Create new user with Google account
+      return this.createUser({
+        email,
+        password: '', // No password for Google users
+        fullName: name,
+        role: 'agency_admin', // Default role
+        avatar,
+        agencyId: null
+      });
+    }
+  }
+
+  // Ad Accounts
+  async getAdAccountsByClient(clientId: string): Promise<AdAccount[]> {
+    return db.query.adAccounts.findMany({
+      where: eq(adAccounts.clientId, clientId),
+      orderBy: [desc(adAccounts.createdAt)]
+    });
+  }
+
+  async createAdAccount(adAccount: InsertAdAccount): Promise<AdAccount> {
+    const [created] = await db.insert(adAccounts).values([adAccount]).returning();
+    return created;
+  }
+
+  async updateAdAccount(id: string, adAccount: Partial<InsertAdAccount>): Promise<AdAccount> {
+    const [updated] = await db.update(adAccounts)
+      .set(adAccount)
+      .where(eq(adAccounts.id, id))
+      .returning();
+    return updated;
+  }
+
+  // Leads
+  async getLeadsByClient(clientId: string): Promise<Lead[]> {
+    return db.query.leads.findMany({
+      where: eq(leads.clientId, clientId),
+      orderBy: [desc(leads.createdAt)]
+    });
+  }
+
+  async getLeadsByAgency(agencyId: string): Promise<Lead[]> {
+    return db.query.leads.findMany({
+      where: eq(leads.agencyId, agencyId),
+      orderBy: [desc(leads.createdAt)]
+    });
+  }
+
+  async createLead(lead: InsertLead): Promise<Lead> {
+    const [created] = await db.insert(leads).values([lead]).returning();
+    return created;
+  }
+
+  async updateLead(id: string, leadData: Partial<InsertLead>): Promise<Lead> {
+    const [updated] = await db.update(leads)
+      .set(leadData)
+      .where(eq(leads.id, id))
+      .returning();
+    return updated;
+  }
+
+  // Chat
+  async getChatConversationsByUser(userId: string): Promise<ChatConversation[]> {
+    return db.query.chatConversations.findMany({
+      where: or(
+        eq(chatConversations.createdBy, userId),
+        eq(chatConversations.assignedTo, userId),
+        sql`${chatConversations.participants} @> ${JSON.stringify([userId])}`
+      ),
+      orderBy: [desc(chatConversations.lastMessageAt)]
+    });
+  }
+
+  async getChatConversation(id: string): Promise<ChatConversation | undefined> {
+    return db.query.chatConversations.findFirst({
+      where: eq(chatConversations.id, id)
+    });
+  }
+
+  async createChatConversation(conversation: InsertChatConversation): Promise<ChatConversation> {
+    const [created] = await db.insert(chatConversations).values([conversation]).returning();
+    return created;
+  }
+
+  async getChatMessages(conversationId: string): Promise<ChatMessage[]> {
+    return db.query.chatMessages.findMany({
+      where: eq(chatMessages.conversationId, conversationId),
+      orderBy: [asc(chatMessages.createdAt)]
+    });
+  }
+
+  async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
+    const [created] = await db.insert(chatMessages).values([message]).returning();
+    
+    // Update conversation's last message timestamp
+    await db.update(chatConversations)
+      .set({ 
+        lastMessageAt: new Date(),
+        unreadCount: sql`${chatConversations.unreadCount} + 1`
+      })
+      .where(eq(chatConversations.id, message.conversationId));
+    
+    return created;
+  }
+
+  async markMessagesAsRead(conversationId: string, userId: string): Promise<void> {
+    // Reset unread count for the conversation
+    await db.update(chatConversations)
+      .set({ unreadCount: 0 })
+      .where(eq(chatConversations.id, conversationId));
+  }
+
+  // Team Invitations
+  async createTeamInvitation(invitation: InsertTeamInvitation): Promise<TeamInvitation> {
+    const [created] = await db.insert(teamInvitations).values([invitation]).returning();
+    return created;
+  }
+
+  async getTeamInvitation(token: string): Promise<TeamInvitation | undefined> {
+    return db.query.teamInvitations.findFirst({
+      where: and(
+        eq(teamInvitations.token, token),
+        eq(teamInvitations.status, 'pending'),
+        gt(teamInvitations.expiresAt, new Date())
+      )
+    });
+  }
+
+  async acceptTeamInvitation(token: string): Promise<void> {
+    await db.update(teamInvitations)
+      .set({ 
+        status: 'accepted',
+        acceptedAt: new Date()
+      })
+      .where(eq(teamInvitations.token, token));
+  }
+
+  // Notifications
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [created] = await db.insert(notifications).values([notification]).returning();
+    return created;
+  }
+
+  async getUserNotifications(userId: string): Promise<Notification[]> {
+    return db.query.notifications.findMany({
+      where: eq(notifications.userId, userId),
+      orderBy: [desc(notifications.createdAt)],
+      limit: 50
+    });
+  }
+
+  async markNotificationAsRead(id: string): Promise<void> {
+    await db.update(notifications)
+      .set({ 
+        isRead: true,
+        readAt: new Date()
+      })
+      .where(eq(notifications.id, id));
   }
 }
 

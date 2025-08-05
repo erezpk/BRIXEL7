@@ -26,6 +26,8 @@ import Team from "@/pages/dashboard/team";
 import ClientDashboard from "@/pages/client-portal/client-dashboard";
 import Profile from "@/pages/dashboard/profile";
 import Settings from "@/pages/dashboard/settings";
+import TeamDashboardPage from "@/pages/team-dashboard";
+import LeadsManagementPage from "@/pages/leads-management";
 import NotFound from "@/pages/not-found";
 import HelpCenter from "@/pages/help-center";
 
@@ -156,6 +158,18 @@ export default function App() {
               <DashboardLayout>
                 <Team />
               </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+          
+          <Route path="/dashboard/team-dashboard">
+            <ProtectedRoute>
+              <TeamDashboardPage />
+            </ProtectedRoute>
+          </Route>
+          
+          <Route path="/dashboard/leads">
+            <ProtectedRoute>
+              <LeadsManagementPage />
             </ProtectedRoute>
           </Route>
 
