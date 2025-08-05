@@ -1,399 +1,146 @@
-import { useState } from "react";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { useRoute } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
-import { apiRequest } from "@/lib/queryClient";
+import React from 'react';
+import { useParams } from 'wouter';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  ArrowRight, 
-  Edit, 
-  MessageCircle, 
-  Users, 
   Calendar,
-  DollarSign,
   Clock,
-  Eye,
-  Send,
-  Paperclip,
-  CheckSquare
-} from "lucide-react";
-import { type Project, type Task, type User, type DigitalAsset, type TaskComment } from "@shared/schema";
-import { format } from "date-fns";
-import { he } from "date-fns/locale";
+  User,
+  FileText,
+  MessageSquare,
+  Upload,
+  Edit,
+  Trash2
+} from 'lucide-react';
 
 export default function ProjectDetails() {
-  const [, params] = useRoute("/dashboard/projects/:id");
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [newMessage, setNewMessage] = useState("");
-  const [isViewingAsClient, setIsViewingAsClient] = useState(false);
+  const { projectId } = useParams();
 
-  const projectId = params?.id;
-
-  // Fetch project details
-  const { data: project, isLoading } = useQuery<Project>({
-    queryKey: ['/api/projects', projectId],
-    enabled: !!projectId,
-  });
-
-  // Fetch project tasks
-  const { data: tasks } = useQuery<Task[]>({
-    queryKey: ['/api/tasks', { projectId }],
-    queryFn: async () => {
-      const response = await fetch(`/api/tasks?projectId=${projectId}`, { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to fetch tasks');
-      return response.json();
-    },
-    enabled: !!projectId,
-  });
-
-  // Fetch project chat/comments
-  const { data: projectComments } = useQuery<TaskComment[]>({
-    queryKey: ['/api/projects', projectId, 'comments'],
-    queryFn: async () => {
-      // For now, return empty array - this would be a separate API endpoint
-      return [];
-    },
-    enabled: !!projectId,
-  });
-
-  // Fetch digital assets for this project
-  const { data: assets } = useQuery<DigitalAsset[]>({
-    queryKey: ['/api/digital-assets', { projectId }],
-    queryFn: async () => {
-      // For now, return empty array - this would be a separate API endpoint
-      return [];
-    },
-    enabled: !!projectId,
-  });
-
-  const sendMessageMutation = useMutation({
-    mutationFn: async (message: string) => {
-      // This would be implemented as a project message/comment system
-      const response = await apiRequest('POST', `/api/projects/${projectId}/messages`, {
-        content: message
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      setNewMessage("");
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'comments'] });
-      toast({
-        title: "הודעה נשלחה",
-        description: "ההודעה נוספה לפרויקט",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "שגיאה",
-        description: "לא ניתן לשלוח הודעה כרגע",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
-    sendMessageMutation.mutate(newMessage);
+  // Mock data for demonstration - replace with actual API call
+  const project = {
+    id: projectId,
+    name: 'Project Alpha',
+    description: 'This is a sample project description for Project Alpha. It involves developing a new feature for the main application.',
+    status: 'In Progress',
+    progress: 60,
+    dueDate: '2023-12-31',
+    team: [
+      { id: 1, name: 'Alice', avatar: '/avatars/01.png' },
+      { id: 2, name: 'Bob', avatar: '/avatars/02.png' },
+    ],
+    tasks: [
+      { id: 1, title: 'Setup development environment', completed: true, deadline: '2023-11-01' },
+      { id: 2, title: 'Implement user authentication', completed: false, deadline: '2023-11-15' },
+      { id: 3, title: 'Develop project dashboard', completed: false, deadline: '2023-11-30' },
+      { id: 4, title: 'Integrate payment gateway', completed: false, deadline: '2023-12-10' },
+    ],
+    comments: [
+      { id: 1, user: 'Alice', text: 'Great progress on the setup!', timestamp: '2023-10-20T10:00:00Z' },
+      { id: 2, user: 'Bob', text: 'Need to review the task assignments for the next phase.', timestamp: '2023-10-21T14:30:00Z' },
+    ]
   };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'planning': return 'bg-yellow-100 text-yellow-800';
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'low': return 'bg-green-100 text-green-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'urgent': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!project) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="text-center py-12">
-          <h2 className="text-xl font-medium text-gray-600">פרויקט לא נמצא</h2>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-reverse space-x-4">
-          <Button 
-            variant="ghost" 
-            onClick={() => window.history.back()}
-            className="flex items-center space-x-reverse space-x-2"
-          >
-            <ArrowRight className="h-4 w-4" />
-            <span>חזרה</span>
-          </Button>
-          <div className="border-r border-gray-300 h-6"></div>
-          <h1 className="text-2xl font-bold text-gray-900 font-rubik">{project.name}</h1>
-        </div>
-
-        <div className="flex items-center space-x-reverse space-x-2">
-          <Button
-            variant={isViewingAsClient ? "default" : "outline"}
-            onClick={() => setIsViewingAsClient(!isViewingAsClient)}
-            className="flex items-center space-x-reverse space-x-2"
-          >
-            <Eye className="h-4 w-4" />
-            <span>{isViewingAsClient ? "תצוגת סוכנות" : "תצוגת לקוח"}</span>
-          </Button>
-          <Button variant="outline" className="flex items-center space-x-reverse space-x-2">
-            <Edit className="h-4 w-4" />
-            <span>עריכת פרויקט</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Project Info Card */}
-      <Card className="mb-6">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div className="container mx-auto p-4">
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            Project: {project.name}
+            <Badge variant="outline" className="ml-2">{project.status}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground mb-4">{project.description}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">סטטוס</h3>
-              <Badge className={getStatusColor(project.status)}>
-                {project.status === 'planning' && 'תכנון'}
-                {project.status === 'active' && 'פעיל'}
-                {project.status === 'completed' && 'הושלם'}
-                {project.status === 'cancelled' && 'בוטל'}
-              </Badge>
+              <h3 className="text-lg font-semibold mb-2 flex items-center">
+                <Calendar className="mr-2 h-4 w-4" /> Due Date
+              </h3>
+              <p>{project.dueDate}</p>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">עדיפות</h3>
-              <Badge className={getPriorityColor(project.priority)}>
-                {project.priority === 'low' && 'נמוך'}
-                {project.priority === 'medium' && 'בינוני'}
-                {project.priority === 'high' && 'גבוה'}
-                {project.priority === 'urgent' && 'דחוף'}
-              </Badge>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">תאריך התחלה</h3>
-              <div className="flex items-center space-x-reverse space-x-2">
-                <Calendar className="h-4 w-4 text-gray-400" />
-                <span>
-                  {project.startDate 
-                    ? format(new Date(project.startDate), "dd/MM/yyyy", { locale: he })
-                    : "לא נקבע"
-                  }
-                </span>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">תקציב</h3>
-              <div className="flex items-center space-x-reverse space-x-2">
-                <DollarSign className="h-4 w-4 text-gray-400" />
-                <span>
-                  {project.budget 
-                    ? `₪${(project.budget / 100).toLocaleString()}`
-                    : "לא נקבע"
-                  }
-                </span>
+              <h3 className="text-lg font-semibold mb-2 flex items-center">
+                <User className="mr-2 h-4 w-4" /> Team Members
+              </h3>
+              <div className="flex -space-x-2 overflow-hidden">
+                {project.team.map(member => (
+                  <img key={member.id} className="inline-block h-8 w-8 rounded-full ring-2 ring-white" src={member.avatar} alt={member.name} />
+                ))}
               </div>
             </div>
           </div>
-          
-          {project.description && (
-            <div className="mt-4 pt-4 border-t">
-              <h3 className="text-sm font-medium text-gray-500 mb-2">תיאור הפרויקט</h3>
-              <p className="text-gray-700 text-right">{project.description}</p>
-            </div>
-          )}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-2 flex items-center">
+              <Progress className="mr-2 h-4 w-4" /> Project Progress
+            </h3>
+            <Progress value={project.progress} />
+            <span className="text-sm text-muted-foreground">{project.progress}% Complete</span>
+          </div>
+
+          <Tabs defaultValue="tasks" className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="tasks">Tasks</TabsTrigger>
+              <TabsTrigger value="comments">Comments</TabsTrigger>
+              <TabsTrigger value="files">Files</TabsTrigger>
+            </TabsList>
+            <TabsContent value="tasks">
+              <div className="space-y-4">
+                {project.tasks.map((task) => (
+                  <Card key={task.id} className="p-3 flex justify-between items-center">
+                    <div>
+                      <p className={`font-medium ${task.completed ? 'line-through text-gray-500' : ''}`}>{task.title}</p>
+                      <p className="text-sm text-muted-foreground flex items-center">
+                        <Clock className="mr-1 h-3 w-3" /> Deadline: {task.deadline}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {task.completed ? (
+                        <Badge variant="success">Completed</Badge>
+                      ) : (
+                        <Badge variant="secondary">Pending</Badge>
+                      )}
+                      <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" className="text-red-500"><Trash2 className="h-4 w-4" /></Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+            <TabsContent value="comments">
+              <div className="space-y-4">
+                {project.comments.map((comment) => (
+                  <Card key={comment.id} className="p-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="flex items-center">
+                        <User className="mr-2 h-4 w-4 text-primary" />
+                        <span className="font-semibold">{comment.user}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(comment.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+                    <p>{comment.text}</p>
+                  </Card>
+                ))}
+                <div className="flex items-center space-x-2 mt-4">
+                  <textarea className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" placeholder="Add a comment..." />
+                  <Button><MessageSquare className="mr-2 h-4 w-4" /> Comment</Button>
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="files">
+              <div className="flex flex-col items-center justify-center space-y-4 py-8">
+                <Upload className="h-12 w-12 text-muted-foreground" />
+                <p className="text-muted-foreground">No files uploaded yet.</p>
+                <Button><Upload className="mr-2 h-4 w-4" /> Upload File</Button>
+              </div>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
-
-      <Tabs defaultValue="tasks" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="tasks">משימות</TabsTrigger>
-          <TabsTrigger value="chat">התכתבות</TabsTrigger>
-          <TabsTrigger value="assets">נכסים דיגיטליים</TabsTrigger>
-          <TabsTrigger value="team">צוות</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="tasks" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>משימות הפרויקט</span>
-                <Badge variant="secondary">{tasks?.length || 0} משימות</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {tasks && tasks.length > 0 ? (
-                <div className="space-y-3">
-                  {tasks.map((task) => (
-                    <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center space-x-reverse space-x-3">
-                        <CheckSquare className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <h4 className="font-medium text-right">{task.title}</h4>
-                          {task.description && (
-                            <p className="text-sm text-gray-500 text-right">{task.description}</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-reverse space-x-2">
-                        <Badge className={getStatusColor(task.status)}>
-                          {task.status === 'new' && 'חדש'}
-                          {task.status === 'in_progress' && 'בביצוע'}
-                          {task.status === 'completed' && 'הושלם'}
-                          {task.status === 'cancelled' && 'בוטל'}
-                        </Badge>
-                        {task.dueDate && (
-                          <span className="text-xs text-gray-500">
-                            {format(new Date(task.dueDate), "dd/MM", { locale: he })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <CheckSquare className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p>אין משימות בפרויקט זה</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="chat" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-reverse space-x-2">
-                <MessageCircle className="h-5 w-5" />
-                <span>התכתבות פרויקט</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Chat Messages */}
-                <div className="h-96 border rounded-lg p-4 overflow-y-auto bg-gray-50">
-                  {projectComments && projectComments.length > 0 ? (
-                    <div className="space-y-3">
-                      {projectComments.map((comment, index) => (
-                        <div key={index} className="flex items-start space-x-reverse space-x-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback>
-                              {user?.fullName?.charAt(0) || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 bg-white rounded-lg p-3 shadow-sm">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm font-medium">{user?.fullName}</span>
-                              <span className="text-xs text-gray-500">
-                                {format(new Date(comment.createdAt), "HH:mm dd/MM", { locale: he })}
-                              </span>
-                            </div>
-                            <p className="text-sm text-right">{comment.content}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      <MessageCircle className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                      <p>אין הודעות עדיין</p>
-                      <p className="text-sm">התחל שיחה עם הצוות והלקוח</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Message Input */}
-                <div className="flex items-center space-x-reverse space-x-2">
-                  <Button variant="outline" size="sm">
-                    <Paperclip className="h-4 w-4" />
-                  </Button>
-                  <Input
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="כתוב הודעה..."
-                    className="flex-1 text-right"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                  />
-                  <Button 
-                    onClick={handleSendMessage}
-                    disabled={!newMessage.trim() || sendMessageMutation.isPending}
-                    size="sm"
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="assets" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>נכסים דיגיטליים</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-gray-500">
-                <Clock className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                <p>ניהול נכסים דיגיטליים יתווסף בקרוב</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="team" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-reverse space-x-2">
-                <Users className="h-5 w-5" />
-                <span>צוות הפרויקט</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-gray-500">
-                <Users className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                <p>ניהול צוות הפרויקט יתווסף בקרוב</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }
