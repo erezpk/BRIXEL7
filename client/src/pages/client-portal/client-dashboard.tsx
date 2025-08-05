@@ -249,11 +249,21 @@ export default function ClientDashboard() {
       const url = editingLead ? `/api/client/leads/${editingLead.id}` : '/api/client/leads';
       const method = editingLead ? 'PUT' : 'POST';
       
+      // Validate form data
+      if (!leadData.name?.trim() || !leadData.email?.trim()) {
+        throw new Error('שם ואימייל נדרשים');
+      }
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ ...leadData, clientId: effectiveClientId })
+        body: JSON.stringify({ 
+          ...leadData, 
+          clientId: effectiveClientId,
+          name: leadData.name.trim(),
+          email: leadData.email.trim()
+        })
       });
 
       if (!response.ok) {
@@ -263,12 +273,17 @@ export default function ClientDashboard() {
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedLead) => {
       toast({
         title: editingLead ? "ליד עודכן" : "ליד נוסף",
         description: editingLead ? "הליד עודכן בהצלחה" : "ליד חדש נוסף בהצלחה"
       });
+      
+      // Invalidate all related queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/client/leads'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+      
       setShowLeadModal(false);
       setEditingLead(null);
       setLeadForm({
@@ -282,10 +297,11 @@ export default function ClientDashboard() {
       });
     },
     onError: (error: Error) => {
+      console.error('Lead save error:', error);
       toast({
         variant: "destructive",
         title: "שגיאה",
-        description: error.message
+        description: error.message || 'שגיאה בשמירת הליד'
       });
     }
   });
@@ -369,6 +385,34 @@ export default function ClientDashboard() {
   });
 
   const handleSaveLead = () => {
+    // Validate form before submitting
+    if (!leadForm.name.trim()) {
+      toast({
+        variant: "destructive",
+        title: "שגיאה",
+        description: "יש למלא את שם הליד"
+      });
+      return;
+    }
+
+    if (!leadForm.email.trim()) {
+      toast({
+        variant: "destructive",
+        title: "שגיאה", 
+        description: "יש למלא את כתובת האימייל"
+      });
+      return;
+    }
+
+    if (!leadForm.email.includes('@')) {
+      toast({
+        variant: "destructive",
+        title: "שגיאה",
+        description: "כתובת אימייל לא תקינה"
+      });
+      return;
+    }
+
     saveLeadMutation.mutate(leadForm);
   };
 

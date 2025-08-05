@@ -943,10 +943,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const leadData = req.body;
       
-      // In real implementation, save to database
+      // Validate required fields
+      if (!leadData.name || !leadData.email) {
+        return res.status(400).json({ message: 'שם ואימייל נדרשים' });
+      }
+
+      // Create new lead with proper validation
       const newLead = {
         id: Date.now().toString(),
-        ...leadData,
+        name: leadData.name.trim(),
+        email: leadData.email.trim(),
+        phone: leadData.phone || '',
+        source: leadData.source || 'website',
+        status: leadData.status || 'new',
+        value: Number(leadData.value) || 0,
+        notes: leadData.notes || '',
+        clientId: leadData.clientId,
         createdAt: new Date().toISOString()
       };
 
@@ -964,6 +976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(newLead);
     } catch (error) {
+      console.error('Error creating lead:', error);
       res.status(500).json({ message: 'שגיאה ביצירת ליד' });
     }
   });
@@ -973,11 +986,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leadId = req.params.id;
       const updateData = req.body;
       
-      // In real implementation, update in database
+      // Validate required fields
+      if (!updateData.name || !updateData.email) {
+        return res.status(400).json({ message: 'שם ואימייל נדרשים' });
+      }
+
+      // Create updated lead with proper validation
       const updatedLead = {
         id: leadId,
-        ...updateData,
-        updatedAt: new Date().toISOString()
+        name: updateData.name.trim(),
+        email: updateData.email.trim(),
+        phone: updateData.phone || '',
+        source: updateData.source || 'website',
+        status: updateData.status || 'new',
+        value: Number(updateData.value) || 0,
+        notes: updateData.notes || '',
+        clientId: updateData.clientId,
+        updatedAt: new Date().toISOString(),
+        createdAt: updateData.createdAt || new Date().toISOString()
       };
 
       // Log activity (if user has agency)
@@ -988,12 +1014,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           action: 'updated',
           entityType: 'lead',
           entityId: leadId,
-          details: { leadName: updateData.name, leadEmail: updateData.email },
+          details: { leadName: updatedLead.name, leadEmail: updatedLead.email },
         });
       }
 
       res.json(updatedLead);
     } catch (error) {
+      console.error('Error updating lead:', error);
       res.status(500).json({ message: 'שגיאה בעדכון ליד' });
     }
   });
