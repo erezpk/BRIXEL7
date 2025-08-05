@@ -1,14 +1,23 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import StatsCard from "@/components/dashboard/stats-card";
 import QuickActions from "@/components/dashboard/quick-actions";
 import RecentActivity from "@/components/dashboard/recent-activity";
 import NewClientModal from "@/components/modals/new-client-modal";
 import NewTaskModal from "@/components/modals/new-task-modal";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, Calendar, CheckSquare, Clock, Projector, PoundSterling, Users } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { AlertCircle, Calendar, CheckSquare, Clock, Projector, PoundSterling, Users, Plus, FolderOpen } from "lucide-react";
+import { type Client, type InsertClient, type InsertProject, type InsertTask } from "@shared/schema";
 
 interface DashboardStats {
   activeProjects: number;
@@ -19,13 +28,135 @@ interface DashboardStats {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [showNewClientModal, setShowNewClientModal] = useState(false);
-  const [showNewTaskModal, setShowNewTaskModal] = useState(false);
+  const [showNewClientModal, setShowClientModal] = useState(false);
+  const [showNewProjectModal, setShowProjectModal] = useState(false);
+  const [showNewTaskModal, setShowTaskModal] = useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const [clientData, setClientData] = useState<Omit<InsertClient, 'agencyId'>>({
+    name: "",
+    contactName: "",
+    email: "",
+    phone: "",
+    industry: "",
+    status: "active",
+    notes: "",
+  });
+
+  const [projectData, setProjectData] = useState<Omit<InsertProject, 'agencyId'>>({
+    name: "",
+    description: "",
+    type: "",
+    clientId: "",
+  });
+
+  const [taskData, setTaskData] = useState<Omit<InsertTask, 'agencyId' | 'assignedTo'>>({
+    title: "",
+    description: "",
+    priority: "medium",
+    projectId: "",
+  });
 
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ['/api/dashboard/stats'],
     staleTime: 60000, // 1 minute
   });
+
+  const { data: clients = [] } = useQuery<Client[]>({
+    queryKey: ['/api/clients'],
+    staleTime: 30000,
+  });
+
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    staleTime: 30000,
+  });
+
+  // Create client mutation
+  const createClientMutation = useMutation({
+    mutationFn: async (data: Omit<InsertClient, 'agencyId'>) => {
+      const response = await apiRequest('POST', '/api/clients', data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+      setShowClientModal(false);
+      resetClientForm();
+      toast({
+        title: "לקוח נוצר בהצלחה",
+        description: "הלקוח החדש נוסף למערכת",
+      });
+    },
+  });
+
+  // Create project mutation
+  const createProjectMutation = useMutation({
+    mutationFn: async (data: Omit<InsertProject, 'agencyId'>) => {
+      const response = await apiRequest('POST', '/api/projects', data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+      setShowProjectModal(false);
+      resetProjectForm();
+      toast({
+        title: "פרויקט נוצר בהצלחה",
+        description: "הפרויקט החדש נוסף למערכת",
+      });
+    },
+  });
+
+  // Create task mutation
+  const createTaskMutation = useMutation({
+    mutationFn: async (data: Omit<InsertTask, 'agencyId' | 'assignedTo'>) => {
+      const response = await apiRequest('POST', '/api/tasks', data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+      setShowTaskModal(false);
+      resetTaskForm();
+      toast({
+        title: "משימה נוצרה בהצלחה",
+        description: "המשימה החדשה נוספה למערכת",
+      });
+    },
+  });
+
+  const resetClientForm = () => {
+    setClientData({
+      name: "",
+      contactName: "",
+      email: "",
+      phone: "",
+      industry: "",
+      status: "active",
+      notes: "",
+    });
+  };
+
+  const resetProjectForm = () => {
+    setProjectData({
+      name: "",
+      description: "",
+      type: "",
+      clientId: "",
+    });
+  };
+
+  const resetTaskForm = () => {
+    setTaskData({
+      title: "",
+      description: "",
+      priority: "medium",
+      projectId: "",
+    });
+  };
+
 
   const statsCards = [
     {
@@ -99,23 +230,49 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Actions */}
-      <QuickActions
-        onNewClient={() => setShowNewClientModal(true)}
-        onNewProject={() => {
-          // TODO: Implement new project modal
-          console.log('New project modal');
-        }}
-        onNewTask={() => setShowNewTaskModal(true)}
-        onInviteTeam={() => {
-          // TODO: Implement team invite modal
-          console.log('Team invite modal');
-        }}
-      />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-right">פעולות מהירות</CardTitle>
+          <CardDescription className="text-right">
+            גישה מהירה לפעולות נפוצות
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button
+              onClick={() => setShowClientModal(true)}
+              className="h-20 flex flex-col items-center space-y-2"
+              variant="outline"
+            >
+              <Users className="h-6 w-6" />
+              <span>לקוח חדש</span>
+            </Button>
+
+            <Button
+              onClick={() => setShowProjectModal(true)}
+              className="h-20 flex flex-col items-center space-y-2"
+              variant="outline"
+            >
+              <FolderOpen className="h-6 w-6" />
+              <span>פרויקט חדש</span>
+            </Button>
+
+            <Button
+              onClick={() => setShowTaskModal(true)}
+              className="h-20 flex flex-col items-center space-y-2"
+              variant="outline"
+            >
+              <CheckSquare className="h-6 w-6" />
+              <span>משימה חדשה</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Recent Activity & Upcoming Deadlines */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <RecentActivity />
-        
+
         {/* Upcoming Deadlines */}
         <Card data-testid="upcoming-deadlines">
           <CardHeader>
@@ -156,16 +313,187 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Modals */}
-      <NewClientModal
-        isOpen={showNewClientModal}
-        onClose={() => setShowNewClientModal(false)}
-      />
-      
-      <NewTaskModal
-        isOpen={showNewTaskModal}
-        onClose={() => setShowNewTaskModal(false)}
-      />
+      {/* Add Client Modal */}
+      <Dialog open={showNewClientModal} onOpenChange={setShowClientModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-right">לקוח חדש</DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={(e) => { e.preventDefault(); createClientMutation.mutate(clientData); }} className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-right">שם הלקוח *</Label>
+              <Input
+                value={clientData.name}
+                onChange={(e) => setClientData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="הכנס שם הלקוח"
+                className="text-right"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-right">איש קשר</Label>
+              <Input
+                value={clientData.contactName}
+                onChange={(e) => setClientData(prev => ({ ...prev, contactName: e.target.value }))}
+                placeholder="שם איש הקשר"
+                className="text-right"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-right">אימייל</Label>
+              <Input
+                type="email"
+                value={clientData.email}
+                onChange={(e) => setClientData(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="כתובת אימייל"
+                className="text-right"
+              />
+            </div>
+
+            <div className="flex space-x-reverse space-x-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setShowClientModal(false)}>
+                ביטול
+              </Button>
+              <Button type="submit" disabled={createClientMutation.isPending}>
+                {createClientMutation.isPending ? "יוצר..." : "צור לקוח"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Project Modal */}
+      <Dialog open={showNewProjectModal} onOpenChange={setShowProjectModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-right">פרויקט חדש</DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            createProjectMutation.mutate({
+              ...projectData,
+              status: 'planning',
+              clientId: projectData.clientId || null,
+            });
+          }} className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-right">שם הפרויקט *</Label>
+              <Input
+                value={projectData.name}
+                onChange={(e) => setProjectData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="הכנס שם פרויקט"
+                className="text-right"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-right">תיאור</Label>
+              <Textarea
+                value={projectData.description}
+                onChange={(e) => setProjectData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="תאר את הפרויקט"
+                className="text-right"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-right">לקוח</Label>
+              <Select value={projectData.clientId} onValueChange={(value) => setProjectData(prev => ({ ...prev, clientId: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="בחר לקוח" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">ללא לקוח</SelectItem>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex space-x-reverse space-x-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setShowProjectModal(false)}>
+                ביטול
+              </Button>
+              <Button type="submit" disabled={createProjectMutation.isPending}>
+                {createProjectMutation.isPending ? "יוצר..." : "צור פרויקט"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Task Modal */}
+      <Dialog open={showNewTaskModal} onOpenChange={setShowTaskModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-right">משימה חדשה</DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            createTaskMutation.mutate({
+              ...taskData,
+              status: 'pending',
+              projectId: taskData.projectId || null,
+            });
+          }} className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-right">כותרת המשימה *</Label>
+              <Input
+                value={taskData.title}
+                onChange={(e) => setTaskData(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="הכנס כותרת למשימה"
+                className="text-right"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-right">תיאור</Label>
+              <Textarea
+                value={taskData.description}
+                onChange={(e) => setTaskData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="תאר את המשימה"
+                className="text-right"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-right">פרויקט</Label>
+              <Select value={taskData.projectId} onValueChange={(value) => setTaskData(prev => ({ ...prev, projectId: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="בחר פרויקט" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">ללא פרויקט</SelectItem>
+                  {projects.map((project: any) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex space-x-reverse space-x-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setShowTaskModal(false)}>
+                ביטול
+              </Button>
+              <Button type="submit" disabled={createTaskMutation.isPending}>
+                {createTaskMutation.isPending ? "יוצר..." : "צור משימה"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
