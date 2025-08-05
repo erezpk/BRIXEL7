@@ -18,10 +18,12 @@ import { type User } from "@shared/schema";
 import { getUserRole } from "@/lib/auth";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
+import InviteTeamMemberModal from "@/components/modals/invite-team-member-modal";
 
 export default function Team() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   const { data: teamMembers, isLoading } = useQuery<User[]>({
     queryKey: ['/api/team'],
@@ -90,6 +92,7 @@ export default function Team() {
         </div>
         <Button 
           className="flex items-center space-x-reverse space-x-2"
+          onClick={() => setShowInviteModal(true)}
           data-testid="button-invite-member"
         >
           <Plus className="h-4 w-4" />
@@ -161,7 +164,10 @@ export default function Team() {
             }
           </p>
           {!searchQuery && roleFilter === "all" && (
-            <Button data-testid="button-invite-first-member">
+            <Button 
+              onClick={() => setShowInviteModal(true)}
+              data-testid="button-invite-first-member"
+            >
               <Plus className="h-4 w-4 ml-2" />
               הזמן חבר צוות ראשון
             </Button>
@@ -237,6 +243,11 @@ export default function Team() {
           ))}
         </div>
       )}
+      
+      <InviteTeamMemberModal 
+        open={showInviteModal}
+        onOpenChange={setShowInviteModal}
+      />
     </div>
   );
 }

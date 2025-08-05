@@ -601,6 +601,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/team/invite', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      
+      // Only agency admins can invite team members
+      if (user.role !== 'agency_admin') {
+        return res.status(403).json({ message: 'רק מנהלי סוכנות יכולים להזמין חברי צוות' });
+      }
+      
+      const userData = insertUserSchema.parse({
+        ...req.body,
+        agencyId: user.agencyId!,
+        isActive: true,
+      });
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(userData.email);
+      if (existingUser) {
+        return res.status(400).json({ message: 'משתמש כבר קיים עם אימייל זה' });
+      }
+      
+      const newUser = await storage.createUser(userData);
+      
+      // Log activity
+      await storage.logActivity({
+        agencyId: user.agencyId!,
+        userId: user.id,
+        action: 'invited',
+        entityType: 'user',
+        entityId: newUser.id,
+        details: { userName: newUser.fullName, userEmail: newUser.email },
+      });
+      
+      // Remove password from response
+      const { password, ...safeUser } = newUser;
+      res.json(safeUser);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
+      }
+      res.status(500).json({ message: 'שגיאה בהזמנת חבר צוות' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
