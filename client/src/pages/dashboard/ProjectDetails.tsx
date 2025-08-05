@@ -19,7 +19,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/components/ui/use-toast'; // Assuming useToast is in this path
+import { useToast } from '@/hooks/use-toast';
 
 // Define interfaces for better type safety (replace with actual types if available)
 interface Client {
