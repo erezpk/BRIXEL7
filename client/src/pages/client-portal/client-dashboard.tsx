@@ -132,6 +132,19 @@ export default function ClientDashboard() {
     }
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
+
+  // Update profile data when client profile is loaded
+  useEffect(() => {
+    if (currentClientProfile) {
+      setProfileData({
+        fullName: currentClientProfile.contactName || currentClientProfile.name || '',
+        email: currentClientProfile.email || '',
+        phone: currentClientProfile.phone || '',
+        company: currentClientProfile.name || '',
+        avatar: null
+      });
+    }
+  }, [currentClientProfile]);
   
   // Check if this is an agency admin viewing a client's dashboard
   const isAgencyAdmin = user?.role === 'agency_admin' || user?.role === 'team_member';
@@ -172,10 +185,10 @@ export default function ClientDashboard() {
   });
 
   const [profileData, setProfileData] = useState({
-    fullName: 'יוסי כהן',
-    email: 'yossi@example.com',
-    phone: '050-1234567',
-    company: 'חברת הדוגמא',
+    fullName: '',
+    email: '',
+    phone: '',
+    company: '',
     avatar: null as string | null
   });
 
@@ -188,6 +201,12 @@ export default function ClientDashboard() {
   const { data: clientInfo } = useQuery({
     queryKey: ['/api/clients', effectiveClientId],
     enabled: !!effectiveClientId && isAgencyAdmin && !!viewingClientId,
+  });
+
+  // Fetch current client profile data
+  const { data: currentClientProfile } = useQuery({
+    queryKey: ['/api/clients', effectiveClientId],
+    enabled: !!effectiveClientId,
   });
 
   const { data: clientProjects = [] } = useQuery({
@@ -517,13 +536,39 @@ export default function ClientDashboard() {
     }
   };
 
-  const handleSaveProfile = () => {
-    // In real app, this would make an API call
-    toast({
-      title: "פרופיל עודכן",
-      description: "הפרטים שלך נשמרו בהצלחה"
-    });
-    setShowProfileModal(false);
+  const handleSaveProfile = async () => {
+    try {
+      const response = await fetch(`/api/clients/${effectiveClientId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          contactName: profileData.fullName,
+          email: profileData.email,
+          phone: profileData.phone,
+          name: profileData.company
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('שגיאה בעדכון הפרופיל');
+      }
+
+      // Update the cache
+      queryClient.invalidateQueries({ queryKey: ['/api/clients', effectiveClientId] });
+      
+      toast({
+        title: "פרופיל עודכן",
+        description: "הפרטים שלך נשמרו בהצלחה"
+      });
+      setShowProfileModal(false);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "שגיאה",
+        description: "אירעה שגיאה בעדכון הפרופיל"
+      });
+    }
   };
 
   const handleConnectFacebook = () => {
