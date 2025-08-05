@@ -11,6 +11,12 @@ import { emailService } from "./email-service"; // Import from email-service.ts
 import crypto from 'crypto'; // Import crypto for token generation
 import { verifyGoogleToken } from "./google-auth";
 
+// Import necessary modules for profile update endpoint (if they were intended to be used)
+// import bcrypt from 'bcryptjs';
+// import { db } from './db'; // Assuming you have a database connection setup
+// import { users, projects, tasks } from './schema'; // Assuming schema definitions exist
+// import { eq } from 'drizzle-orm';
+
 // Extend Express types
 declare global {
   namespace Express {
@@ -288,7 +294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'הסיסמה שונתה בהצלחה' });
     } catch (error) {
       console.error('Password reset confirm error:', error);
-      res.status(500).json({ message: 'שגיאת שרת' });
+      res.status(500).json({ message: 'שגיאה שרת' });
     }
   });
 
@@ -1302,7 +1308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   router.post('/api/team/invite', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
-      
+
       if (user.role !== 'agency_admin') {
         return res.status(403).json({ message: 'רק מנהלי סוכנות יכולים להזמין חברי צוות' });
       }
@@ -1326,7 +1332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send invitation email (placeholder for now)
       const inviteUrl = `${req.protocol}://${req.get('host')}/invite?token=${token}`;
-      
+
       res.json({ 
         invitation, 
         inviteUrl,

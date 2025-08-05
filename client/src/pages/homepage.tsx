@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, CheckCircle, Users, BarChart3, Zap, Shield, Globe, Link as LucideLink } from "lucide-react";
+import { ArrowLeft, CheckCircle, Users, BarChart3, Zap, Shield, Globe, Link as LucideLink, Menu, X, Phone, Mail, MapPin, ChevronLeft, Projector, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function Homepage() {
@@ -19,6 +19,8 @@ export default function Homepage() {
         setLocation("/dashboard/agency");
       } else if (user.role === "client") {
         setLocation("/dashboard/client");
+      } else if (user.role === "team_member") {
+        setLocation("/dashboard/team-member");
       }
     }
   }, [isAuthenticated, user, location, setLocation]);

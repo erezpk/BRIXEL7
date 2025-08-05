@@ -32,6 +32,7 @@ import TeamDashboardPage from "@/pages/team-dashboard";
 import LeadsManagementPage from "@/pages/leads-management";
 import NotFound from "@/pages/not-found";
 import HelpCenter from "@/pages/help-center";
+import TeamMemberDashboard from "./pages/dashboard/team-member-dashboard";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -209,6 +210,10 @@ export default function App() {
 
           {/* ADDED HELP CENTER ROUTE */}
           <Route path="/help" component={HelpCenter} />
+
+          {/* ADDED TEAM MEMBER DASHBOARD ROUTE */}
+          <Route path="/dashboard/team-member" component={TeamMemberDashboard} />
+
 
           <Route component={NotFound} />
         </Switch>
