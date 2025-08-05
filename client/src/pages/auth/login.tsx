@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
-import { signInWithGoogle, handleGoogleRedirect } from "@/lib/firebase";
+import { loginWithGoogle, handleGoogleRedirect } from "../../../firebase";
 import { useMutation } from "@tanstack/react-query";
 
 export default function Login() {
@@ -59,7 +59,7 @@ export default function Login() {
     mutationFn: async () => {
       console.log('Starting Google sign in...');
       try {
-        await signInWithGoogle();
+        await loginWithGoogle();
         console.log('Google sign in redirect initiated');
       } catch (error) {
         console.error('Google sign in error:', error);
