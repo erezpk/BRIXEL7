@@ -30,6 +30,7 @@ export interface IStorage {
   hashPassword(password: string): Promise<string>;
 
   // Replit Auth required methods
+  getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
 
   // Agencies
@@ -44,9 +45,6 @@ export interface IStorage {
   getUserById(id: string): Promise<User | undefined>;
   getUsersByAgency(agencyId: string): Promise<User[]>;
   updateUser(id: string, user: Partial<InsertUser>): Promise<User>;
-  deleteUserByEmail(email: string): Promise<any>;
-  getAllUsers(): Promise<User[]>;
-  createUserWithPassword(email: string, fullName: string, password: string, role?: string): Promise<User>;
 
   // Clients
   getClient(id: string): Promise<Client | undefined>;
@@ -153,23 +151,10 @@ export class DatabaseStorage implements IStorage {
   constructor(private db: any) {} // Assuming db is injected or initialized elsewhere
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    try {
-      const results = await this.db.select().from(users).where(eq(users.email, email));
-      return results[0] || undefined;
-    } catch (error) {
-      console.error('Get user by email error:', error);
-      throw error;
-    }
-  }
+    const result = await this.db.select().from(users).where(eq(users.email, email)).limit(1);
+    const user = result[0] || null;
 
-  async deleteUserByEmail(email: string): Promise<any> {
-    try {
-      const result = await this.db.delete(users).where(eq(users.email, email));
-      return result;
-    } catch (error) {
-      console.error('Delete user by email error:', error);
-      throw error;
-    }
+    return user;
   }
 
   async getUserById(id: string): Promise<User | undefined> {
@@ -792,7 +777,7 @@ export class DatabaseStorage implements IStorage {
       console.log('Starting Firebase user sync...');
 
       // Get all users from local database
-      const localUsers = await this.db.select().from(users);
+      const localUsers = await db.select().from(users);
       console.log(`Found ${localUsers.length} users in local database`);
 
       return {
@@ -804,35 +789,6 @@ export class DatabaseStorage implements IStorage {
       console.error('Error syncing users with Firebase:', error);
       throw error;
     }
-  }
-
-  async getAllUsers(): Promise<User[]> {
-    return this.db.select().from(users);
-  }
-
-  async validatePassword(password: string, hash: string): Promise<boolean> {
-    const bcrypt = await import('bcryptjs');
-    return bcrypt.default.compare(password, hash);
-  }
-
-  async hashPassword(password: string): Promise<string> {
-    const bcrypt = await import('bcryptjs');
-    return bcrypt.default.hash(password, 10);
-  }
-
-  async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await this.db
-      .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return user;
   }
 }
 

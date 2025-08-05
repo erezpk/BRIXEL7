@@ -79,20 +79,10 @@ app.use(express.urlencoded({ extended: false }));
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  
-  server.on('error', (err: any) => {
-    if (err.code === 'EADDRINUSE') {
-      console.log(`Port ${port} is in use, trying to kill existing process...`);
-      process.exit(1);
-    } else {
-      console.error('Server error:', err);
-      process.exit(1);
-    }
-  });
-
   server.listen({
     port,
     host: "0.0.0.0",
+    reusePort: true,
   }, () => {
     console.log(`serving on port ${port}`);
   });
