@@ -7,6 +7,7 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema } from "@shared/schema";
 import { z } from "zod";
 import express from "express"; // Import express to use its Router
+import { emailService } from "./emailService"; // Assuming emailService is in './emailService'
 
 // Extend Express types
 declare global {
@@ -973,61 +974,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Send credentials email endpoint
-  router.post('/api/send-credentials-email', async (req, res) => {
+  // Email routes
+  router.post('/api/clients/:id/send-credentials', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
-      const { clientId, clientName, clientEmail, username, password, portalUrl } = req.body;
+      const user = req.user!;
+      const clientId = req.params.id;
 
-      if (!clientEmail) {
-        return res.status(400).json({ message: 'כתובת אימייל נדרשת' });
+      // Get the client
+      const client = await storage.getClient(clientId);
+      if (!client || client.agencyId !== user.agencyId) {
+        return res.status(404).json({ message: 'לקוח לא נמצא' });
       }
 
-      // Here you would integrate with your email service (SendGrid, Mailgun, etc.)
-      // For now, we'll simulate sending an email and log the details
+      if (!client.email) {
+        return res.status(400).json({ message: 'ללקוח אין כתובת אימייל' });
+      }
 
-      console.log('Sending credentials email:', {
-        to: clientEmail,
-        clientName,
-        username,
-        password,
-        portalUrl
-      });
+      // Get agency details
+      const agency = await storage.getAgencyById(user.agencyId!);
+      if (!agency) {
+        return res.status(404).json({ message: 'סוכנות לא נמצאה' });
+      }
 
-      // Email content
-      const emailContent = `
-שלום ${clientName},
+      // Generate credentials (or use existing ones from request)
+      const { username, password } = req.body;
+      const defaultUsername = username || client.email;
+      const defaultPassword = password || `${client.name.toLowerCase().replace(/\s+/g, '')}_${client.id.slice(0, 8)}`;
 
-פרטי ההתחברות שלך למערכת הלקוחות:
+      const loginUrl = `${req.protocol}://${req.get('host')}/client-portal?clientId=${client.id}`;
 
-שם משתמש: ${username}
-סיסמה: ${password}
-קישור למערכת: ${portalUrl}
+      const emailData = {
+        to: client.email,
+        clientName: client.name,
+        username: defaultUsername,
+        password: defaultPassword,
+        loginUrl: loginUrl,
+        agencyName: agency.name
+      };
 
-בברכה,
-הצוות שלנו
-    `;
+      // Send the email
+      const emailSent = await emailService.sendClientCredentials(emailData);
 
-      // TODO: Replace this with actual email sending service
-      // Example with nodemailer or similar service:
-      /*
-      await emailService.send({
-        to: clientEmail,
-        subject: 'פרטי התחברות למערכת הלקוחות',
-        text: emailContent
-      });
-      */
+      if (emailSent) {
+        // Log activity
+        await storage.logActivity({
+          agencyId: user.agencyId!,
+          userId: user.id,
+          action: 'sent_credentials',
+          entityType: 'client',
+          entityId: client.id,
+          details: { 
+            clientName: client.name,
+            clientEmail: client.email,
+            sentBy: user.fullName 
+          },
+        });
 
-      // For now, just log and return success
-      console.log('Email content:', emailContent);
-
-      res.json({ 
-        message: 'פרטי התחברות נשלחו בהצלחה', 
-        sentTo: clientEmail 
-      });
-
+        res.json({ 
+          message: 'פרטי ההתחברות נשלחו בהצלחה',
+          details: {
+            sentTo: client.email,
+            clientName: client.name
+          }
+        });
+      } else {
+        res.status(500).json({ message: 'שגיאה בשליחת האימייל. אנא בדוק את הגדרות האימייל' });
+      }
     } catch (error) {
       console.error('Error sending credentials email:', error);
-      res.status(500).json({ message: 'שגיאה בשליחת האימייל' });
+      res.status(500).json({ message: 'שגיאה בשליחת פרטי ההתחברות' });
+    }
+  });
+
+  // Test email configuration
+  router.get('/api/email/test', requireAuth, async (req, res) => {
+    try {
+      const isConnected = await emailService.testConnection();
+      if (isConnected) {
+        res.json({ message: 'חיבור האימייל תקין', status: 'success' });
+      } else {
+        res.json({ message: 'חיבור האימייל לא מוגדר או לא תקין', status: 'error' });
+      }
+    } catch (error) {
+      console.error('Error testing email connection:', error);
+      res.status(500).json({ message: 'שגיאה בבדיקת חיבור האימייל' });
     }
   });
 

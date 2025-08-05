@@ -176,39 +176,36 @@ export default function ClientCard({ client, onView, onEdit, onDelete, onManageC
             <div>סיסמה: {defaultPassword}</div>
             <div className="mt-1">
               <Button 
-                variant="ghost" 
+                variant="outline" 
                 size="sm"
                 onClick={async () => {
                   try {
-                    // שלח התראת אימייל ללקוח
-                    const response = await fetch('/api/send-credentials-email', {
+                    const response = await fetch(`/api/clients/${client.id}/send-credentials`, {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
                       },
                       body: JSON.stringify({
-                        clientId: client.id,
-                        clientName: client.name,
-                        clientEmail: client.email,
                         username: defaultEmail,
-                        password: defaultPassword,
-                        portalUrl: clientPortalUrl
-                      }),
+                        password: defaultPassword
+                      })
                     });
 
+                    const result = await response.json();
+
                     if (response.ok) {
-                      alert(`פרטי התחברות נשלחו בהצלחה ל-${client.email || client.name}`);
+                      alert(`✅ ${result.message}\nנשלח ל: ${result.details.sentTo}`);
                     } else {
-                      throw new Error('שגיאה בשליחת האימייל');
+                      alert(`❌ שגיאה: ${result.message}`);
                     }
                   } catch (error) {
-                    console.error('Error sending email:', error);
-                    alert('שגיאה בשליחת האימייל. אנא נסה שוב.');
+                    alert('❌ שגיאה בשליחת האימייל. אנא נסה שוב.');
                   }
                 }}
-                className="text-xs text-purple-600 hover:text-purple-800 p-1 h-auto"
+                className="border-purple-500 text-purple-600 hover:bg-purple-50 flex-1 text-xs"
               >
-                📧 שלח באימייל
+                <User className="h-3 w-3 ml-1" />
+                שלח פרטים
               </Button>
             </div>
           </div>

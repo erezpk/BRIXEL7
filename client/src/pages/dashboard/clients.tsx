@@ -17,7 +17,7 @@ export default function Clients() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [, navigate] = useLocation();
-  
+
   const [credentialsForm, setCredentialsForm] = useState({
     username: '',
     password: '',
@@ -34,9 +34,9 @@ export default function Clients() {
       client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       client.contactName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       client.email?.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesStatus = statusFilter === "all" || client.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -107,7 +107,7 @@ export default function Clients() {
             data-testid="search-clients"
           />
         </div>
-        
+
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full sm:w-48" data-testid="filter-status">
             <SelectValue placeholder="סינון לפי סטטוס" />
@@ -195,7 +195,7 @@ export default function Clients() {
               <h2 className="text-xl font-bold">ניהול פרטי התחברות - {selectedClient.name}</h2>
               <Button variant="ghost" onClick={() => setShowCredentialsModal(false)}>X</Button>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">שם משתמש/אימייל</label>
@@ -206,7 +206,7 @@ export default function Clients() {
                   className="w-full text-right"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-1">סיסמה</label>
                 <Input
@@ -216,7 +216,7 @@ export default function Clients() {
                   className="w-full text-right"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-1">אימייל ליצירת קשר</label>
                 <Input
@@ -226,7 +226,7 @@ export default function Clients() {
                   className="w-full text-right"
                 />
               </div>
-              
+
               <div className="bg-gray-50 p-3 rounded">
                 <h4 className="font-medium mb-2">קישור לדאשבורד הלקוח:</h4>
                 <code className="text-sm bg-white p-2 rounded block text-left">
@@ -234,7 +234,7 @@ export default function Clients() {
                 </code>
               </div>
             </div>
-            
+
             <div className="mt-6 flex justify-end gap-3">
               <Button 
                 variant="outline" 
@@ -251,37 +251,32 @@ export default function Clients() {
               <Button 
                 onClick={async () => {
                   try {
-                    const response = await fetch('/api/send-credentials-email', {
+                    const response = await fetch(`/api/clients/${selectedClient.id}/send-credentials`, {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
                       },
                       body: JSON.stringify({
-                        clientId: selectedClient.id,
-                        clientName: selectedClient.name,
-                        clientEmail: credentialsForm.email,
                         username: credentialsForm.username,
-                        password: credentialsForm.password,
-                        portalUrl: `${window.location.origin}/client-portal?clientId=${selectedClient.id}`
-                      }),
+                        password: credentialsForm.password
+                      })
                     });
 
+                    const result = await response.json();
+
                     if (response.ok) {
-                      alert(`פרטי התחברות נשלחו בהצלחה באימייל ל-${credentialsForm.email}`);
+                      alert(`✅ ${result.message}\nנשלח ל: ${result.details.sentTo}`);
                       setShowCredentialsModal(false);
-                      setSelectedClient(null);
                     } else {
-                      const errorData = await response.json();
-                      throw new Error(errorData.message || 'שגיאה בשליחת האימייל');
+                      alert(`❌ שגיאה: ${result.message}`);
                     }
                   } catch (error) {
-                    console.error('Error sending email:', error);
-                    alert('שגיאה בשליחת האימייל. אנא בדוק את כתובת האימייל ונסה שוב.');
+                    alert('❌ שגיאה בשליחת האימייל. אנא נסה שוב.');
                   }
                 }}
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
-                📧 שלח ללקוח באימייל
+                שלח ללקוח
               </Button>
             </div>
           </div>
