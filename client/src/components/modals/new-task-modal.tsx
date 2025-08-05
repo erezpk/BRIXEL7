@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { type InsertTask, type Client, type Project, type User } from "@shared/schema";
+import { type InsertTask, type Client, type Project, type User, type Task } from "@shared/schema";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
@@ -38,7 +38,7 @@ export default function NewTaskModal({ isOpen, onClose, editingTask }: NewTaskMo
   });
 
   // Initialize form with editing task data
-  React.useEffect(() => {
+  useEffect(() => {
     if (editingTask) {
       setFormData({
         title: editingTask.title || "",
