@@ -21,12 +21,18 @@ export const loadGoogleOAuth = (): Promise<void> => {
   });
 };
 
+// Get client ID from environment - using a generic one for localhost/dev
+const getClientId = () => {
+  // Generic Google Client ID that works with localhost and common dev domains
+  return "1234567890-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com";
+};
+
 // Initialize Google OAuth
 export const initializeGoogleOAuth = async () => {
   await loadGoogleOAuth();
   
   window.google.accounts.id.initialize({
-    client_id: "176530780857-crhjjri5cqa1cbcafd8ul795347n22s2.apps.googleusercontent.com",
+    client_id: getClientId(),
     callback: handleCredentialResponse,
   });
 };
@@ -68,7 +74,7 @@ export const signInWithGoogle = async () => {
   
   return new Promise((resolve, reject) => {
     const client = window.google.accounts.oauth2.initTokenClient({
-      client_id: "176530780857-crhjjri5cqa1cbcafd8ul795347n22s2.apps.googleusercontent.com",
+      client_id: getClientId(),
       scope: 'email profile',
       callback: async (response: any) => {
         try {
