@@ -664,7 +664,7 @@ export default function Homepage() {
                 className="text-2xl font-bold mb-4 font-rubik"
                 data-testid="footer-logo"
               >
-                AgencyCRM
+                Brixel7
               </div>
               <p className="text-gray-400">
                 מערכת CRM מתקדמת לסוכנויות דיגיטליות
@@ -689,26 +689,11 @@ export default function Homepage() {
                     מחירים
                   </a>
                 </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    אבטחה
-                  </a>
-                </li>
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold mb-4">חברה</h3>
+              <h3 className="font-semibold mb-4">צור קשר</h3>
               <ul className="space-y-2 text-gray-400">
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    אודות
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    בלוג
-                  </a>
-                </li>
                 <li>
                   <a
                     href="#contact"
@@ -729,21 +714,11 @@ export default function Homepage() {
                     </a>
                   </Link>
                 </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    מדריכים
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    API
-                  </a>
-                </li>
               </ul>
             </div>
           </div>
           <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 AgencyCRM. כל הזכויות שמורות.</p>
+            <p>&copy; 2025 Brixel7. כל הזכויות שמורות.</p>
           </div>
         </div>
       </footer>
