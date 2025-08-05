@@ -43,7 +43,7 @@ export default function Login() {
 
           // Determine redirect path based on user role
           let redirectPath = '/dashboard'; // default
-          
+
           if (result.user?.role === 'client') {
             redirectPath = '/client-portal';
           } else if (result.user?.role === 'team_member') {
@@ -89,22 +89,23 @@ export default function Login() {
 
       return response.json();
     },
-    onSuccess: (result) => {
-      if (result?.user) {
-        toast({
-          title: "התחברות הצליחה",
-          description: "ברוכים הבאים למערכת",
-        });
+    onSuccess: (data) => {
+        localStorage.setItem('authToken', 'logged-in');
+        login(data.user);
 
         // Redirect based on user role
-        const redirectPath = result.user.role === 'client' ? '/client-portal' : '/dashboard';
+        if (data.user.role === 'client') {
+          window.location.href = '/client-portal';
+        } else {
+          // Redirect to agency dashboard for team members and admins
+          window.location.href = '/dashboard';
+        }
 
-        // רגע קצר לפני הפניה כדי שהמערכת תעדכן את הסטטוס
-        setTimeout(() => {
-          setLocation(redirectPath);
-        }, 100);
-      }
-    },
+        toast({
+          title: "התחברת בהצלחה!",
+          description: `ברוך הבא, ${data.user.fullName}`,
+        });
+      },
     onError: (error: any) => {
           console.error("Login error:", error);
           const errorMessage = error.response?.data?.message || error.message || "שגיאה לא צפויה";
@@ -317,7 +318,7 @@ export default function Login() {
               {googleLoginMutation.isPending ? "מתחבר..." : "כניסה עם Google"}
             </Button>
 
-            
+
           </div>
 
           <div className="mt-6 text-center">
