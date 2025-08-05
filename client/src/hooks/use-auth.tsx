@@ -51,23 +51,22 @@ export function useAuth() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginData) => {
-      const response = await apiRequest({
-        method: 'POST',
-        url: '/api/auth/login',
-        body: data
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'שגיאה בהתחברות');
-      }
-      
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        return response.json();
-      } else {
-        const text = await response.text();
-        throw new Error(text || 'תגובה לא תקינה מהשרת');
+      try {
+        const response = await apiRequest({
+          method: 'POST',
+          url: '/api/auth/login',
+          body: data
+        });
+        
+        // apiRequest already handles error responses, so if we get here, it's successful
+        const result = await response.json();
+        return result;
+      } catch (error: any) {
+        // Handle specific error messages from the server
+        if (error.message && error.message.includes('401')) {
+          throw new Error('אימייל או סיסמה שגויים');
+        }
+        throw new Error(error.message || 'שגיאה בהתחברות');
       }
     },
     onSuccess: () => {
@@ -77,23 +76,22 @@ export function useAuth() {
 
   const signupMutation = useMutation({
     mutationFn: async (data: SignupData) => {
-      const response = await apiRequest({
-        method: 'POST',
-        url: '/api/auth/signup',
-        body: data
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'שגיאה ביצירת החשבון');
-      }
-      
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        return response.json();
-      } else {
-        const text = await response.text();
-        throw new Error(text || 'תגובה לא תקינה מהשרת');
+      try {
+        const response = await apiRequest({
+          method: 'POST',
+          url: '/api/auth/signup',
+          body: data
+        });
+        
+        // apiRequest already handles error responses, so if we get here, it's successful
+        const result = await response.json();
+        return result;
+      } catch (error: any) {
+        // Handle specific error messages from the server
+        if (error.message && error.message.includes('400')) {
+          throw new Error('נתונים לא תקינים או משתמש כבר קיים');
+        }
+        throw new Error(error.message || 'שגיאה ביצירת החשבון');
       }
     },
     onSuccess: () => {
