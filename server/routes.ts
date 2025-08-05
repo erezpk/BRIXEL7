@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { firebaseSync } from "./firebase-sync";
 import bcrypt from "bcryptjs";
+import { db } from "./db";
+import { users } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
@@ -65,6 +67,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'Failed to sync data to Firebase',
         error: error.message 
       });
+    }
+  });
+
+  // Create user route (for testing)
+  app.post('/api/auth/create-user', async (req, res) => {
+    try {
+      const { email, fullName, password, role = 'admin' } = req.body;
+
+      if (!email || !password || !fullName) {
+        return res.status(400).json({ message: 'חסרים פרטים נדרשים' });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: 'משתמש עם האימייל הזה כבר קיים' });
+      }
+
+      // Create user
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const user = await storage.createUser({
+        email,
+        fullName,
+        password: hashedPassword,
+        role,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      const { password: _, ...userWithoutPassword } = user;
+      
+      res.json({ 
+        success: true,
+        message: 'משתמש נוצר בהצלחה',
+        user: userWithoutPassword 
+      });
+
+    } catch (error) {
+      console.error('Create user error:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת משתמש' });
+    }
+  });
+
+  // Check users route (for debugging)
+  app.get('/api/users/check', async (req, res) => {
+    try {
+      const allUsers = await db.select().from(users);
+      res.json({ 
+        success: true,
+        count: allUsers.length,
+        users: allUsers.map(user => ({
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          hasPassword: !!user.password,
+          createdAt: user.createdAt
+        }))
+      });
+    } catch (error) {
+      console.error('Check users error:', error);
+      res.status(500).json({ message: 'שגיאה בבדיקת משתמשים' });
     }
   });
 

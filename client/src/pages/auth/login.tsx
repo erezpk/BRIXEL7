@@ -69,33 +69,12 @@ export default function Login() {
         return;
       }
 
-      // If backend auth fails, try Firebase
-      try {
-        await login(email, password);
-        toast({
-          title: "הצלחה",
-          description: "התחברת בהצלחה למערכת",
-        });
-        setLocation("/dashboard");
-      } catch (firebaseError: any) {
-        let errorMessage = "אימייל או סיסמה שגויים";
-        
-        if (firebaseError.message.includes("invalid-credential")) {
-          errorMessage = "אימייל או סיסמה שגויים";
-        } else if (firebaseError.message.includes("user-not-found")) {
-          errorMessage = "המשתמש לא נמצא במערכת";
-        } else if (firebaseError.message.includes("wrong-password")) {
-          errorMessage = "סיסמה שגויה";
-        } else if (firebaseError.message.includes("too-many-requests")) {
-          errorMessage = "יותר מדי ניסיונות. נסה שוב מאוחר יותר";
-        }
-        
-        toast({
-          title: "שגיאה בהתחברות",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      }
+      // No Firebase fallback - show the backend error
+      toast({
+        title: "שגיאה בהתחברות", 
+        description: result.message || "אימייל או סיסמה שגויים",
+        variant: "destructive",
+      });
     } catch (error: any) {
       toast({
         title: "שגיאה בהתחברות",
