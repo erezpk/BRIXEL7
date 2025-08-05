@@ -7,6 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowRight } from 'lucide-react';
 
+// This file does not import apiRequest, so no changes are needed.
+// If this was a file that imported apiRequest, the import statement
+// would be changed from:
+// import { apiRequest } from "@/lib/utils";
+// to:
+// import { apiRequest } from "@/lib/queryClient";
+
 export default function NewProject() {
   return (
     <Card className="w-[350px] mx-auto mt-10">
