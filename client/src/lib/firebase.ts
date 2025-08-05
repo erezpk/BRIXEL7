@@ -20,8 +20,23 @@ console.log('Firebase config:', {
   apiKey: firebaseConfig.apiKey ? '***configured***' : 'missing'
 });
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Validate configuration
+if (!firebaseConfig.apiKey) {
+  console.error('Firebase API key is missing');
+}
+
+// Initialize Firebase (prevent duplicate app error)
+let app;
+try {
+  app = initializeApp(firebaseConfig);
+} catch (error: any) {
+  if (error.code === 'app/duplicate-app') {
+    // App already initialized, get the existing instance
+    app = initializeApp(firebaseConfig, 'secondary');
+  } else {
+    throw error;
+  }
+}
 
 // Initialize Firebase Authentication and get a reference to the service
 export const auth = getAuth(app);
