@@ -10,7 +10,7 @@ export async function verifyGoogleToken(idToken: string) {
       idToken,
       audience: GOOGLE_CLIENT_ID
     });
-    
+
     const payload = ticket.getPayload();
     if (!payload) {
       console.error('No payload in Google token');
@@ -25,31 +25,18 @@ export async function verifyGoogleToken(idToken: string) {
     };
   } catch (error) {
     console.error('Google token verification failed:', error);
-    return null;
-  }
-}
-// Google OAuth token verification utility
-export async function verifyGoogleToken(idToken: string): Promise<boolean> {
-  try {
-    // For development, we'll skip actual verification
-    // In production, you should verify the token with Google's API
+
+    // For development, return true to bypass verification
     if (process.env.NODE_ENV === 'development') {
-      return true;
+      console.log('Development mode: bypassing Google token verification');
+      return {
+        email: 'dev@example.com',
+        name: 'Development User',
+        picture: null,
+        verified: true
+      };
     }
-    
-    // Production verification would look like this:
-    // const { OAuth2Client } = require('google-auth-library');
-    // const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-    // const ticket = await client.verifyIdToken({
-    //   idToken: idToken,
-    //   audience: process.env.GOOGLE_CLIENT_ID,
-    // });
-    // const payload = ticket.getPayload();
-    // return !!payload;
-    
-    return true;
-  } catch (error) {
-    console.error('Error verifying Google token:', error);
-    return false;
+
+    return null;
   }
 }
