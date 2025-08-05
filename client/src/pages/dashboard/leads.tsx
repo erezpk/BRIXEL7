@@ -1,727 +1,578 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Facebook, Chrome, UserPlus, TrendingUp, Filter, RefreshCw, MessageSquare, Phone, Mail } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UserPlus, Filter, MoreHorizontal, Phone, Mail, DollarSign, Calendar, TrendingUp, Users, Plus, Edit, Trash2, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { rtlClass } from "@/lib/rtl";
-import type { Lead } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
-interface LeadFormData {
+interface Lead {
+  id: string;
   name: string;
   email: string;
   phone: string;
   source: string;
   status: string;
   priority: string;
-  budget: string;
-  notes: string;
+  value: number;
+  notes?: string;
+  assignedTo?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
-interface ConvertFormData {
-  name: string;
-  email: string;
-  phone: string;
-  company: string;
-  industry: string;
-}
+export default function Leads() {
+  const [activeTab, setActiveTab] = useState("all");
+  const [isLeadDialogOpen, setIsLeadDialogOpen] = useState(false);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterSource, setFilterSource] = useState("");
+  const [filterPriority, setFilterPriority] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
-export default function LeadsPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [sourceFilter, setSourceFilter] = useState("all");
-  const [facebookReady, setFacebookReady] = useState(false);
-  const [googleReady, setGoogleReady] = useState(false);
-
-  // Check if APIs are ready
-  React.useEffect(() => {
-    // Check Facebook SDK
-    const checkFacebook = () => {
-      if (typeof window.FB !== 'undefined') {
-        setFacebookReady(true);
-      } else if (import.meta.env.VITE_FACEBOOK_APP_ID) {
-        // Try again in 1 second
-        setTimeout(checkFacebook, 1000);
-      }
-    };
-
-    // Check Google API
-    const checkGoogle = () => {
-      if (typeof window.gapi !== 'undefined') {
-        setGoogleReady(true);
-      } else if (import.meta.env.VITE_GOOGLE_CLIENT_ID) {
-        // Try again in 1 second
-        setTimeout(checkGoogle, 1000);
-      }
-    };
-
-    checkFacebook();
-    checkGoogle();
-  }, []);
-  const [isNewLeadOpen, setIsNewLeadOpen] = useState(false);
-  const [isConvertOpen, setIsConvertOpen] = useState(false);
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [leadForm, setLeadForm] = useState<LeadFormData>({
+  const [leadForm, setLeadForm] = useState({
     name: "",
     email: "",
     phone: "",
-    source: "manual",
+    source: "website",
     status: "new",
     priority: "medium",
-    budget: "",
-    notes: ""
-  });
-  const [convertForm, setConvertForm] = useState<ConvertFormData>({
-    name: "",
-    email: "",
-    phone: "",
-    company: "",
-    industry: ""
+    value: 0,
+    notes: "",
+    assignedTo: ""
   });
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: leads, isLoading } = useQuery({
-    queryKey: ['/api/leads', statusFilter, sourceFilter],
-    enabled: true
-  });
+  // Fetch leads with filters
+  const { data: leads = [], isLoading } = useQuery({
+    queryKey: ['/api/leads', { status: filterStatus, source: filterSource, priority: filterPriority }],
+  }) as { data: Lead[], isLoading: boolean };
 
-  const createLeadMutation = useMutation({
-    mutationFn: async (data: LeadFormData) => {
-      const response = await fetch('/api/leads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          budget: data.budget ? parseInt(data.budget) * 100 : null // Convert to agorot
-        })
+  // Create/Update lead mutation
+  const leadMutation = useMutation({
+    mutationFn: async (data: typeof leadForm) => {
+      const url = editingLead ? `/api/leads/${editingLead.id}` : '/api/leads';
+      const method = editingLead ? 'PUT' : 'POST';
+      
+      return await apiRequest({
+        url,
+        method,
+        body: data,
       });
-      if (!response.ok) throw new Error('Failed to create lead');
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
-      setIsNewLeadOpen(false);
-      setLeadForm({
-        name: "",
-        email: "",
-        phone: "",
-        source: "manual",
-        status: "new",
-        priority: "medium",
-        budget: "",
-        notes: ""
-      });
+      setIsLeadDialogOpen(false);
+      resetForm();
       toast({
-        title: "ליד נוצר בהצלחה",
-        description: "הליד החדש נוסף למערכת"
+        title: editingLead ? "ליד עודכן" : "ליד נוצר",
+        description: editingLead ? "הליד עודכן בהצלחה" : "ליד חדש נוסף למערכת"
       });
     },
     onError: () => {
       toast({
-        title: "שגיאה ביצירת ליד",
-        description: "אנא נסה שוב",
+        title: "שגיאה",
+        description: "אירעה שגיאה בשמירת הליד",
         variant: "destructive"
       });
     }
   });
 
-  const convertLeadMutation = useMutation({
-    mutationFn: async ({ leadId, data }: { leadId: string; data: ConvertFormData }) => {
-      const response = await fetch(`/api/leads/${leadId}/convert`, {
+  // Convert lead to client mutation
+  const convertMutation = useMutation({
+    mutationFn: async (leadId: string) => {
+      return await apiRequest({
+        url: `/api/leads/${leadId}/convert`,
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: {
+          name: leads.find(l => l.id === leadId)?.name || "",
+          email: leads.find(l => l.id === leadId)?.email || "",
+          phone: leads.find(l => l.id === leadId)?.phone || ""
+        }
       });
-      if (!response.ok) throw new Error('Failed to convert lead');
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
       queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
-      setIsConvertOpen(false);
-      setSelectedLead(null);
-      setConvertForm({
-        name: "",
-        email: "",
-        phone: "",
-        company: "",
-        industry: ""
-      });
       toast({
-        title: "ליד הומר ללקוח בהצלחה",
-        description: "הליד הומר ללקוח חדש במערכת"
+        title: "המרה הושלמה",
+        description: "הליד הומר ללקוח בהצלחה"
       });
     },
     onError: () => {
       toast({
-        title: "שגיאה בהמרת ליד",
-        description: "אנא נסה שוב",
+        title: "שגיאה בהמרה",
+        description: "לא הצלחנו להמיר את הליד ללקוח",
         variant: "destructive"
       });
     }
   });
 
-  const syncFacebookMutation = useMutation({
-    mutationFn: async () => {
-      // Check if Facebook SDK is loaded
-      if (typeof window.FB === 'undefined') {
-        throw new Error('Facebook SDK not loaded');
-      }
+  const resetForm = () => {
+    setLeadForm({
+      name: "",
+      email: "",
+      phone: "",
+      source: "website",
+      status: "new",
+      priority: "medium",
+      value: 0,
+      notes: "",
+      assignedTo: ""
+    });
+    setEditingLead(null);
+  };
 
-      // Get Facebook access token
-      return new Promise((resolve, reject) => {
-        window.FB.login((response: any) => {
-          if (response.authResponse) {
-            // Send access token to backend
-            fetch('/api/ads/facebook/sync', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ accessToken: response.authResponse.accessToken })
-            })
-            .then(res => res.json())
-            .then(resolve)
-            .catch(reject);
-          } else {
-            reject(new Error('Facebook login failed'));
-          }
-        }, { scope: 'ads_read,pages_read_engagement' });
-      });
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
-      toast({
-        title: "סנכרון פייסבוק הושלם",
-        description: data.message || "לידים מפייסבוק סונכרנו בהצלחה"
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "שגיאה בסנכרון פייסבוק",
-        description: error.message || "אנא בדוק את הגדרות החיבור",
-        variant: "destructive"
-      });
-    }
-  });
+  const handleEditLead = (lead: Lead) => {
+    setEditingLead(lead);
+    setLeadForm({
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      source: lead.source,
+      status: lead.status,
+      priority: lead.priority,
+      value: lead.value,
+      notes: lead.notes || "",
+      assignedTo: lead.assignedTo || ""
+    });
+    setIsLeadDialogOpen(true);
+  };
 
-  const syncGoogleMutation = useMutation({
-    mutationFn: async () => {
-      // Check if Google APIs are loaded
-      if (typeof window.gapi === 'undefined') {
-        throw new Error('Google APIs not loaded');
-      }
+  const handleNewLead = () => {
+    resetForm();
+    setIsLeadDialogOpen(true);
+  };
 
-      // Initialize Google Auth
-      return new Promise((resolve, reject) => {
-        window.gapi.load('auth2', () => {
-          const authInstance = window.gapi.auth2.getAuthInstance();
-          if (!authInstance) {
-            window.gapi.auth2.init({
-              client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID
-            }).then(() => {
-              const auth = window.gapi.auth2.getAuthInstance();
-              auth.signIn({ scope: 'https://www.googleapis.com/auth/adwords' })
-                .then((user: any) => {
-                  const accessToken = user.getAuthResponse().access_token;
-                  return fetch('/api/ads/google/sync', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ accessToken })
-                  });
-                })
-                .then(res => res.json())
-                .then(resolve)
-                .catch(reject);
-            });
-          } else {
-            authInstance.signIn({ scope: 'https://www.googleapis.com/auth/adwords' })
-              .then((user: any) => {
-                const accessToken = user.getAuthResponse().access_token;
-                return fetch('/api/ads/google/sync', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ accessToken })
-                });
-              })
-              .then(res => res.json())
-              .then(resolve)
-              .catch(reject);
-          }
-        });
-      });
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
-      toast({
-        title: "סנכרון גוגל הושלם",
-        description: data.message || "לידים מגוגל אדס סונכרנו בהצלחה"
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "שגיאה בסנכרון גוגל",
-        description: error.message || "אנא בדוק את הגדרות החיבור",
-        variant: "destructive"
-      });
-    }
-  });
-
-  const filteredLeads = (leads || [])?.filter((lead: Lead) => {
-    const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lead.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
-    const matchesSource = sourceFilter === "all" || lead.source === sourceFilter;
-    return matchesSearch && matchesStatus && matchesSource;
-  }) || [];
+  const handleSubmit = () => {
+    leadMutation.mutate(leadForm);
+  };
 
   const getStatusBadge = (status: string) => {
-    const variants = {
-      new: "default",
-      contacted: "secondary",
-      qualified: "outline",
-      converted: "default",
-      lost: "destructive"
-    } as const;
-    
-    const labels = {
-      new: "חדש",
-      contacted: "נוצר קשר",
-      qualified: "מוכשר",
-      converted: "הומר",
-      lost: "אבד"
+    const statusConfig = {
+      new: { label: "חדש", variant: "default" as const, color: "bg-blue-100 text-blue-800" },
+      contacted: { label: "נוצר קשר", variant: "secondary" as const, color: "bg-yellow-100 text-yellow-800" },
+      qualified: { label: "מוכשר", variant: "default" as const, color: "bg-green-100 text-green-800" },
+      proposal: { label: "הצעה", variant: "outline" as const, color: "bg-purple-100 text-purple-800" },
+      won: { label: "נסגר", variant: "default" as const, color: "bg-green-500 text-white" },
+      lost: { label: "אבד", variant: "destructive" as const, color: "bg-red-100 text-red-800" }
     };
-    
-    return (
-      <Badge variant={variants[status as keyof typeof variants] || "default"}>
-        {labels[status as keyof typeof labels] || status}
-      </Badge>
-    );
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.new;
+    return <Badge variant={config.variant} className={config.color}>{config.label}</Badge>;
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    const priorityConfig = {
+      low: { label: "נמוכה", color: "bg-gray-100 text-gray-800" },
+      medium: { label: "בינונית", color: "bg-blue-100 text-blue-800" },
+      high: { label: "גבוהה", color: "bg-orange-100 text-orange-800" },
+      urgent: { label: "דחופה", color: "bg-red-100 text-red-800" }
+    };
+
+    const config = priorityConfig[priority as keyof typeof priorityConfig] || priorityConfig.medium;
+    return <Badge variant="outline" className={config.color}>{config.label}</Badge>;
   };
 
   const getSourceIcon = (source: string) => {
     switch (source) {
-      case 'facebook_ads':
-        return <Facebook className="h-4 w-4" />;
-      case 'google_ads':
-        return <Chrome className="h-4 w-4" />;
-      default:
-        return <UserPlus className="h-4 w-4" />;
+      case 'facebook': return '📘';
+      case 'google': return '🔍';
+      case 'website': return '🌐';
+      case 'referral': return '👥';
+      default: return '📝';
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'text-red-500';
-      case 'medium':
-        return 'text-yellow-500';
-      case 'low':
-        return 'text-green-500';
-      default:
-        return 'text-gray-500';
-    }
+  const filteredLeads = leads.filter(lead => {
+    const matchesSearch = searchQuery === "" || 
+      lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.email.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesTab = activeTab === "all" || lead.status === activeTab;
+    
+    return matchesSearch && matchesTab;
+  });
+
+  const leadStats = {
+    total: leads.length,
+    new: leads.filter(l => l.status === 'new').length,
+    qualified: leads.filter(l => l.status === 'qualified').length,
+    won: leads.filter(l => l.status === 'won').length,
+    totalValue: leads.reduce((sum, lead) => sum + (lead.value || 0), 0)
   };
 
   return (
     <div className={cn("space-y-8", rtlClass())}>
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">לידים</h1>
+          <h1 className="text-3xl font-bold tracking-tight">ניהול לידים</h1>
           <p className="text-muted-foreground">
-            ניהול לידים וסנכרון מפייסבוק ואדס וגוגל אדס
+            נהל את כל הלידים שלך במקום אחד
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              if (!facebookReady || !import.meta.env.VITE_FACEBOOK_APP_ID) {
-                toast({
-                  title: "פייסבוק אדס לא מוגדר",
-                  description: "יש להגדיר מפתח API בהגדרות המערכת",
-                  variant: "destructive"
-                });
-                return;
-              }
-              syncFacebookMutation.mutate();
-            }}
-            disabled={syncFacebookMutation.isPending}
-          >
-            {syncFacebookMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin me-2" /> : <Facebook className="h-4 w-4 me-2" />}
-            סנכרן פייסבוק
-            {(!facebookReady || !import.meta.env.VITE_FACEBOOK_APP_ID) && 
-              <Badge variant="secondary" className="mr-2">לא זמין</Badge>
-            }
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={() => {
-              if (!googleReady || !import.meta.env.VITE_GOOGLE_CLIENT_ID) {
-                toast({
-                  title: "גוגל אדס לא מוגדר",
-                  description: "יש להגדיר מפתח API בהגדרות המערכת",
-                  variant: "destructive"
-                });
-                return;
-              }
-              syncGoogleMutation.mutate();
-            }}
-            disabled={syncGoogleMutation.isPending}
-          >
-            {syncGoogleMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin me-2" /> : <Chrome className="h-4 w-4 me-2" />}
-            סנכרן גוגל
-            {(!googleReady || !import.meta.env.VITE_GOOGLE_CLIENT_ID) && 
-              <Badge variant="secondary" className="mr-2">לא זמין</Badge>
-            }
-          </Button>
-          <Dialog open={isNewLeadOpen} onOpenChange={setIsNewLeadOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 me-2" />
-                ליד חדש
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>הוספת ליד חדש</DialogTitle>
-                <DialogDescription>
-                  הזן את פרטי הליד החדש
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="name">שם מלא *</Label>
-                  <Input
-                    id="name"
-                    value={leadForm.name}
-                    onChange={(e) => setLeadForm(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="הזן שם מלא"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="email">אימייל</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={leadForm.email}
-                    onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="הזן כתובת אימייל"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="phone">טלפון</Label>
-                  <Input
-                    id="phone"
-                    value={leadForm.phone}
-                    onChange={(e) => setLeadForm(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="הזן מספר טלפון"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="source">מקור</Label>
-                    <Select value={leadForm.source} onValueChange={(value) => setLeadForm(prev => ({ ...prev, source: value }))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="manual">ידני</SelectItem>
-                        <SelectItem value="website">אתר</SelectItem>
-                        <SelectItem value="facebook_ads">פייסבוק אדס</SelectItem>
-                        <SelectItem value="google_ads">גוגל אדס</SelectItem>
-                        <SelectItem value="referral">הפניה</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="priority">עדיפות</Label>
-                    <Select value={leadForm.priority} onValueChange={(value) => setLeadForm(prev => ({ ...prev, priority: value }))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">נמוכה</SelectItem>
-                        <SelectItem value="medium">בינונית</SelectItem>
-                        <SelectItem value="high">גבוהה</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="budget">תקציב (₪)</Label>
-                  <Input
-                    id="budget"
-                    type="number"
-                    value={leadForm.budget}
-                    onChange={(e) => setLeadForm(prev => ({ ...prev, budget: e.target.value }))}
-                    placeholder="הזן תקציב משוער"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="notes">הערות</Label>
-                  <Textarea
-                    id="notes"
-                    value={leadForm.notes}
-                    onChange={(e) => setLeadForm(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="הערות נוספות על הליד"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit" onClick={() => createLeadMutation.mutate(leadForm)} disabled={createLeadMutation.isPending || !leadForm.name.trim()}>
-                  {createLeadMutation.isPending ? "יוצר..." : "צור ליד"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
+        <Button onClick={handleNewLead} className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          ליד חדש
+        </Button>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex gap-4 items-center flex-wrap">
-            <div className="flex-1 min-w-[200px]">
-              <div className="relative">
-                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="חיפוש לידים..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="ps-10"
-                />
-              </div>
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="סטטוס" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">כל הסטטוסים</SelectItem>
-                <SelectItem value="new">חדש</SelectItem>
-                <SelectItem value="contacted">נוצר קשר</SelectItem>
-                <SelectItem value="qualified">מוכשר</SelectItem>
-                <SelectItem value="converted">הומר</SelectItem>
-                <SelectItem value="lost">אבד</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sourceFilter} onValueChange={setSourceFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="מקור" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">כל המקורות</SelectItem>
-                <SelectItem value="manual">ידני</SelectItem>
-                <SelectItem value="website">אתר</SelectItem>
-                <SelectItem value="facebook_ads">פייסבוק אדס</SelectItem>
-                <SelectItem value="google_ads">גוגל אדס</SelectItem>
-                <SelectItem value="referral">הפניה</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Leads Grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2 mb-4"></div>
-                <div className="space-y-2">
-                  <div className="h-3 bg-gray-200 rounded"></div>
-                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredLeads.map((lead: Lead) => (
-            <Card key={lead.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg">{lead.name}</CardTitle>
-                    <CardDescription className="flex items-center gap-2 mt-1">
-                      {getSourceIcon(lead.source)}
-                      <span className="capitalize">
-                        {lead.source === 'facebook_ads' ? 'פייסבוק אדס' :
-                         lead.source === 'google_ads' ? 'גוגל אדס' :
-                         lead.source === 'website' ? 'אתר' :
-                         lead.source === 'referral' ? 'הפניה' : 'ידני'}
-                      </span>
-                    </CardDescription>
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    {getStatusBadge(lead.status)}
-                    <div className={cn("text-sm font-medium", getPriorityColor(lead.priority))}>
-                      {lead.priority === 'high' ? 'גבוהה' :
-                       lead.priority === 'medium' ? 'בינונית' : 'נמוכה'}
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {lead.email && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Mail className="h-4 w-4" />
-                      {lead.email}
-                    </div>
-                  )}
-                  {lead.phone && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Phone className="h-4 w-4" />
-                      {lead.phone}
-                    </div>
-                  )}
-                  {lead.budget && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <TrendingUp className="h-4 w-4" />
-                      ₪{(lead.budget / 100).toLocaleString()}
-                    </div>
-                  )}
-                  {lead.notes && (
-                    <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <MessageSquare className="h-4 w-4 mt-0.5" />
-                      <span className="line-clamp-2">{lead.notes}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex gap-2 mt-4">
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="flex-1"
-                    onClick={() => {
-                      setSelectedLead(lead);
-                      setConvertForm({
-                        name: lead.name,
-                        email: lead.email || "",
-                        phone: lead.phone || "",
-                        company: "",
-                        industry: ""
-                      });
-                      setIsConvertOpen(true);
-                    }}
-                    disabled={lead.status === 'converted'}
-                  >
-                    המר ללקוח
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {filteredLeads.length === 0 && !isLoading && (
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-5">
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <UserPlus className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">אין לידים</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              {searchTerm || statusFilter !== "all" || sourceFilter !== "all"
-                ? "לא נמצאו לידים המתאימים לחיפוש"
-                : "עדיין לא נוספו לידים למערכת"}
-            </p>
-            <Button onClick={() => setIsNewLeadOpen(true)}>
-              <Plus className="h-4 w-4 me-2" />
-              הוסף ליד ראשון
-            </Button>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">סה"כ לידים</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{leadStats.total}</div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Convert Lead Dialog */}
-      <Dialog open={isConvertOpen} onOpenChange={setIsConvertOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>המרת ליד ללקוח</DialogTitle>
-            <DialogDescription>
-              המר את הליד "{selectedLead?.name}" ללקוח במערכת
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="convert-name">שם הלקוח *</Label>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">לידים חדשים</CardTitle>
+            <UserPlus className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{leadStats.new}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">מוכשרים</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{leadStats.qualified}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">נסגרו</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{leadStats.won}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">ערך כולל</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₪{leadStats.totalValue.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters and Search */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            סינון וחיפוש
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-4">
+            <div className="flex-1 min-w-[200px]">
+              <Label>חיפוש</Label>
               <Input
-                id="convert-name"
-                value={convertForm.name}
-                onChange={(e) => setConvertForm(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="הזן שם הלקוח"
+                placeholder="חפש לפי שם או אימייל..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="convert-email">אימייל</Label>
-              <Input
-                id="convert-email"
-                type="email"
-                value={convertForm.email}
-                onChange={(e) => setConvertForm(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="הזן כתובת אימייל"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="convert-phone">טלפון</Label>
-              <Input
-                id="convert-phone"
-                value={convertForm.phone}
-                onChange={(e) => setConvertForm(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="הזן מספר טלפון"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="convert-company">חברה</Label>
-              <Input
-                id="convert-company"
-                value={convertForm.company}
-                onChange={(e) => setConvertForm(prev => ({ ...prev, company: e.target.value }))}
-                placeholder="הזן שם החברה"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="convert-industry">תחום</Label>
-              <Select value={convertForm.industry} onValueChange={(value) => setConvertForm(prev => ({ ...prev, industry: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="בחר תחום" />
+            <div>
+              <Label>סינון לפי מקור</Label>
+              <Select value={filterSource} onValueChange={setFilterSource}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="כל המקורות" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="technology">טכנולוגיה</SelectItem>
-                  <SelectItem value="retail">קמעונאות</SelectItem>
-                  <SelectItem value="healthcare">בריאות</SelectItem>
-                  <SelectItem value="finance">פיננסים</SelectItem>
-                  <SelectItem value="education">חינוך</SelectItem>
-                  <SelectItem value="real-estate">נדל"ן</SelectItem>
-                  <SelectItem value="food">מזון ומשקאות</SelectItem>
-                  <SelectItem value="other">אחר</SelectItem>
+                  <SelectItem value="">כל המקורות</SelectItem>
+                  <SelectItem value="facebook">Facebook</SelectItem>
+                  <SelectItem value="google">Google</SelectItem>
+                  <SelectItem value="website">אתר</SelectItem>
+                  <SelectItem value="referral">הפניה</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>סינון לפי עדיפות</Label>
+              <Select value={filterPriority} onValueChange={setFilterPriority}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="כל העדיפויות" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">כל העדיפויות</SelectItem>
+                  <SelectItem value="low">נמוכה</SelectItem>
+                  <SelectItem value="medium">בינונית</SelectItem>
+                  <SelectItem value="high">גבוהה</SelectItem>
+                  <SelectItem value="urgent">דחופה</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Leads Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="all">הכל ({leadStats.total})</TabsTrigger>
+          <TabsTrigger value="new">חדשים ({leadStats.new})</TabsTrigger>
+          <TabsTrigger value="contacted">נוצר קשר</TabsTrigger>
+          <TabsTrigger value="qualified">מוכשרים</TabsTrigger>
+          <TabsTrigger value="proposal">הצעות</TabsTrigger>
+          <TabsTrigger value="won">נסגרו</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={activeTab} className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>רשימת לידים</CardTitle>
+              <CardDescription>
+                {filteredLeads.length} לידים מתוך {leads.length}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="text-center py-8">טוען לידים...</div>
+              ) : filteredLeads.length === 0 ? (
+                <div className="text-center py-8">
+                  <UserPlus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium">אין לידים</h3>
+                  <p className="text-muted-foreground mb-4">התחל בהוספת הליד הראשון שלך</p>
+                  <Button onClick={handleNewLead}>הוסף ליד חדש</Button>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">שם</TableHead>
+                      <TableHead className="text-right">יצירת קשר</TableHead>
+                      <TableHead className="text-right">מקור</TableHead>
+                      <TableHead className="text-right">סטטוס</TableHead>
+                      <TableHead className="text-right">עדיפות</TableHead>
+                      <TableHead className="text-right">ערך צפוי</TableHead>
+                      <TableHead className="text-right">תאריך יצירה</TableHead>
+                      <TableHead className="text-right">פעולות</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredLeads.map((lead) => (
+                      <TableRow key={lead.id}>
+                        <TableCell className="font-medium text-right">
+                          <div>
+                            <div className="font-medium">{lead.name}</div>
+                            {lead.notes && (
+                              <div className="text-sm text-muted-foreground truncate max-w-[200px]">
+                                {lead.notes}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1 text-sm">
+                              <Mail className="h-3 w-3" />
+                              {lead.email}
+                            </div>
+                            <div className="flex items-center gap-1 text-sm">
+                              <Phone className="h-3 w-3" />
+                              {lead.phone}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center gap-2">
+                            <span>{getSourceIcon(lead.source)}</span>
+                            {lead.source}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {getStatusBadge(lead.status)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {getPriorityBadge(lead.priority)}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          ₪{lead.value?.toLocaleString() || 0}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {new Date(lead.createdAt).toLocaleDateString('he-IL')}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditLead(lead)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            {lead.status !== 'won' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => convertMutation.mutate(lead.id)}
+                                disabled={convertMutation.isPending}
+                              >
+                                <ArrowRight className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Lead Dialog */}
+      <Dialog open={isLeadDialogOpen} onOpenChange={setIsLeadDialogOpen}>
+        <DialogContent className="max-w-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingLead ? 'עריכת ליד' : 'הוספת ליד חדש'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingLead ? 'ערוך את פרטי הליד' : 'הוסף ליד חדש למערכת'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">שם מלא *</Label>
+                <Input
+                  id="name"
+                  value={leadForm.name}
+                  onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })}
+                  placeholder="הכנס שם מלא"
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">אימייל *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={leadForm.email}
+                  onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
+                  placeholder="example@domain.com"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="phone">טלפון</Label>
+                <Input
+                  id="phone"
+                  value={leadForm.phone}
+                  onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })}
+                  placeholder="050-1234567"
+                />
+              </div>
+              <div>
+                <Label htmlFor="value">ערך צפוי (₪)</Label>
+                <Input
+                  id="value"
+                  type="number"
+                  value={leadForm.value}
+                  onChange={(e) => setLeadForm({ ...leadForm, value: Number(e.target.value) })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="source">מקור</Label>
+                <Select value={leadForm.source} onValueChange={(value) => setLeadForm({ ...leadForm, source: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="facebook">Facebook</SelectItem>
+                    <SelectItem value="google">Google</SelectItem>
+                    <SelectItem value="website">אתר</SelectItem>
+                    <SelectItem value="referral">הפניה</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="status">סטטוס</Label>
+                <Select value={leadForm.status} onValueChange={(value) => setLeadForm({ ...leadForm, status: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new">חדש</SelectItem>
+                    <SelectItem value="contacted">נוצר קשר</SelectItem>
+                    <SelectItem value="qualified">מוכשר</SelectItem>
+                    <SelectItem value="proposal">הצעה</SelectItem>
+                    <SelectItem value="won">נסגר</SelectItem>
+                    <SelectItem value="lost">אבד</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="priority">עדיפות</Label>
+                <Select value={leadForm.priority} onValueChange={(value) => setLeadForm({ ...leadForm, priority: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">נמוכה</SelectItem>
+                    <SelectItem value="medium">בינונית</SelectItem>
+                    <SelectItem value="high">גבוהה</SelectItem>
+                    <SelectItem value="urgent">דחופה</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="notes">הערות</Label>
+              <Textarea
+                id="notes"
+                value={leadForm.notes}
+                onChange={(e) => setLeadForm({ ...leadForm, notes: e.target.value })}
+                placeholder="הערות נוספות על הליד..."
+                rows={3}
+              />
+            </div>
+          </div>
+
           <DialogFooter>
-            <Button 
-              type="submit" 
-              onClick={() => selectedLead && convertLeadMutation.mutate({ 
-                leadId: selectedLead.id, 
-                data: convertForm 
-              })} 
-              disabled={convertLeadMutation.isPending}
-            >
-              {convertLeadMutation.isPending ? "ממיר..." : "המר ללקוח"}
+            <Button variant="outline" onClick={() => setIsLeadDialogOpen(false)}>
+              ביטול
+            </Button>
+            <Button onClick={handleSubmit} disabled={leadMutation.isPending || !leadForm.name || !leadForm.email}>
+              {leadMutation.isPending ? "שומר..." : editingLead ? "עדכן ליד" : "הוסף ליד"}
             </Button>
           </DialogFooter>
         </DialogContent>
