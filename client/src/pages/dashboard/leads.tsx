@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,34 @@ export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [facebookReady, setFacebookReady] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
+
+  // Check if APIs are ready
+  React.useEffect(() => {
+    // Check Facebook SDK
+    const checkFacebook = () => {
+      if (typeof window.FB !== 'undefined') {
+        setFacebookReady(true);
+      } else if (import.meta.env.VITE_FACEBOOK_APP_ID) {
+        // Try again in 1 second
+        setTimeout(checkFacebook, 1000);
+      }
+    };
+
+    // Check Google API
+    const checkGoogle = () => {
+      if (typeof window.gapi !== 'undefined') {
+        setGoogleReady(true);
+      } else if (import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+        // Try again in 1 second
+        setTimeout(checkGoogle, 1000);
+      }
+    };
+
+    checkFacebook();
+    checkGoogle();
+  }, []);
   const [isNewLeadOpen, setIsNewLeadOpen] = useState(false);
   const [isConvertOpen, setIsConvertOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -144,52 +172,104 @@ export default function LeadsPage() {
   });
 
   const syncFacebookMutation = useMutation({
-    mutationFn: async (accessToken: string) => {
-      const response = await fetch('/api/ads/facebook/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessToken })
+    mutationFn: async () => {
+      // Check if Facebook SDK is loaded
+      if (typeof window.FB === 'undefined') {
+        throw new Error('Facebook SDK not loaded');
+      }
+
+      // Get Facebook access token
+      return new Promise((resolve, reject) => {
+        window.FB.login((response: any) => {
+          if (response.authResponse) {
+            // Send access token to backend
+            fetch('/api/ads/facebook/sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ accessToken: response.authResponse.accessToken })
+            })
+            .then(res => res.json())
+            .then(resolve)
+            .catch(reject);
+          } else {
+            reject(new Error('Facebook login failed'));
+          }
+        }, { scope: 'ads_read,pages_read_engagement' });
       });
-      if (!response.ok) throw new Error('Failed to sync Facebook leads');
-      return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
       toast({
         title: "סנכרון פייסבוק הושלם",
-        description: data.message
+        description: data.message || "לידים מפייסבוק סונכרנו בהצלחה"
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "שגיאה בסנכרון פייסבוק",
-        description: "אנא בדוק את הגדרות החיבור",
+        description: error.message || "אנא בדוק את הגדרות החיבור",
         variant: "destructive"
       });
     }
   });
 
   const syncGoogleMutation = useMutation({
-    mutationFn: async (accessToken: string) => {
-      const response = await fetch('/api/ads/google/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessToken })
+    mutationFn: async () => {
+      // Check if Google APIs are loaded
+      if (typeof window.gapi === 'undefined') {
+        throw new Error('Google APIs not loaded');
+      }
+
+      // Initialize Google Auth
+      return new Promise((resolve, reject) => {
+        window.gapi.load('auth2', () => {
+          const authInstance = window.gapi.auth2.getAuthInstance();
+          if (!authInstance) {
+            window.gapi.auth2.init({
+              client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID
+            }).then(() => {
+              const auth = window.gapi.auth2.getAuthInstance();
+              auth.signIn({ scope: 'https://www.googleapis.com/auth/adwords' })
+                .then((user: any) => {
+                  const accessToken = user.getAuthResponse().access_token;
+                  return fetch('/api/ads/google/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accessToken })
+                  });
+                })
+                .then(res => res.json())
+                .then(resolve)
+                .catch(reject);
+            });
+          } else {
+            authInstance.signIn({ scope: 'https://www.googleapis.com/auth/adwords' })
+              .then((user: any) => {
+                const accessToken = user.getAuthResponse().access_token;
+                return fetch('/api/ads/google/sync', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ accessToken })
+                });
+              })
+              .then(res => res.json())
+              .then(resolve)
+              .catch(reject);
+          }
+        });
       });
-      if (!response.ok) throw new Error('Failed to sync Google leads');
-      return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
       toast({
         title: "סנכרון גוגל הושלם",
-        description: data.message
+        description: data.message || "לידים מגוגל אדס סונכרנו בהצלחה"
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "שגיאה בסנכרון גוגל",
-        description: "אנא בדוק את הגדרות החיבור",
+        description: error.message || "אנא בדוק את הגדרות החיבור",
         variant: "destructive"
       });
     }
@@ -263,19 +343,45 @@ export default function LeadsPage() {
         <div className="flex gap-2">
           <Button 
             variant="outline" 
-            onClick={() => syncFacebookMutation.mutate('mock-token')}
+            onClick={() => {
+              if (!facebookReady || !import.meta.env.VITE_FACEBOOK_APP_ID) {
+                toast({
+                  title: "פייסבוק אדס לא מוגדר",
+                  description: "יש להגדיר מפתח API בהגדרות המערכת",
+                  variant: "destructive"
+                });
+                return;
+              }
+              syncFacebookMutation.mutate();
+            }}
             disabled={syncFacebookMutation.isPending}
           >
             {syncFacebookMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin me-2" /> : <Facebook className="h-4 w-4 me-2" />}
             סנכרן פייסבוק
+            {(!facebookReady || !import.meta.env.VITE_FACEBOOK_APP_ID) && 
+              <Badge variant="secondary" className="mr-2">לא זמין</Badge>
+            }
           </Button>
           <Button 
             variant="outline"
-            onClick={() => syncGoogleMutation.mutate('mock-token')}
+            onClick={() => {
+              if (!googleReady || !import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+                toast({
+                  title: "גוגל אדס לא מוגדר",
+                  description: "יש להגדיר מפתח API בהגדרות המערכת",
+                  variant: "destructive"
+                });
+                return;
+              }
+              syncGoogleMutation.mutate();
+            }}
             disabled={syncGoogleMutation.isPending}
           >
             {syncGoogleMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin me-2" /> : <Chrome className="h-4 w-4 me-2" />}
             סנכרן גוגל
+            {(!googleReady || !import.meta.env.VITE_GOOGLE_CLIENT_ID) && 
+              <Badge variant="secondary" className="mr-2">לא זמין</Badge>
+            }
           </Button>
           <Dialog open={isNewLeadOpen} onOpenChange={setIsNewLeadOpen}>
             <DialogTrigger asChild>

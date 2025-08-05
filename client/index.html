@@ -6,6 +6,33 @@
     <title>AgencyCRM - מערכת CRM מתקדמת לסוכנויות דיגיטליות</title>
     <meta name="description" content="מערכת CRM מקצועית לסוכנויות דיגיטליות עם תמיכה מלאה בעברית וממשק מותאם לשוק הישראלי. נהלו לקוחות, פרויקטים ומשימות במקום אחד.">
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Facebook SDK -->
+    <script async defer crossorigin="anonymous" 
+            src="https://connect.facebook.net/he_IL/sdk.js#xfbml=1&version=v18.0&appId=YOUR_FACEBOOK_APP_ID"></script>
+
+    <!-- Google APIs -->
+    <script src="https://apis.google.com/js/api.js"></script>
+
+    <script>
+      // Initialize Facebook SDK
+      window.fbAsyncInit = function() {
+        FB.init({
+          appId: 'YOUR_FACEBOOK_APP_ID',
+          cookie: true,
+          xfbml: true,
+          version: 'v18.0'
+        });
+      };
+
+      // Add global type declarations
+      declare global {
+        interface Window {
+          FB: any;
+          gapi: any;
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
