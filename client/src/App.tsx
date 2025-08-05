@@ -24,6 +24,7 @@ import Tasks from "@/pages/dashboard/tasks";
 import Assets from "@/pages/dashboard/assets";
 import Team from "@/pages/dashboard/team";
 import ClientDashboard from "@/pages/client-portal/client-dashboard";
+import ClientDashboardNew from "@/pages/client-portal/client-dashboard-new";
 import ClientProjectDetails from "@/pages/client-portal/project-details";
 import Profile from "@/pages/dashboard/profile";
 import Settings from "@/pages/dashboard/settings";

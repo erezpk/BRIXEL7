@@ -26,7 +26,7 @@ export default function Login() {
   // Redirect if already logged in
   useEffect(() => {
     if (!isLoading && user) {
-      setLocation("/dashboard");
+      setLocation("/");
     }
   }, [user, isLoading, setLocation]);
 
@@ -39,7 +39,7 @@ export default function Login() {
             title: "התחברות הצליחה",
             description: "ברוכים הבאים למערכת",
           });
-          setLocation("/dashboard");
+          setLocation("/");
         }
       })
       .catch((error) => {
@@ -102,7 +102,7 @@ export default function Login() {
         });
         // רגע קצר לפני הפניה כדי שהמערכת תעדכן את הסטטוס
         setTimeout(() => {
-          setLocation("/dashboard");
+          setLocation("/");
         }, 100);
       }
     } catch (error: any) {
