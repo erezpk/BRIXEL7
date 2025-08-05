@@ -322,7 +322,7 @@ export default function Leads() {
                   <SelectValue placeholder="כל העדיפויות" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">כל העדיפויות</SelectItem>
+                  <SelectItem value="all">כל העדיפויות</SelectItem>
                   <SelectItem value="low">נמוכה</SelectItem>
                   <SelectItem value="medium">בינונית</SelectItem>
                   <SelectItem value="high">גבוהה</SelectItem>

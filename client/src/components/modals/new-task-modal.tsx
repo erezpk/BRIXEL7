@@ -238,7 +238,7 @@ export default function NewTaskModal({ isOpen, onClose, editingTask }: NewTaskMo
                 <SelectValue placeholder="בחר לקוח" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">ללא לקוח</SelectItem>
+                <SelectItem value="no-client">ללא לקוח</SelectItem>
                 {clients?.map((client) => (
                   <SelectItem key={client.id} value={client.id || "none"}>
                     {client.name}
@@ -256,7 +256,7 @@ export default function NewTaskModal({ isOpen, onClose, editingTask }: NewTaskMo
                   <SelectValue placeholder="בחר פרויקט" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">ללא פרויקט</SelectItem>
+                  <SelectItem value="no-project">ללא פרויקט</SelectItem>
                   {projects?.map((project) => (
                     <SelectItem key={project.id} value={project.id || "none"}>
                       {project.name}

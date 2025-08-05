@@ -283,9 +283,9 @@ export default function ClientDetails() {
                           password: `${client.name.toLowerCase().replace(/\s+/g, '')}_${Date.now().toString().slice(-8)}`
                         }),
                       });
-          
+
                       const data = await response.json();
-          
+
                       if (response.ok) {
                         toast({
                           title: "פרטי התחברות נשלחו",

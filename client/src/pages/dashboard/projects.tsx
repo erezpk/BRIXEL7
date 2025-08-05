@@ -344,7 +344,7 @@ export default function Projects() {
                     <SelectValue placeholder="בחר לקוח" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">ללא לקוח</SelectItem>
+                    <SelectItem value="no-client">ללא לקוח</SelectItem>
                     {clients?.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name}
