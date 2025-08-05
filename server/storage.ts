@@ -1,10 +1,11 @@
 import { 
-  agencies, users, clients, projects, tasks, taskComments, digitalAssets, agencyTemplates, activityLog, passwordResetTokens,
+  agencies, users, clients, projects, tasks, leads, taskComments, digitalAssets, agencyTemplates, activityLog, passwordResetTokens,
   type Agency, type InsertAgency,
   type User, type InsertUser,
   type Client, type InsertClient,
   type Project, type InsertProject,
   type Task, type InsertTask,
+  type Lead, type InsertLead,
   type TaskComment, type InsertTaskComment,
   type DigitalAsset, type InsertDigitalAsset,
   type AgencyTemplate, type InsertAgencyTemplate,
@@ -62,6 +63,22 @@ export interface IStorage {
   createTask(task: InsertTask): Promise<Task>;
   updateTask(id: string, task: Partial<InsertTask>): Promise<Task>;
   deleteTask(id: string): Promise<void>;
+
+  // Leads
+  getLead(id: string): Promise<Lead | undefined>;
+  getLeadsByAgency(agencyId: string, filters?: {
+    status?: string;
+    source?: string;
+    assignedTo?: string;
+    clientId?: string;
+  }): Promise<Lead[]>;
+  getLeadsByClient(clientId: string): Promise<Lead[]>;
+  createLead(lead: InsertLead): Promise<Lead>;
+  updateLead(id: string, lead: Partial<InsertLead>): Promise<Lead>;
+  deleteLead(id: string): Promise<void>;
+  convertLeadToClient(leadId: string, clientData: InsertClient): Promise<{ lead: Lead; client: Client }>;
+  syncLeadsFromFacebook(agencyId: string, accessToken: string): Promise<Lead[]>;
+  syncLeadsFromGoogle(agencyId: string, accessToken: string): Promise<Lead[]>;
 
   // Task Comments
   getTaskComments(taskId: string): Promise<TaskComment[]>;
@@ -474,6 +491,78 @@ export class DatabaseStorage implements IStorage {
     await db.update(users)
       .set({ password: hashedPassword })
       .where(eq(users.id, userId));
+  }
+
+  // Leads methods
+  async getLead(id: string): Promise<Lead | undefined> {
+    const [lead] = await db.select().from(leads).where(eq(leads.id, id));
+    return lead || undefined;
+  }
+
+  async getLeadsByAgency(agencyId: string, filters?: {
+    status?: string;
+    source?: string;
+    assignedTo?: string;
+    clientId?: string;
+  }): Promise<Lead[]> {
+    const conditions = [eq(leads.agencyId, agencyId)];
+
+    if (filters?.status) {
+      conditions.push(eq(leads.status, filters.status));
+    }
+    if (filters?.source) {
+      conditions.push(eq(leads.source, filters.source));
+    }
+    if (filters?.assignedTo) {
+      conditions.push(eq(leads.assignedTo, filters.assignedTo));
+    }
+    if (filters?.clientId) {
+      conditions.push(eq(leads.clientId, filters.clientId));
+    }
+
+    return db.select().from(leads).where(and(...conditions)).orderBy(desc(leads.createdAt));
+  }
+
+  async getLeadsByClient(clientId: string): Promise<Lead[]> {
+    return db.select().from(leads).where(eq(leads.clientId, clientId)).orderBy(desc(leads.createdAt));
+  }
+
+  async createLead(insertLead: InsertLead): Promise<Lead> {
+    const [lead] = await db
+      .insert(leads)
+      .values(insertLead as any)
+      .returning();
+    return lead;
+  }
+
+  async updateLead(id: string, updateLead: Partial<InsertLead>): Promise<Lead> {
+    const [lead] = await db
+      .update(leads)
+      .set({ ...updateLead, updatedAt: new Date() })
+      .where(eq(leads.id, id))
+      .returning();
+    return lead;
+  }
+
+  async deleteLead(id: string): Promise<void> {
+    await db.delete(leads).where(eq(leads.id, id));
+  }
+
+  async convertLeadToClient(leadId: string, clientData: InsertClient): Promise<{ lead: Lead; client: Client }> {
+    const client = await this.createClient(clientData);
+    const lead = await this.updateLead(leadId, {
+      status: 'converted',
+      convertedToClientId: client.id
+    });
+    return { lead, client };
+  }
+
+  async syncLeadsFromFacebook(agencyId: string, accessToken: string): Promise<Lead[]> {
+    return [];
+  }
+
+  async syncLeadsFromGoogle(agencyId: string, accessToken: string): Promise<Lead[]> {
+    return [];
   }
 }
 

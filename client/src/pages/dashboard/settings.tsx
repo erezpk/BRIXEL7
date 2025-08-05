@@ -1,56 +1,231 @@
-
 import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertTriangle, Bell, Facebook, Chrome, Settings as SettingsIcon, Shield, Users, Palette, Zap, Plus, ExternalLink, Trash2, CheckCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
+import { rtlClass } from "@/lib/rtl";
 import { apiRequest } from "@/lib/queryClient";
-import { 
-  Settings as SettingsIcon, 
-  Bell, 
-  Globe, 
-  Shield, 
-  Moon,
-  Sun,
-  Monitor,
-  Save
-} from "lucide-react";
+
+interface AdAccount {
+  id: string;
+  name: string;
+  platform: 'facebook' | 'google';
+  status: 'connected' | 'error' | 'pending';
+  lastSync?: string;
+  leadCount?: number;
+}
+
+interface FacebookConnectionForm {
+  appId: string;
+  appSecret: string;
+  accessToken: string;
+}
+
+interface GoogleConnectionForm {
+  clientId: string;
+  clientSecret: string;
+  customerId: string;
+  refreshToken: string;
+}
 
 export default function Settings() {
-  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("integrations");
+  const [isFacebookDialogOpen, setIsFacebookDialogOpen] = useState(false);
+  const [isGoogleDialogOpen, setIsGoogleDialogOpen] = useState(false);
+  const [facebookForm, setFacebookForm] = useState<FacebookConnectionForm>({
+    appId: "",
+    appSecret: "",
+    accessToken: ""
+  });
+  const [googleForm, setGoogleForm] = useState<GoogleConnectionForm>({
+    clientId: "",
+    clientSecret: "",
+    customerId: "",
+    refreshToken: ""
+  });
   const [settings, setSettings] = useState({
     notifications: {
       email: true,
       push: true,
-      marketing: false,
-      projectUpdates: true,
-      taskReminders: true,
+      leadSync: true,
+      autoAssign: false
     },
-    appearance: {
-      theme: 'system',
-      language: 'he',
-      fontSize: 'medium',
-    },
-    privacy: {
-      profileVisible: true,
-      activityVisible: false,
-      dataSharing: false,
-    },
-    account: {
-      twoFactor: false,
-      sessionTimeout: '24h',
+    leadSync: {
+      enabled: true,
+      frequency: 'hourly',
+      autoConvert: false,
+      minScore: 50
     }
   });
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Mock data for connected accounts - in real implementation, this would come from the API
+  const [adAccounts, setAdAccounts] = useState<AdAccount[]>([
+    {
+      id: "facebook_123456",
+      name: "סוכנות הדיגיטל - Facebook Ads",
+      platform: "facebook",
+      status: "connected",
+      lastSync: "2025-01-05T20:30:00Z",
+      leadCount: 45
+    },
+    {
+      id: "google_789012",
+      name: "Google Ads Account (123-456-7890)",
+      platform: "google", 
+      status: "error",
+      lastSync: "2025-01-05T18:15:00Z",
+      leadCount: 23
+    }
+  ]);
+
+  const connectFacebookMutation = useMutation({
+    mutationFn: async (data: FacebookConnectionForm) => {
+      const response = await fetch('/api/ads/facebook/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) throw new Error('Failed to connect Facebook');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      const newAccount: AdAccount = {
+        id: `facebook_${Date.now()}`,
+        name: data.name || "Facebook Ads Account",
+        platform: "facebook",
+        status: "connected",
+        lastSync: new Date().toISOString(),
+        leadCount: 0
+      };
+      setAdAccounts(prev => [...prev, newAccount]);
+      setIsFacebookDialogOpen(false);
+      setFacebookForm({ appId: "", appSecret: "", accessToken: "" });
+      toast({
+        title: "חיבור פייסבוק אדס הושלם",
+        description: "החשבון חובר בהצלחה ומוכן לסנכרון לידים"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "שגיאה בחיבור פייסבוק",
+        description: "אנא בדוק את פרטי החיבור ונסה שוב",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const connectGoogleMutation = useMutation({
+    mutationFn: async (data: GoogleConnectionForm) => {
+      const response = await fetch('/api/ads/google/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) throw new Error('Failed to connect Google');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      const newAccount: AdAccount = {
+        id: `google_${Date.now()}`,
+        name: data.customerName || "Google Ads Account",
+        platform: "google",
+        status: "connected",
+        lastSync: new Date().toISOString(),
+        leadCount: 0
+      };
+      setAdAccounts(prev => [...prev, newAccount]);
+      setIsGoogleDialogOpen(false);
+      setGoogleForm({ clientId: "", clientSecret: "", customerId: "", refreshToken: "" });
+      toast({
+        title: "חיבור גוגל אדס הושלם",
+        description: "החשבון חובר בהצלחה ומוכן לסנכרון לידים"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "שגיאה בחיבור גוגל אדס",
+        description: "אנא בדוק את פרטי החיבור ונסה שוב",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const syncAccountMutation = useMutation({
+    mutationFn: async (accountId: string) => {
+      const account = adAccounts.find(a => a.id === accountId);
+      if (!account) throw new Error('Account not found');
+      
+      const endpoint = account.platform === 'facebook' ? '/api/ads/facebook/sync' : '/api/ads/google/sync';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken: 'mock-token' })
+      });
+      
+      if (!response.ok) throw new Error('Sync failed');
+      return response.json();
+    },
+    onSuccess: (data, accountId) => {
+      setAdAccounts(prev => prev.map(account => 
+        account.id === accountId 
+          ? { ...account, lastSync: new Date().toISOString(), status: 'connected' as const }
+          : account
+      ));
+      queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+      toast({
+        title: "סנכרון הושלם",
+        description: data.message || "לידים סונכרנו בהצלחה"
+      });
+    },
+    onError: (error, accountId) => {
+      setAdAccounts(prev => prev.map(account => 
+        account.id === accountId 
+          ? { ...account, status: 'error' as const }
+          : account
+      ));
+      toast({
+        title: "שגיאה בסנכרון",
+        description: "לא הצלחנו לסנכרן לידים",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const disconnectAccount = (accountId: string) => {
+    setAdAccounts(prev => prev.filter(account => account.id !== accountId));
+    toast({
+      title: "חשבון נותק",
+      description: "החשבון נותק בהצלחה מהמערכת"
+    });
+  };
+
+  const getStatusBadge = (status: AdAccount['status']) => {
+    switch (status) {
+      case 'connected':
+        return <Badge variant="default" className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 me-1" />מחובר</Badge>;
+      case 'error':
+        return <Badge variant="destructive"><AlertTriangle className="h-3 w-3 me-1" />שגיאה</Badge>;
+      case 'pending':
+        return <Badge variant="secondary"><RefreshCw className="h-3 w-3 me-1" />ממתין</Badge>;
+    }
+  };
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: typeof settings) => {
       return await apiRequest({
-        url: "/api/auth/settings",
+        url: "/api/settings",
         method: "PUT",
         body: data,
       });
@@ -70,251 +245,401 @@ export default function Settings() {
     },
   });
 
-  const handleSave = () => {
-    updateSettingsMutation.mutate(settings);
-  };
-
-  const updateNotificationSetting = (key: string, value: boolean) => {
-    setSettings(prev => ({
-      ...prev,
-      notifications: {
-        ...prev.notifications,
-        [key]: value
-      }
-    }));
-  };
-
-  const updateAppearanceSetting = (key: string, value: string) => {
-    setSettings(prev => ({
-      ...prev,
-      appearance: {
-        ...prev.appearance,
-        [key]: value
-      }
-    }));
-  };
-
-  const updatePrivacySetting = (key: string, value: boolean) => {
-    setSettings(prev => ({
-      ...prev,
-      privacy: {
-        ...prev.privacy,
-        [key]: value
-      }
-    }));
-  };
-
-  const updateAccountSetting = (key: string, value: boolean | string) => {
-    setSettings(prev => ({
-      ...prev,
-      account: {
-        ...prev.account,
-        [key]: value
-      }
-    }));
-  };
-
   return (
-    <div className="space-y-6" dir="rtl">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900 font-rubik">הגדרות</h1>
-        <Button 
-          onClick={handleSave}
-          disabled={updateSettingsMutation.isPending}
-          className="flex items-center gap-2"
-        >
-          <Save className="h-4 w-4" />
-          שמור הגדרות
-        </Button>
+    <div className={cn("space-y-8", rtlClass())}>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">הגדרות</h1>
+        <p className="text-muted-foreground">
+          נהל את הגדרות המערכת, חיבורים לפייסבוק ואדס וגוגל אדס
+        </p>
       </div>
 
-      <div className="grid gap-6">
-        {/* Notifications Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              התראות
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="email-notifications">התראות אימייל</Label>
-                <p className="text-sm text-gray-500">קבל התראות באימייל על פעילות חשובה</p>
-              </div>
-              <Switch
-                id="email-notifications"
-                checked={settings.notifications.email}
-                onCheckedChange={(checked) => updateNotificationSetting('email', checked)}
-              />
-            </div>
-            
-            <Separator />
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="push-notifications">התראות דחיפה</Label>
-                <p className="text-sm text-gray-500">קבל התראות בדפדפן</p>
-              </div>
-              <Switch
-                id="push-notifications"
-                checked={settings.notifications.push}
-                onCheckedChange={(checked) => updateNotificationSetting('push', checked)}
-              />
-            </div>
-            
-            <Separator />
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="project-updates">עדכוני פרויקטים</Label>
-                <p className="text-sm text-gray-500">קבל התראות על שינויים בפרויקטים</p>
-              </div>
-              <Switch
-                id="project-updates"
-                checked={settings.notifications.projectUpdates}
-                onCheckedChange={(checked) => updateNotificationSetting('projectUpdates', checked)}
-              />
-            </div>
-            
-            <Separator />
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="task-reminders">תזכורות משימות</Label>
-                <p className="text-sm text-gray-500">קבל תזכורות על משימות שצריך להשלים</p>
-              </div>
-              <Switch
-                id="task-reminders"
-                checked={settings.notifications.taskReminders}
-                onCheckedChange={(checked) => updateNotificationSetting('taskReminders', checked)}
-              />
-            </div>
-          </CardContent>
-        </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="integrations">אינטגרציות</TabsTrigger>
+          <TabsTrigger value="notifications">התראות</TabsTrigger>
+          <TabsTrigger value="leads">לידים</TabsTrigger>
+          <TabsTrigger value="account">חשבון</TabsTrigger>
+        </TabsList>
 
-        {/* Appearance Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Monitor className="h-5 w-5" />
-              מראה
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <Label htmlFor="theme">ערכת נושא</Label>
-                <Select 
-                  value={settings.appearance.theme} 
-                  onValueChange={(value) => updateAppearanceSetting('theme', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">בהיר</SelectItem>
-                    <SelectItem value="dark">כהה</SelectItem>
-                    <SelectItem value="system">לפי המערכת</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="language">שפה</Label>
-                <Select 
-                  value={settings.appearance.language} 
-                  onValueChange={(value) => updateAppearanceSetting('language', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="he">עברית</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="fontSize">גודל גופן</Label>
-                <Select 
-                  value={settings.appearance.fontSize} 
-                  onValueChange={(value) => updateAppearanceSetting('fontSize', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="small">קטן</SelectItem>
-                    <SelectItem value="medium">בינוני</SelectItem>
-                    <SelectItem value="large">גדול</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <TabsContent value="integrations" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                אינטגרציות פרסום
+              </CardTitle>
+              <CardDescription>
+                חבר את חשבונות הפרסום שלך לסנכרון אוטומטי של לידים
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">חשבונות מחוברים</h3>
+                <div className="flex gap-2">
+                  <Dialog open={isFacebookDialogOpen} onOpenChange={setIsFacebookDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Facebook className="h-4 w-4 me-2" />
+                        חבר פייסבוק אדס
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>חיבור פייסבוק אדס</DialogTitle>
+                        <DialogDescription>
+                          הזן את פרטי חשבון הפייסבוק אדס שלך
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="app-id">App ID</Label>
+                          <Input
+                            id="app-id"
+                            value={facebookForm.appId}
+                            onChange={(e) => setFacebookForm(prev => ({ ...prev, appId: e.target.value }))}
+                            placeholder="הזן App ID"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="app-secret">App Secret</Label>
+                          <Input
+                            id="app-secret"
+                            type="password"
+                            value={facebookForm.appSecret}
+                            onChange={(e) => setFacebookForm(prev => ({ ...prev, appSecret: e.target.value }))}
+                            placeholder="הזן App Secret"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="access-token">Access Token</Label>
+                          <Input
+                            id="access-token"
+                            value={facebookForm.accessToken}
+                            onChange={(e) => setFacebookForm(prev => ({ ...prev, accessToken: e.target.value }))}
+                            placeholder="הזן Access Token"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button 
+                          onClick={() => connectFacebookMutation.mutate(facebookForm)} 
+                          disabled={connectFacebookMutation.isPending || !facebookForm.appId || !facebookForm.accessToken}
+                        >
+                          {connectFacebookMutation.isPending ? "מחבר..." : "חבר חשבון"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
 
-        {/* Privacy Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              פרטיות ואבטחה
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="profile-visible">פרופיל גלוי</Label>
-                <p className="text-sm text-gray-500">אפשר לחברי צוות אחרים לראות את הפרופיל שלך</p>
+                  <Dialog open={isGoogleDialogOpen} onOpenChange={setIsGoogleDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Chrome className="h-4 w-4 me-2" />
+                        חבר גוגל אדס
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>חיבור גוגל אדס</DialogTitle>
+                        <DialogDescription>
+                          הזן את פרטי חשבון הגוגל אדס שלך
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="client-id">Client ID</Label>
+                          <Input
+                            id="client-id"
+                            value={googleForm.clientId}
+                            onChange={(e) => setGoogleForm(prev => ({ ...prev, clientId: e.target.value }))}
+                            placeholder="הזן Client ID"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="client-secret">Client Secret</Label>
+                          <Input
+                            id="client-secret"
+                            type="password"
+                            value={googleForm.clientSecret}
+                            onChange={(e) => setGoogleForm(prev => ({ ...prev, clientSecret: e.target.value }))}
+                            placeholder="הזן Client Secret"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="customer-id">Customer ID</Label>
+                          <Input
+                            id="customer-id"
+                            value={googleForm.customerId}
+                            onChange={(e) => setGoogleForm(prev => ({ ...prev, customerId: e.target.value }))}
+                            placeholder="הזן Customer ID (123-456-7890)"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="refresh-token">Refresh Token</Label>
+                          <Input
+                            id="refresh-token"
+                            value={googleForm.refreshToken}
+                            onChange={(e) => setGoogleForm(prev => ({ ...prev, refreshToken: e.target.value }))}
+                            placeholder="הזן Refresh Token"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button 
+                          onClick={() => connectGoogleMutation.mutate(googleForm)} 
+                          disabled={connectGoogleMutation.isPending || !googleForm.clientId || !googleForm.customerId}
+                        >
+                          {connectGoogleMutation.isPending ? "מחבר..." : "חבר חשבון"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
-              <Switch
-                id="profile-visible"
-                checked={settings.privacy.profileVisible}
-                onCheckedChange={(checked) => updatePrivacySetting('profileVisible', checked)}
-              />
-            </div>
-            
-            <Separator />
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="two-factor">אימות דו-שלבי</Label>
-                <p className="text-sm text-gray-500">הפעל אימות דו-שלבי לאבטחה מוגברת</p>
+
+              <div className="space-y-4">
+                {adAccounts.map((account) => (
+                  <Card key={account.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {account.platform === 'facebook' ? (
+                            <Facebook className="h-8 w-8 text-blue-600" />
+                          ) : (
+                            <Chrome className="h-8 w-8 text-blue-500" />
+                          )}
+                          <div>
+                            <h4 className="font-medium">{account.name}</h4>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              {getStatusBadge(account.status)}
+                              {account.lastSync && (
+                                <span>
+                                  סונכרן לאחרונה: {new Date(account.lastSync).toLocaleDateString('he-IL')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {account.leadCount !== undefined && (
+                            <Badge variant="outline">
+                              {account.leadCount} לידים
+                            </Badge>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => syncAccountMutation.mutate(account.id)}
+                            disabled={syncAccountMutation.isPending}
+                          >
+                            {syncAccountMutation.isPending ? (
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => disconnectAccount(account.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {adAccounts.length === 0 && (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">עדיין לא חיברת חשבונות פרסום</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      חבר את חשבונות הפייסבוק אדס ו/או גוגל אדס שלך כדי להתחיל לסנכרן לידים
+                    </p>
+                  </div>
+                )}
               </div>
-              <Switch
-                id="two-factor"
-                checked={settings.account.twoFactor}
-                onCheckedChange={(checked) => updateAccountSetting('twoFactor', checked)}
-              />
-            </div>
-            
-            <Separator />
-            
-            <div>
-              <Label htmlFor="session-timeout">תפוגת הפעלה</Label>
-              <p className="text-sm text-gray-500 mb-2">בחר כמה זמן להישאר מחובר</p>
-              <Select 
-                value={settings.account.sessionTimeout} 
-                onValueChange={(value) => updateAccountSetting('sessionTimeout', value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1h">שעה אחת</SelectItem>
-                  <SelectItem value="8h">8 שעות</SelectItem>
-                  <SelectItem value="24h">24 שעות</SelectItem>
-                  <SelectItem value="7d">שבוע</SelectItem>
-                  <SelectItem value="30d">חודש</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="notifications" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                הגדרות התראות
+              </CardTitle>
+              <CardDescription>
+                נהל את ההתראות שאתה מקבל מהמערכת
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">התראות אימייל</h4>
+                    <p className="text-sm text-muted-foreground">קבל התראות באימייל על פעילות במערכת</p>
+                  </div>
+                  <Switch
+                    checked={settings.notifications.email}
+                    onCheckedChange={(checked) =>
+                      setSettings(prev => ({
+                        ...prev,
+                        notifications: { ...prev.notifications, email: checked }
+                      }))
+                    }
+                  />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">התראות פוש</h4>
+                    <p className="text-sm text-muted-foreground">קבל התראות בדפדפן על אירועים חשובים</p>
+                  </div>
+                  <Switch
+                    checked={settings.notifications.push}
+                    onCheckedChange={(checked) =>
+                      setSettings(prev => ({
+                        ...prev,
+                        notifications: { ...prev.notifications, push: checked }
+                      }))
+                    }
+                  />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">סנכרון לידים</h4>
+                    <p className="text-sm text-muted-foreground">קבל התראות כשלידים חדשים מסונכרנים</p>
+                  </div>
+                  <Switch
+                    checked={settings.notifications.leadSync}
+                    onCheckedChange={(checked) =>
+                      setSettings(prev => ({
+                        ...prev,
+                        notifications: { ...prev.notifications, leadSync: checked }
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="leads" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                הגדרות לידים
+              </CardTitle>
+              <CardDescription>
+                נהל את הגדרות הסנכרון והטיפול בלידים
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">סנכרון אוטומטי</h4>
+                    <p className="text-sm text-muted-foreground">סנכרן לידים מחשבונות הפרסום באופן אוטומטי</p>
+                  </div>
+                  <Switch
+                    checked={settings.leadSync.enabled}
+                    onCheckedChange={(checked) =>
+                      setSettings(prev => ({
+                        ...prev,
+                        leadSync: { ...prev.leadSync, enabled: checked }
+                      }))
+                    }
+                  />
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <Label>תדירות סנכרון</Label>
+                  <select
+                    value={settings.leadSync.frequency}
+                    onChange={(e) =>
+                      setSettings(prev => ({
+                        ...prev,
+                        leadSync: { ...prev.leadSync, frequency: e.target.value }
+                      }))
+                    }
+                    className="w-full p-2 border rounded-md"
+                  >
+                    <option value="hourly">כל שעה</option>
+                    <option value="daily">יומי</option>
+                    <option value="weekly">שבועי</option>
+                  </select>
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">המרה אוטומטית</h4>
+                    <p className="text-sm text-muted-foreground">המר לידים איכותיים ללקוחות באופן אוטומטי</p>
+                  </div>
+                  <Switch
+                    checked={settings.leadSync.autoConvert}
+                    onCheckedChange={(checked) =>
+                      setSettings(prev => ({
+                        ...prev,
+                        leadSync: { ...prev.leadSync, autoConvert: checked }
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="account" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                הגדרות חשבון
+              </CardTitle>
+              <CardDescription>
+                נהל את הגדרות האבטחה והפרטיות שלך
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">אימות דו-שלבי</h4>
+                    <p className="text-sm text-muted-foreground">הוסף שכבת אבטחה נוספת לחשבון שלך</p>
+                  </div>
+                  <Switch />
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <Label>משך זמן פג תוקף הסשן</Label>
+                  <select className="w-full p-2 border rounded-md">
+                    <option value="1h">שעה</option>
+                    <option value="8h">8 שעות</option>
+                    <option value="24h">24 שעות</option>
+                    <option value="7d">שבוע</option>
+                  </select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <div className="flex justify-end">
+        <Button 
+          onClick={() => updateSettingsMutation.mutate(settings)} 
+          disabled={updateSettingsMutation.isPending}
+        >
+          {updateSettingsMutation.isPending ? "שומר..." : "שמור הגדרות"}
+        </Button>
       </div>
     </div>
   );

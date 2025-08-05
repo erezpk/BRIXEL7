@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema } from "@shared/schema";
+import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertLeadSchema, insertTaskCommentSchema, insertDigitalAssetSchema } from "@shared/schema";
 import { z } from "zod";
 import express from "express"; // Import express to use its Router
 import { emailService } from "./email-service"; // Import from email-service.ts
@@ -422,6 +422,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Profile update error:', error);
       res.status(500).json({ message: 'שגיאה בעדכון פרופיל' });
+    }
+  });
+
+  // Leads routes
+  router.get('/api/leads', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const filters = {
+        status: req.query.status as string,
+        source: req.query.source as string,
+        assignedTo: req.query.assignedTo as string,
+        clientId: req.query.clientId as string,
+      };
+
+      const leads = await storage.getLeadsByAgency(req.user!.agencyId!, filters);
+      res.json(leads);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת לידים' });
+    }
+  });
+
+  router.post('/api/leads', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const leadData = insertLeadSchema.parse({
+        ...req.body,
+        agencyId: req.user!.agencyId!,
+      });
+
+      const lead = await storage.createLead(leadData);
+
+      await storage.logActivity({
+        agencyId: req.user!.agencyId!,
+        userId: req.user!.id,
+        action: 'created',
+        entityType: 'lead',
+        entityId: lead.id,
+        details: { leadName: lead.name, source: lead.source },
+      });
+
+      res.json(lead);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
+      }
+      res.status(500).json({ message: 'שגיאה ביצירת ליד' });
+    }
+  });
+
+  router.put('/api/leads/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const lead = await storage.getLead(req.params.id);
+      if (!lead || lead.agencyId !== req.user!.agencyId) {
+        return res.status(404).json({ message: 'ליד לא נמצא' });
+      }
+
+      const updateData = insertLeadSchema.partial().parse(req.body);
+      const updatedLead = await storage.updateLead(req.params.id, updateData);
+
+      await storage.logActivity({
+        agencyId: req.user!.agencyId!,
+        userId: req.user!.id,
+        action: 'updated',
+        entityType: 'lead',
+        entityId: updatedLead.id,
+        details: { leadName: updatedLead.name },
+      });
+
+      res.json(updatedLead);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
+      }
+      res.status(500).json({ message: 'שגיאה בעדכון ליד' });
+    }
+  });
+
+  router.post('/api/leads/:id/convert', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const lead = await storage.getLead(req.params.id);
+      if (!lead || lead.agencyId !== req.user!.agencyId) {
+        return res.status(404).json({ message: 'ליד לא נמצא' });
+      }
+
+      const clientData = insertClientSchema.parse({
+        ...req.body,
+        agencyId: req.user!.agencyId!,
+        name: req.body.name || lead.name,
+        email: req.body.email || lead.email,
+        phone: req.body.phone || lead.phone,
+      });
+
+      const result = await storage.convertLeadToClient(req.params.id, clientData);
+
+      await storage.logActivity({
+        agencyId: req.user!.agencyId!,
+        userId: req.user!.id,
+        action: 'converted',
+        entityType: 'lead',
+        entityId: lead.id,
+        details: { leadName: lead.name, clientName: result.client.name },
+      });
+
+      res.json(result);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
+      }
+      res.status(500).json({ message: 'שגיאה בהמרת ליד ללקוח' });
+    }
+  });
+
+  // Facebook Ads and Google Ads integration routes
+  router.post('/api/ads/facebook/sync', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const { accessToken } = req.body;
+      if (!accessToken) {
+        return res.status(400).json({ message: 'נדרש טוקן גישה לפייסבוק' });
+      }
+
+      const leads = await storage.syncLeadsFromFacebook(req.user!.agencyId!, accessToken);
+      res.json({ message: 'סנכרון לידים מפייסבוק הושלם', leads });
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בסנכרון לידים מפייסבוק' });
+    }
+  });
+
+  router.post('/api/ads/google/sync', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const { accessToken } = req.body;
+      if (!accessToken) {
+        return res.status(400).json({ message: 'נדרש טוקן גישה לגוגל' });
+      }
+
+      const leads = await storage.syncLeadsFromGoogle(req.user!.agencyId!, accessToken);
+      res.json({ message: 'סנכרון לידים מגוגל הושלם', leads });
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בסנכרון לידים מגוגל' });
     }
   });
 

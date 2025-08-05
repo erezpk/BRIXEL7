@@ -6,6 +6,7 @@ import {
   Projector, 
   CheckSquare, 
   UserCheck, 
+  UserPlus,
   Globe, 
   BarChart3, 
   Layers,
@@ -21,6 +22,7 @@ interface SidebarProps {
 
 const navigation = [
   { name: "דשבורד", href: "/dashboard", icon: Home },
+  { name: "לידים", href: "/dashboard/leads", icon: UserPlus },
   { name: "לקוחות", href: "/dashboard/clients", icon: Users },
   { name: "פרויקטים", href: "/dashboard/projects", icon: Projector },
   { name: "משימות", href: "/dashboard/tasks", icon: CheckSquare },

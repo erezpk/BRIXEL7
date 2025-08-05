@@ -17,6 +17,7 @@ import DashboardLayout from "@/components/layout/dashboard-layout";
 import Dashboard from "@/pages/dashboard/dashboard";
 import Clients from "@/pages/dashboard/clients";
 import ClientDetails from "@/pages/dashboard/client-details";
+import Leads from "@/pages/dashboard/leads";
 
 import Projects from "@/pages/dashboard/projects"; // index.tsx
 import NewProject from "@/pages/dashboard/projects/NewProject";
@@ -73,6 +74,13 @@ export default function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <Dashboard />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/dashboard/leads">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Leads />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>

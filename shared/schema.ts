@@ -137,13 +137,39 @@ export const agencyTemplates = pgTable("agency_templates", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Leads (Facebook Ads & Google Ads Integration)
+export const leads = pgTable("leads", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  clientId: uuid("client_id").references(() => clients.id),
+  name: text("name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  source: text("source").notNull(), // facebook_ads, google_ads, manual, website, referral
+  sourceId: text("source_id"), // external lead ID from Facebook/Google
+  campaignId: text("campaign_id"), // campaign ID from ads platform
+  campaignName: text("campaign_name"), // campaign name
+  adSetId: text("ad_set_id"), // ad set ID (Facebook) or ad group ID (Google)
+  adSetName: text("ad_set_name"), // ad set/group name
+  status: text("status").default("new").notNull(), // new, contacted, qualified, converted, lost
+  priority: text("priority").default("medium").notNull(), // low, medium, high
+  budget: integer("budget"), // potential project budget in agorot
+  assignedTo: uuid("assigned_to").references(() => users.id),
+  notes: text("notes"),
+  customFields: json("custom_fields").$type<Record<string, any>>().default({}),
+  convertedToClientId: uuid("converted_to_client_id").references(() => clients.id),
+  convertedToProjectId: uuid("converted_to_project_id").references(() => projects.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Activity Log
 export const activityLog = pgTable("activity_log", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   agencyId: uuid("agency_id").notNull().references(() => agencies.id),
   userId: uuid("user_id").notNull().references(() => users.id),
   action: text("action").notNull(), // created, updated, deleted, commented, etc.
-  entityType: text("entity_type").notNull(), // client, project, task, etc.
+  entityType: text("entity_type").notNull(), // client, project, task, lead, etc.
   entityId: uuid("entity_id"),
   details: json("details").$type<Record<string, any>>().default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -166,6 +192,7 @@ export const agenciesRelations = relations(agencies, ({ many }) => ({
   clients: many(clients),
   projects: many(projects),
   tasks: many(tasks),
+  leads: many(leads),
   digitalAssets: many(digitalAssets),
   templates: many(agencyTemplates),
   activityLog: many(activityLog),
@@ -191,6 +218,7 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   }),
   projects: many(projects),
   tasks: many(tasks),
+  leads: many(leads),
   digitalAssets: many(digitalAssets),
 }));
 
@@ -271,6 +299,29 @@ export const agencyTemplatesRelations = relations(agencyTemplates, ({ one }) => 
   }),
 }));
 
+export const leadsRelations = relations(leads, ({ one }) => ({
+  agency: one(agencies, {
+    fields: [leads.agencyId],
+    references: [agencies.id],
+  }),
+  client: one(clients, {
+    fields: [leads.clientId],
+    references: [clients.id],
+  }),
+  assignedUser: one(users, {
+    fields: [leads.assignedTo],
+    references: [users.id],
+  }),
+  convertedToClient: one(clients, {
+    fields: [leads.convertedToClientId],
+    references: [clients.id],
+  }),
+  convertedToProject: one(projects, {
+    fields: [leads.convertedToProjectId],
+    references: [projects.id],
+  }),
+}));
+
 export const activityLogRelations = relations(activityLog, ({ one }) => ({
   agency: one(agencies, {
     fields: [activityLog.agencyId],
@@ -318,6 +369,12 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({
   updatedAt: true,
 });
 
+export const insertLeadSchema = createInsertSchema(leads).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertTaskCommentSchema = createInsertSchema(taskComments).omit({
   id: true,
   createdAt: true,
@@ -353,6 +410,9 @@ export type InsertProject = z.infer<typeof insertProjectSchema>;
 
 export type Task = typeof tasks.$inferSelect;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
+
+export type Lead = typeof leads.$inferSelect;
+export type InsertLead = z.infer<typeof insertLeadSchema>;
 
 export type TaskComment = typeof taskComments.$inferSelect;
 export type InsertTaskComment = z.infer<typeof insertTaskCommentSchema>;
