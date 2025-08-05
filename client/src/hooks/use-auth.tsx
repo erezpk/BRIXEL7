@@ -116,7 +116,6 @@ export function useAuth() {
   return {
     user,
     isLoading,
-    isAuthenticated: !!user,
     login: loginMutation.mutate,
     signup: signupMutation.mutate,
     logout: logoutMutation.mutate,

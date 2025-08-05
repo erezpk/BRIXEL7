@@ -494,15 +494,7 @@ export default function ClientDashboard() {
                       </div>
 
                       <div className="flex gap-2 pt-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="flex-1"
-                          onClick={() => {
-                            // Navigate to client project details page
-                            window.location.href = `/client-portal/project/${project.id}`;
-                          }}
-                        >
+                        <Button size="sm" variant="outline" className="flex-1">
                           <Eye className="h-4 w-4 ml-1" />
                           פרטים
                         </Button>

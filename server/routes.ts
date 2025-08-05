@@ -4,18 +4,11 @@ import { storage } from "./storage";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema, insertChatConversationSchema, insertChatMessageSchema, insertTeamInvitationSchema } from "@shared/schema";
+import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema } from "@shared/schema";
 import { z } from "zod";
 import express from "express"; // Import express to use its Router
 import { emailService } from "./email-service"; // Import from email-service.ts
 import crypto from 'crypto'; // Import crypto for token generation
-import { verifyGoogleToken } from "./google-auth";
-import bcrypt from 'bcrypt'; // Import bcrypt for password hashing
-
-// Import necessary modules for profile update endpoint (if they were intended to be used)
-// import { db } from './db'; // Assuming you have a database connection setup
-// import { users, projects, tasks } from './schema'; // Assuming schema definitions exist
-// import { eq } from 'drizzle-orm';
 
 // Extend Express types
 declare global {
@@ -27,7 +20,6 @@ declare global {
       role: string;
       agencyId: string | null;
       avatar?: string | null;
-      isActive: boolean; // Added isActive to User interface
     }
   }
 }
@@ -55,71 +47,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (email, password, done) => {
       try {
         const user = await storage.getUserByEmail(email);
-        if (!user || !user.password) {
-          return done(null, false, { message: 'Invalid credentials' });
+        if (!user) {
+          return done(null, false, { message: 'משתמש לא נמצא' });
         }
 
-        const isValidPassword = await bcrypt.compare(password, user.password);
-        if (!isValidPassword) {
-          return done(null, false, { message: 'Invalid credentials' });
+        const isValid = await storage.validatePassword(password, user.password);
+        if (!isValid) {
+          return done(null, false, { message: 'סיסמה שגויה' });
         }
 
-        return done(null, {
-          id: user.id,
-          email: user.email,
-          fullName: user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
-          role: user.role,
-          agencyId: user.agencyId,
-          isActive: user.isActive,
-          avatar: user.avatar || user.profileImageUrl
-        });
+        return done(null, user);
       } catch (error) {
-        console.error('Authentication error:', error);
         return done(error);
       }
     }
   ));
 
-  passport.serializeUser((user: Express.User, done) => {
+  passport.serializeUser((user: any, done) => {
     done(null, {
       id: user.id,
       email: user.email,
       fullName: user.fullName,
       role: user.role,
-      agencyId: user.agencyId,
-      isActive: user.isActive,
-      avatar: user.avatar
+      agencyId: user.agencyId
     });
   });
 
-  passport.deserializeUser(async (user: Express.User, done) => {
-    // Fetch the user from storage to ensure they are active and up-to-date
-    try {
-      const foundUser = await storage.getUserById(user.id);
-      if (foundUser) {
-        // Reconstruct the user object with the correct structure for Express.User
-        const userProfile = {
-          id: foundUser.id,
-          email: foundUser.email,
-          fullName: foundUser.fullName,
-          role: foundUser.role,
-          agencyId: foundUser.agencyId,
-          isActive: foundUser.isActive,
-          avatar: foundUser.avatar
-        };
-        done(null, userProfile);
-      } else {
-        done(null, false); // User not found or inactive
-      }
-    } catch (error) {
-      done(error);
-    }
+  passport.deserializeUser(async (user: any, done) => {
+    done(null, user);
   });
-
 
   // Middleware to check authentication
   const requireAuth = (req: any, res: any, next: any) => {
-    if (req.isAuthenticated() && req.user && req.user.isActive) { // Check if user is active
+    if (req.isAuthenticated() && req.user) {
       return next();
     }
     res.status(401).json({ message: 'נדרשת התחברות' });
@@ -160,8 +120,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   router.post('/api/auth/login', passport.authenticate('local'), (req, res) => {
     res.json({ user: req.user, message: 'התחברות הצליחה' });
   });
-
-  // Continue with other routes...
 
   router.post('/api/auth/signup', async (req, res) => {
     try {
@@ -273,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Try to send email, handle if service is not configured
+      // Send email
       const emailSent = await emailService.sendPasswordReset({
         to: email,
         userName: user.fullName,
@@ -281,18 +239,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agencyName
       });
 
-      // If email wasn't sent (service not configured), provide alternative for development
-      if (!emailSent) {
-        console.log('Email service not available. Reset URL:', resetUrl);
-        return res.json({
-          message: 'שירות האימייל לא זמין כרגע. עבור סביבת פיתוח, ניתן לגשת לקישור הבא:',
-          resetUrl: resetUrl,
-          development: true
-        });
+      if (emailSent) {
+        res.json({ message: 'קישור איפוס סיסמה נשלח לאימייל שלך' });
+      } else {
+        res.status(500).json({ message: 'שגיאה בשליחת האימייל. אנא נסה שוב מאוחר יותר' });
       }
-
-      // If we get here, email was sent successfully
-      res.json({ message: 'קישור איפוס סיסמה נשלח לאימייל שלך' });
     } catch (error) {
       console.error('Password reset error:', error);
       res.status(500).json({ message: 'שגיאת שרת' });
@@ -329,66 +280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'הסיסמה שונתה בהצלחה' });
     } catch (error) {
       console.error('Password reset confirm error:', error);
-      res.status(500).json({ message: 'שגיאה שרת' });
-    }
-  });
-
-  // Google OAuth route
-  router.post('/api/auth/google', async (req, res) => {
-    try {
-      const { idToken, email, name, avatar } = req.body;
-
-      console.log('Google auth request:', { email, name, hasToken: !!idToken });
-
-      if (!idToken || !email || !name) {
-        console.error('Missing required fields:', { hasToken: !!idToken, hasEmail: !!email, hasName: !!name });
-        return res.status(400).json({ message: 'נתונים חסרים' });
-      }
-
-      // For development, bypass Google token verification
-      console.log('Bypassing Google token verification for development');
-
-      // Check if user exists, if not create them
-      let user = await storage.getUserByEmail(email);
-      
-      if (!user) {
-        console.log('Creating new user from Google auth');
-        // Create new user from Google auth
-        const newUserData = {
-          email,
-          fullName: name,
-          password: '', // No password for Google users
-          role: 'team_member' as const,
-          agencyId: null,
-          avatar,
-          isActive: true
-        };
-        
-        user = await storage.createUser(newUserData);
-      } else {
-        console.log('Existing user found, updating last login');
-        // Update existing user's last login
-        await storage.updateUser(user.id, { lastLogin: new Date() });
-      }
-      console.log('User created/updated:', { userId: user.id, email: user.email });
-
-      // Log user in
-      req.login(user, (err) => {
-        if (err) {
-          console.error('Login error:', err);
-          return res.status(500).json({ message: 'שגיאה בהתחברות' });
-        }
-
-        const { password, ...safeUser } = user;
-        console.log('User logged in successfully:', { userId: safeUser.id });
-        res.json({ user: safeUser, message: 'התחברות מוצלחת' });
-      });
-    } catch (error) {
-      console.error('Google auth error:', error);
-      res.status(500).json({ 
-        message: 'שגיאה באימות Google',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
-      });
+      res.status(500).json({ message: 'שגיאת שרת' });
     }
   });
 
@@ -420,8 +312,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fullName: updateData.fullName || user.fullName,
         role: user.role,
         agencyId: user.agencyId,
-        avatar: updateData.avatar || user.avatar,
-        isActive: user.isActive // Make sure isActive is included
+        avatar: updateData.avatar || user.avatar
       };
 
       const { password, ...safeUser } = updatedUser;
@@ -1160,14 +1051,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: 'resent_invitation',
         entityType: 'user',
         entityId: memberId,
-        details: {
+        details: { 
           userName: member.fullName,
           userEmail: member.email,
-          sentBy: user.fullName
+          sentBy: user.fullName 
         },
       });
 
-      res.json({
+      res.json({ 
         message: 'הזמנה נשלחה מחדש בהצלחה',
         details: {
           sentTo: member.email,
@@ -1228,14 +1119,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           action: 'sent_credentials',
           entityType: 'client',
           entityId: client.id,
-          details: {
+          details: { 
             clientName: client.name,
             clientEmail: client.email,
-            sentBy: user.fullName
+            sentBy: user.fullName 
           },
         });
 
-        res.json({
+        res.json({ 
           message: 'פרטי ההתחברות נשלחו בהצלחה',
           details: {
             sentTo: client.email,
@@ -1267,164 +1158,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mount the router to the app
-  // Chat routes
-  router.get('/api/chat/conversations', requireAuth, async (req, res) => {
-    try {
-      const conversations = await storage.getChatConversationsByUser(req.user!.id);
-      res.json(conversations);
-    } catch (error) {
-      res.status(500).json({ message: 'שגיאה בטעינת שיחות' });
-    }
-  });
-
-  router.post('/api/chat/conversations', requireAuth, requireUserWithAgency, async (req, res) => {
-    try {
-      const conversationData = insertChatConversationSchema.parse({
-        ...req.body,
-        agencyId: req.user!.agencyId!,
-        createdBy: req.user!.id
-      });
-
-      const conversation = await storage.createChatConversation(conversationData);
-      res.json(conversation);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
-      }
-      res.status(500).json({ message: 'שגיאה ביצירת שיחה' });
-    }
-  });
-
-  router.get('/api/chat/conversations/:id/messages', requireAuth, async (req, res) => {
-    try {
-      const conversation = await storage.getChatConversation(req.params.id);
-      if (!conversation) {
-        return res.status(404).json({ message: 'שיחה לא נמצאה' });
-      }
-
-      const messages = await storage.getChatMessages(req.params.id);
-      res.json(messages);
-    } catch (error) {
-      res.status(500).json({ message: 'שגיאה בטעינת הודעות' });
-    }
-  });
-
-  router.post('/api/chat/conversations/:id/messages', requireAuth, async (req, res) => {
-    try {
-      const conversation = await storage.getChatConversation(req.params.id);
-      if (!conversation) {
-        return res.status(404).json({ message: 'שיחה לא נמצאה' });
-      }
-
-      const messageData = insertChatMessageSchema.parse({
-        ...req.body,
-        conversationId: req.params.id,
-        senderId: req.user!.id
-      });
-
-      const message = await storage.createChatMessage(messageData);
-      res.json(message);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
-      }
-      res.status(500).json({ message: 'שגיאה בשליחת הודעה' });
-    }
-  });
-
-  router.put('/api/chat/conversations/:id/read', requireAuth, async (req, res) => {
-    try {
-      await storage.markMessagesAsRead(req.params.id, req.user!.id);
-      res.json({ message: 'הודעות סומנו כנקראו' });
-    } catch (error) {
-      res.status(500).json({ message: 'שגיאה בעדכון סטטוס קריאה' });
-    }
-  });
-
-  // Leads routes
-  router.get('/api/leads', requireAuth, requireUserWithAgency, async (req, res) => {
-    try {
-      const leads = await storage.getLeadsByAgency(req.user!.agencyId!);
-      res.json(leads);
-    } catch (error) {
-      res.status(500).json({ message: 'שגיאה בטעינת לידים' });
-    }
-  });
-
-  router.get('/api/leads/client/:clientId', requireAuth, requireUserWithAgency, async (req, res) => {
-    try {
-      const client = await storage.getClient(req.params.clientId);
-      if (!client || client.agencyId !== req.user!.agencyId) {
-        return res.status(404).json({ message: 'לקוח לא נמצא' });
-      }
-
-      const leads = await storage.getLeadsByClient(req.params.clientId);
-      res.json(leads);
-    } catch (error) {
-      res.status(500).json({ message: 'שגיאה בטעינת לידים של לקוח' });
-    }
-  });
-
-  // Team invitation routes
-  router.post('/api/team/invite', requireAuth, requireUserWithAgency, async (req, res) => {
-    try {
-      const user = req.user!;
-
-      if (user.role !== 'agency_admin') {
-        return res.status(403).json({ message: 'רק מנהלי סוכנות יכולים להזמין חברי צוות' });
-      }
-
-      const { email, role, clientId } = req.body;
-      const token = crypto.randomBytes(32).toString('hex');
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7); // Expires in 7 days
-
-      const invitationData = insertTeamInvitationSchema.parse({
-        agencyId: user.agencyId!,
-        email,
-        role,
-        token,
-        invitedBy: user.id,
-        clientId: clientId || null,
-        expiresAt
-      });
-
-      const invitation = await storage.createTeamInvitation(invitationData);
-
-      // Send invitation email (placeholder for now)
-      const inviteUrl = `${req.protocol}://${req.get('host')}/invite?token=${token}`;
-
-      res.json({
-        invitation,
-        inviteUrl,
-        message: 'הזמנה נשלחה בהצלחה'
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
-      }
-      res.status(500).json({ message: 'שגיאה בשליחת הזמנה' });
-    }
-  });
-
-  router.get('/api/notifications', requireAuth, async (req, res) => {
-    try {
-      const notifications = await storage.getUserNotifications(req.user!.id);
-      res.json(notifications);
-    } catch (error) {
-      res.status(500).json({ message: 'שגיאה בטעינת התראות' });
-    }
-  });
-
-  router.put('/api/notifications/:id/read', requireAuth, async (req, res) => {
-    try {
-      await storage.markNotificationAsRead(req.params.id);
-      res.json({ message: 'התראה סומנה כנקראה' });
-    } catch (error) {
-      res.status(500).json({ message: 'שגיאה בעדכון התראה' });
-    }
-  });
-
   app.use('/', router);
 
   const httpServer = createServer(app);

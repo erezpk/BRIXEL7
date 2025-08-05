@@ -5,20 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  ArrowRight,
-  Edit,
-  Phone,
-  Mail as MailIcon,
-  Building,
+import { 
+  ArrowRight, 
+  Edit, 
+  Phone, 
+  Mail, 
+  Building, 
   User,
   Calendar,
   FileText,
   Folder,
   Save,
-  X,
-  Eye,
-  Mail
+  X
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -37,7 +35,6 @@ export default function ClientDetails() {
   const [newNote, setNewNote] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
 
   const { data: client, isLoading: clientLoading } = useQuery<Client>({
     queryKey: ['/api/clients', clientId],
@@ -58,11 +55,11 @@ export default function ClientDetails() {
         },
         body: JSON.stringify(updatedClient),
       });
-
+      
       if (!response.ok) {
         throw new Error('שגיאה בעדכון הלקוח');
       }
-
+      
       return response.json();
     },
     onSuccess: () => {
@@ -87,10 +84,10 @@ export default function ClientDetails() {
     mutationFn: async (note: string) => {
       const currentNotes = client?.notes || '';
       const timestamp = new Date().toLocaleString('he-IL');
-      const newNotesContent = currentNotes
+      const newNotesContent = currentNotes 
         ? `${currentNotes}\n\n[${timestamp}]\n${note}`
         : `[${timestamp}]\n${note}`;
-
+      
       const response = await fetch(`/api/clients/${clientId}`, {
         method: 'PUT',
         headers: {
@@ -98,11 +95,11 @@ export default function ClientDetails() {
         },
         body: JSON.stringify({ notes: newNotesContent }),
       });
-
+      
       if (!response.ok) {
         throw new Error('שגיאה בהוספת הערה');
       }
-
+      
       return response.json();
     },
     onSuccess: () => {
@@ -223,95 +220,10 @@ export default function ClientDetails() {
           <Badge className={getStatusColor(client.status)}>
             {getStatusText(client.status)}
           </Badge>
-          {/* Replaced the original edit button with the new structure */}
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setIsEditing(!isEditing)}
-              variant={isEditing ? "outline" : "default"}
-              className="flex items-center gap-2"
-            >
-              {isEditing ? (
-                <>
-                  <X className="h-4 w-4" />
-                  ביטול
-                </>
-              ) : (
-                <>
-                  <Edit className="h-4 w-4" />
-                  עריכה
-                </>
-              )}
-            </Button>
-
-            {/* Client Portal Buttons */}
-            {!isEditing && client && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    const clientPortalUrl = `/client-portal?clientId=${client.id}`;
-                    window.open(clientPortalUrl, '_blank');
-                  }}
-                  className="border-green-500 text-green-600 hover:bg-green-50 flex items-center gap-2"
-                >
-                  <Eye className="h-4 w-4" />
-                  צפה כלקוח
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    // TODO: Add manage credentials functionality
-                    alert('ניהול גישה - בקרוב');
-                  }}
-                  className="border-blue-500 text-blue-600 hover:bg-blue-50 flex items-center gap-2"
-                >
-                  <User className="h-4 w-4" />
-                  ניהול גישה
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    if (!client.email) {
-                      alert('ללקוח אין כתובת אימייל');
-                      return;
-                    }
-
-                    try {
-                      const defaultEmail = client.email;
-                      const defaultPassword = `${client.name.toLowerCase().replace(/\s+/g, '')}_${client.id.slice(0, 8)}`;
-
-                      const response = await fetch(`/api/clients/${client.id}/send-credentials`, {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          username: defaultEmail,
-                          password: defaultPassword
-                        })
-                      });
-
-                      const result = await response.json();
-
-                      if (response.ok) {
-                        alert(`✅ ${result.message}\nנשלח ל: ${result.details.sentTo}`);
-                      } else {
-                        alert(`❌ שגיאה: ${result.message}`);
-                      }
-                    } catch (error) {
-                      alert('❌ שגיאה בשליחת האימייל. אנא נסה שוב.');
-                    }
-                  }}
-                  className="border-purple-500 text-purple-600 hover:bg-purple-50 flex items-center gap-2"
-                >
-                  <Mail className="h-4 w-4" />
-                  שלח פרטי גישה
-                </Button>
-              </>
-            )}
-          </div>
+          <Button variant="outline" size="sm" onClick={handleEditClick}>
+            <Edit className="h-4 w-4 ml-2" />
+            ערוך לקוח
+          </Button>
         </div>
       </div>
 
@@ -335,7 +247,7 @@ export default function ClientDetails() {
           <CardContent className="p-6">
             <div className="flex items-center space-x-reverse space-x-3">
               <div className="p-2 bg-green-100 rounded-lg">
-                <MailIcon className="h-5 w-5 text-green-600" />
+                <Mail className="h-5 w-5 text-green-600" />
               </div>
               <div className="text-right">
                 <p className="text-sm text-gray-600">אימייל</p>
@@ -415,8 +327,8 @@ export default function ClientDetails() {
               ) : (
                 <div className="space-y-3">
                   {projects.map((project) => (
-                    <div
-                      key={project.id}
+                    <div 
+                      key={project.id} 
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                       onClick={() => window.location.href = `/dashboard/projects/${project.id}`}
                     >
@@ -431,8 +343,8 @@ export default function ClientDetails() {
                       </div>
                       <div className="flex items-center space-x-reverse space-x-2">
                         <Badge variant="outline">{project.status}</Badge>
-                        <Button
-                          variant="ghost"
+                        <Button 
+                          variant="ghost" 
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -502,7 +414,7 @@ export default function ClientDetails() {
           <DialogHeader>
             <DialogTitle className="text-right font-rubik">ערוך לקוח</DialogTitle>
           </DialogHeader>
-
+          
           <form onSubmit={handleEditSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="clientName" className="text-right">שם הלקוח *</Label>
@@ -515,7 +427,7 @@ export default function ClientDetails() {
                 required
               />
             </div>
-
+            
             <div className="space-y-2">
               <Label htmlFor="contactName" className="text-right">איש קשר</Label>
               <Input
@@ -526,7 +438,7 @@ export default function ClientDetails() {
                 className="text-right"
               />
             </div>
-
+            
             <div className="space-y-2">
               <Label htmlFor="email" className="text-right">אימייל</Label>
               <Input
@@ -538,7 +450,7 @@ export default function ClientDetails() {
                 className="text-right"
               />
             </div>
-
+            
             <div className="space-y-2">
               <Label htmlFor="phone" className="text-right">טלפון</Label>
               <Input
@@ -549,7 +461,7 @@ export default function ClientDetails() {
                 className="text-right"
               />
             </div>
-
+            
             <div className="space-y-2">
               <Label htmlFor="industry" className="text-right">תחום עיסוק</Label>
               <Select value={editFormData.industry || ''} onValueChange={(value) => handleInputChange('industry', value)}>
@@ -584,7 +496,7 @@ export default function ClientDetails() {
                 </SelectContent>
               </Select>
             </div>
-
+            
             <div className="space-y-2">
               <Label htmlFor="notes" className="text-right">הערות</Label>
               <Textarea
@@ -596,7 +508,7 @@ export default function ClientDetails() {
                 rows={3}
               />
             </div>
-
+            
             <div className="flex space-x-reverse space-x-2 pt-4">
               <Button
                 type="button"
@@ -622,7 +534,7 @@ export default function ClientDetails() {
           <DialogHeader>
             <DialogTitle className="text-right font-rubik">הוסף הערה</DialogTitle>
           </DialogHeader>
-
+          
           <form onSubmit={handleAddNoteSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="newNote" className="text-right">הערה חדשה</Label>
@@ -636,7 +548,7 @@ export default function ClientDetails() {
                 required
               />
             </div>
-
+            
             <div className="flex space-x-reverse space-x-2 pt-4">
               <Button
                 type="button"

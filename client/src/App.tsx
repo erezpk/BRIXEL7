@@ -24,15 +24,10 @@ import Tasks from "@/pages/dashboard/tasks";
 import Assets from "@/pages/dashboard/assets";
 import Team from "@/pages/dashboard/team";
 import ClientDashboard from "@/pages/client-portal/client-dashboard";
-import ClientDashboardNew from "@/pages/client-portal/client-dashboard-new";
-import ClientProjectDetails from "@/pages/client-portal/project-details";
 import Profile from "@/pages/dashboard/profile";
 import Settings from "@/pages/dashboard/settings";
-import TeamDashboardPage from "@/pages/team-dashboard";
-import LeadsManagementPage from "@/pages/leads-management";
 import NotFound from "@/pages/not-found";
 import HelpCenter from "@/pages/help-center";
-import TeamMemberDashboard from "./pages/dashboard/team-member-dashboard";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -41,14 +36,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isLoading && !user) {
       setLocation("/login");
-    }
-  }, [user, isLoading, setLocation]);
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (!isLoading && user) {
-      const redirectPath = user.role === 'client' ? '/client-portal' : '/dashboard';
-      setLocation(redirectPath);
     }
   }, [user, isLoading, setLocation]);
 
@@ -172,18 +159,6 @@ export default function App() {
             </ProtectedRoute>
           </Route>
 
-          <Route path="/dashboard/team-dashboard">
-            <ProtectedRoute>
-              <TeamDashboardPage />
-            </ProtectedRoute>
-          </Route>
-
-          <Route path="/dashboard/leads">
-            <ProtectedRoute>
-              <LeadsManagementPage />
-            </ProtectedRoute>
-          </Route>
-
           {/* ADDED PROFILE AND SETTINGS ROUTES */}
           <Route path="/dashboard/profile">
             <ProtectedRoute>
@@ -202,18 +177,9 @@ export default function App() {
 
           {/* CLIENT PORTAL - Standalone authentication */}
           <Route path="/client-portal" component={ClientDashboard} />
-          <Route path="/client-portal/new" component={ClientDashboardNew} />
-          <Route path="/client-portal/project/:projectId" component={ClientProjectDetails} />
-          <Route path="/team" component={TeamDashboardPage} />
-          <Route path="/leads" component={LeadsManagementPage} />
-
 
           {/* ADDED HELP CENTER ROUTE */}
           <Route path="/help" component={HelpCenter} />
-
-          {/* ADDED TEAM MEMBER DASHBOARD ROUTE */}
-          <Route path="/dashboard/team-member" component={TeamMemberDashboard} />
-
 
           <Route component={NotFound} />
         </Switch>
