@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { TaskCard } from '@/components/tasks/task-card';
 import { KanbanBoard } from '@/components/tasks/kanban-board';
+import { format } from 'date-fns';
+import { he } from 'date-fns/locale';
 import NewTaskModal from '@/components/modals/new-task-modal';
 import {
   Plus,
@@ -290,11 +292,11 @@ export default function Tasks() {
         />
       ) : (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
+          <CardHeader className="pb-4">
+            <div className="flex justify-between items-center">
               <CardTitle>משימות - תצוגת טבלה</CardTitle>
               {selectedTasks.length > 0 && (
-                <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center gap-4">
                   <span className="text-sm text-muted-foreground">
                     {selectedTasks.length} משימות נבחרו
                   </span>
@@ -310,33 +312,128 @@ export default function Tasks() {
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={selectedTasks.length === filteredTasks.length && filteredTasks.length > 0}
-                onChange={(e) => handleSelectAll(e.target.checked)}
-                className="rounded"
-              />
-              <span className="text-sm">בחר הכל</span>
-            </div>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {filteredTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  users={users || []}
-                  projects={projects || []}
-                  isTableView={true}
-                  isSelected={selectedTasks.includes(task.id)}
-                  onSelect={handleTaskSelection}
-                  onEdit={handleEditTask}
-                  onDelete={handleDeleteTask}
-                  onTaskTimer={handleTaskTimer}
-                  activeTimers={{}}
-                />
-              ))}
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="p-3 text-right font-medium text-gray-700 w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedTasks.length === filteredTasks.length && filteredTasks.length > 0}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        className="rounded"
+                      />
+                    </th>
+                    <th className="p-3 text-right font-medium text-gray-700">כותרת</th>
+                    <th className="p-3 text-right font-medium text-gray-700">תיאור</th>
+                    <th className="p-3 text-right font-medium text-gray-700">סטטוס</th>
+                    <th className="p-3 text-right font-medium text-gray-700">עדיפות</th>
+                    <th className="p-3 text-right font-medium text-gray-700">מבצע</th>
+                    <th className="p-3 text-right font-medium text-gray-700">פרויקט</th>
+                    <th className="p-3 text-right font-medium text-gray-700">תאריך יעד</th>
+                    <th className="p-3 text-right font-medium text-gray-700 w-24">פעולות</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTasks.map((task) => {
+                    const assignedUser = users.find(user => user.id === task.assignedTo);
+                    const project = projects.find(p => p.id === task.projectId);
+                    const statusConfig = TASK_STATUSES.find(s => s.value === task.status);
+                    
+                    return (
+                      <tr 
+                        key={task.id} 
+                        className="border-b hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="p-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedTasks.includes(task.id)}
+                            onChange={(e) => handleTaskSelection(task.id, e.target.checked)}
+                            className="rounded"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </td>
+                        <td className="p-3 font-medium text-right">{task.title}</td>
+                        <td className="p-3 text-gray-600 text-right max-w-xs truncate">{task.description || '-'}</td>
+                        <td className="p-3">
+                          <Badge className={statusConfig?.color}>
+                            {statusConfig?.label}
+                          </Badge>
+                        </td>
+                        <td className="p-3">
+                          <Badge variant={
+                            task.priority === 'urgent' ? 'destructive' :
+                            task.priority === 'high' ? 'default' :
+                            task.priority === 'medium' ? 'secondary' : 'outline'
+                          }>
+                            {task.priority === 'urgent' ? 'דחופה' :
+                             task.priority === 'high' ? 'גבוהה' :
+                             task.priority === 'medium' ? 'בינונית' : 'נמוכה'}
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-right">
+                          {assignedUser ? (
+                            <div className="flex items-center gap-2 justify-end">
+                              {assignedUser.profileImage ? (
+                                <img 
+                                  src={assignedUser.profileImage} 
+                                  alt={assignedUser.fullName} 
+                                  className="w-6 h-6 rounded-full"
+                                />
+                              ) : (
+                                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs">
+                                  {assignedUser.fullName?.charAt(0)}
+                                </div>
+                              )}
+                              <span className="text-sm">{assignedUser.fullName}</span>
+                            </div>
+                          ) : '-'}
+                        </td>
+                        <td className="p-3 text-right text-sm text-gray-600">
+                          {project?.name || '-'}
+                        </td>
+                        <td className="p-3 text-right text-sm text-gray-600">
+                          {task.dueDate ? format(new Date(task.dueDate), 'dd/MM/yyyy', { locale: he }) : '-'}
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-1 justify-end">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditTask(task);
+                              }}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteTask(task.id);
+                              }}
+                              className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {filteredTasks.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <p>לא נמצאו משימות</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
