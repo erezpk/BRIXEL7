@@ -67,11 +67,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return done(null, {
           id: user.id,
           email: user.email,
-          fullName: user.fullName,
+          fullName: user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
           role: user.role,
-          isActive: user.isActive
+          agencyId: user.agencyId,
+          isActive: user.isActive,
+          avatar: user.avatar || user.profileImageUrl
         });
       } catch (error) {
+        console.error('Authentication error:', error);
         return done(error);
       }
     }
@@ -335,18 +338,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { idToken, email, name, avatar } = req.body;
 
+      console.log('Google auth request:', { email, name, hasToken: !!idToken });
+
       if (!idToken || !email || !name) {
+        console.error('Missing required fields:', { hasToken: !!idToken, hasEmail: !!email, hasName: !!name });
         return res.status(400).json({ message: 'נתונים חסרים' });
       }
 
       // Verify Google token
       const googleUser = await verifyGoogleToken(idToken);
       if (!googleUser || !googleUser.verified) {
+        console.error('Google token verification failed');
         return res.status(401).json({ message: 'אימות Google נכשל' });
       }
 
+      console.log('Google token verified successfully');
+
       // Create or update user
       const user = await storage.createOrUpdateUserFromGoogle(email, name, avatar);
+      console.log('User created/updated:', { userId: user.id, email: user.email });
 
       // Log user in
       req.login(user, (err) => {
@@ -356,11 +366,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const { password, ...safeUser } = user;
+        console.log('User logged in successfully:', { userId: safeUser.id });
         res.json({ user: safeUser, message: 'התחברות מוצלחת' });
       });
     } catch (error) {
       console.error('Google auth error:', error);
-      res.status(500).json({ message: 'שגיאה באימות Google' });
+      res.status(500).json({ 
+        message: 'שגיאה באימות Google',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   });
 
