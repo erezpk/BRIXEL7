@@ -47,7 +47,6 @@ export default function Sidebar({ isOpen, onToggle, isMobile }: SidebarProps) {
           data-testid="sidebar-overlay"
         />
       )}
-      
       <div className={cn(
         "fixed right-0 top-0 h-full w-64 bg-white shadow-sm border-l border-gray-100 z-50 transform transition-transform duration-300",
         isOpen ? "translate-x-0" : "translate-x-full",
@@ -55,9 +54,7 @@ export default function Sidebar({ isOpen, onToggle, isMobile }: SidebarProps) {
       )} data-testid="sidebar">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <div className="text-lg font-bold text-primary font-rubik" data-testid="sidebar-logo">
-            AgencyCRM
-          </div>
+          <div className="text-lg font-bold text-primary font-rubik" data-testid="sidebar-logo">BRIXEL7</div>
           {isMobile && (
             <Button
               variant="ghost"
