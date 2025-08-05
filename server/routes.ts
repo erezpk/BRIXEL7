@@ -10,9 +10,9 @@ import express from "express"; // Import express to use its Router
 import { emailService } from "./email-service"; // Import from email-service.ts
 import crypto from 'crypto'; // Import crypto for token generation
 import { verifyGoogleToken } from "./google-auth";
+import bcrypt from 'bcryptjs'; // Import bcrypt for password hashing
 
 // Import necessary modules for profile update endpoint (if they were intended to be used)
-// import bcrypt from 'bcryptjs';
 // import { db } from './db'; // Assuming you have a database connection setup
 // import { users, projects, tasks } from './schema'; // Assuming schema definitions exist
 // import { eq } from 'drizzle-orm';
@@ -27,6 +27,7 @@ declare global {
       role: string;
       agencyId: string | null;
       avatar?: string | null;
+      isActive: boolean; // Added isActive to User interface
     }
   }
 }
@@ -54,39 +55,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (email, password, done) => {
       try {
         const user = await storage.getUserByEmail(email);
-        if (!user) {
-          return done(null, false, { message: 'משתמש לא נמצא' });
+        if (!user || !user.password) {
+          return done(null, false, { message: 'Invalid credentials' });
         }
 
-        const isValid = await storage.validatePassword(password, user.password);
-        if (!isValid) {
-          return done(null, false, { message: 'סיסמה שגויה' });
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        if (!isValidPassword) {
+          return done(null, false, { message: 'Invalid credentials' });
         }
 
-        return done(null, user);
+        return done(null, {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          isActive: user.isActive
+        });
       } catch (error) {
         return done(error);
       }
     }
   ));
 
-  passport.serializeUser((user: any, done) => {
+  passport.serializeUser((user: Express.User, done) => {
     done(null, {
       id: user.id,
       email: user.email,
       fullName: user.fullName,
       role: user.role,
-      agencyId: user.agencyId
+      agencyId: user.agencyId,
+      isActive: user.isActive,
+      avatar: user.avatar
     });
   });
 
-  passport.deserializeUser(async (user: any, done) => {
-    done(null, user);
+  passport.deserializeUser(async (user: Express.User, done) => {
+    // Fetch the user from storage to ensure they are active and up-to-date
+    try {
+      const foundUser = await storage.getUserById(user.id);
+      if (foundUser) {
+        // Reconstruct the user object with the correct structure for Express.User
+        const userProfile = {
+          id: foundUser.id,
+          email: foundUser.email,
+          fullName: foundUser.fullName,
+          role: foundUser.role,
+          agencyId: foundUser.agencyId,
+          isActive: foundUser.isActive,
+          avatar: foundUser.avatar
+        };
+        done(null, userProfile);
+      } else {
+        done(null, false); // User not found or inactive
+      }
+    } catch (error) {
+      done(error);
+    }
   });
+
 
   // Middleware to check authentication
   const requireAuth = (req: any, res: any, next: any) => {
-    if (req.isAuthenticated() && req.user) {
+    if (req.isAuthenticated() && req.user && req.user.isActive) { // Check if user is active
       return next();
     }
     res.status(401).json({ message: 'נדרשת התחברות' });
@@ -251,7 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If email wasn't sent (service not configured), provide alternative for development
       if (!emailSent) {
         console.log('Email service not available. Reset URL:', resetUrl);
-        return res.json({ 
+        return res.json({
           message: 'שירות האימייל לא זמין כרגע. עבור סביבת פיתוח, ניתן לגשת לקישור הבא:',
           resetUrl: resetUrl,
           development: true
@@ -362,7 +392,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fullName: updateData.fullName || user.fullName,
         role: user.role,
         agencyId: user.agencyId,
-        avatar: updateData.avatar || user.avatar
+        avatar: updateData.avatar || user.avatar,
+        isActive: user.isActive // Make sure isActive is included
       };
 
       const { password, ...safeUser } = updatedUser;
@@ -1101,14 +1132,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: 'resent_invitation',
         entityType: 'user',
         entityId: memberId,
-        details: { 
+        details: {
           userName: member.fullName,
           userEmail: member.email,
-          sentBy: user.fullName 
+          sentBy: user.fullName
         },
       });
 
-      res.json({ 
+      res.json({
         message: 'הזמנה נשלחה מחדש בהצלחה',
         details: {
           sentTo: member.email,
@@ -1169,14 +1200,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           action: 'sent_credentials',
           entityType: 'client',
           entityId: client.id,
-          details: { 
+          details: {
             clientName: client.name,
             clientEmail: client.email,
-            sentBy: user.fullName 
+            sentBy: user.fullName
           },
         });
 
-        res.json({ 
+        res.json({
           message: 'פרטי ההתחברות נשלחו בהצלחה',
           details: {
             sentTo: client.email,
@@ -1335,8 +1366,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send invitation email (placeholder for now)
       const inviteUrl = `${req.protocol}://${req.get('host')}/invite?token=${token}`;
 
-      res.json({ 
-        invitation, 
+      res.json({
+        invitation,
         inviteUrl,
         message: 'הזמנה נשלחה בהצלחה'
       });
