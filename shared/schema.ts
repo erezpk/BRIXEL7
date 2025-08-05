@@ -1,6 +1,6 @@
 import { sql, relations } from "drizzle-orm";
 import { pgTable, text, varchar, uuid, timestamp, integer, boolean, json, date, jsonb } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Agencies (multi-tenant support)
@@ -442,6 +442,7 @@ export const insertClientCardTemplateSchema = createInsertSchema(clientCardTempl
   createdAt: true,
   updatedAt: true,
 });
+export const selectClientCardTemplateSchema = createSelectSchema(clientCardTemplates);
 
 export const insertActivityLogSchema = createInsertSchema(activityLog);
 export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens);

@@ -1533,6 +1533,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agencyId: req.user!.agencyId!,
         createdBy: req.user!.id,
       });
+      
+      const template = await storage.createClientCardTemplate(templateData);
+      res.json(template);
+    } catch (error) {
+      console.error('Error creating client card template:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת תבנית כרטיס לקוח' });
+    }
+  });
+
+  router.put('/api/client-card-templates/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      
+      const template = await storage.updateClientCardTemplate(id, updateData);
+      res.json(template);
+    } catch (error) {
+      console.error('Error updating client card template:', error);
+      res.status(500).json({ message: 'שגיאה בעדכון תבנית כרטיס לקוח' });
+    }
+  });
+
+  router.delete('/api/client-card-templates/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteClientCardTemplate(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting client card template:', error);
+      res.status(500).json({ message: 'שגיאה במחיקת תבנית כרטיס לקוח' });
+    }dy,
+        agencyId: req.user!.agencyId!,
+        createdBy: req.user!.id,
+      });
 
       const template = await storage.createClientCardTemplate(templateData);
 
