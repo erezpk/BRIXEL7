@@ -271,7 +271,41 @@ export default function ClientDetails() {
           <div className="flex gap-3">
                 <Button 
                   variant="outline" 
-                  onClick={handleSendCredentials}
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(`/api/clients/${client.id}/send-credentials`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          username: client.email,
+                          password: `${client.name.toLowerCase().replace(/\s+/g, '')}_${Date.now().toString().slice(-8)}`
+                        }),
+                      });
+          
+                      const data = await response.json();
+          
+                      if (response.ok) {
+                        toast({
+                          title: "פרטי התחברות נשלחו",
+                          description: `פרטי ההתחברות נשלחו בהצלחה לכתובת ${client.email}`,
+                        });
+                      } else {
+                        toast({
+                          title: "שגיאה בשליחת האימייל",
+                          description: data.message || "אירעה שגיאה בשליחת פרטי ההתחברות",
+                          variant: "destructive",
+                        });
+                      }
+                    } catch (error) {
+                      toast({
+                        title: "שגיאה בשליחת האימייל",
+                        description: "אירעה שגיאה בחיבור לשרת",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
                   disabled={!client?.email || sendCredentialsMutation.isPending}
                   className="flex items-center gap-2"
                 >
