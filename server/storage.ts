@@ -1,5 +1,5 @@
 import { 
-  agencies, users, clients, projects, tasks, taskComments, digitalAssets, agencyTemplates, activityLog,
+  agencies, users, clients, projects, tasks, taskComments, digitalAssets, agencyTemplates, activityLog, passwordResetTokens,
   type Agency, type InsertAgency,
   type User, type InsertUser,
   type Client, type InsertClient,
@@ -23,6 +23,7 @@ export interface IStorage {
 
   // Agencies
   getAgency(id: string): Promise<Agency | undefined>;
+  getAgencyById(id: string): Promise<Agency | undefined>;
   getAgencyBySlug(slug: string): Promise<Agency | undefined>;
   createAgency(agency: InsertAgency): Promise<Agency>;
   updateAgency(id: string, agency: Partial<InsertAgency>): Promise<Agency>;
@@ -130,6 +131,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAgency(id: string): Promise<Agency | undefined> {
+    const [agency] = await db.select().from(agencies).where(eq(agencies.id, id));
+    return agency || undefined;
+  }
+
+  async getAgencyById(id: string): Promise<Agency | undefined> {
     const [agency] = await db.select().from(agencies).where(eq(agencies.id, id));
     return agency || undefined;
   }
@@ -430,14 +436,14 @@ export class DatabaseStorage implements IStorage {
   // Password reset tokens
   async createPasswordResetToken(userId: string, token: string): Promise<void> {
     // Delete any existing tokens for this user
-    await db.delete(passwordResetTokensTable)
-      .where(eq(passwordResetTokensTable.userId, userId));
+    await db.delete(passwordResetTokens)
+      .where(eq(passwordResetTokens.userId, userId));
 
     // Create new token (expires in 24 hours)
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
 
-    await db.insert(passwordResetTokensTable)
+    await db.insert(passwordResetTokens)
       .values({
         userId,
         token,
@@ -448,26 +454,26 @@ export class DatabaseStorage implements IStorage {
 
   async validatePasswordResetToken(token: string): Promise<string | null> {
     const [tokenRecord] = await db.select()
-      .from(passwordResetTokensTable)
+      .from(passwordResetTokens)
       .where(and(
-        eq(passwordResetTokensTable.token, token),
-        eq(passwordResetTokensTable.used, false),
-        gt(passwordResetTokensTable.expiresAt, new Date())
+        eq(passwordResetTokens.token, token),
+        eq(passwordResetTokens.used, false),
+        gt(passwordResetTokens.expiresAt, new Date())
       ));
 
     return tokenRecord ? tokenRecord.userId : null;
   }
 
   async markPasswordResetTokenAsUsed(token: string): Promise<void> {
-    await db.update(passwordResetTokensTable)
+    await db.update(passwordResetTokens)
       .set({ used: true })
-      .where(eq(passwordResetTokensTable.token, token));
+      .where(eq(passwordResetTokens.token, token));
   }
 
   async updateUserPassword(userId: string, hashedPassword: string): Promise<void> {
-    await db.update(usersTable)
+    await db.update(users)
       .set({ password: hashedPassword })
-      .where(eq(usersTable.id, userId));
+      .where(eq(users.id, userId));
   }
 }
 

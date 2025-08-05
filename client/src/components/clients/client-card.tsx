@@ -128,87 +128,16 @@ export default function ClientCard({ client, onView, onEdit, onDelete, onManageC
           )}
         </div>
 
-        <div className="flex flex-col space-y-2">
-          <div className="flex space-x-reverse space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => onView(client)}
-              className="flex-1"
-              data-testid="client-view-details"
-            >
-              צפה בפרטים
-            </Button>
-          </div>
-
-          <div className="flex space-x-reverse space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                // עבור לדאשבורד של הלקוח
-                window.location.href = clientPortalUrl;
-              }}
-              className="border-green-500 text-green-600 hover:bg-green-50 flex-1 text-xs"
-            >
-              <Eye className="h-3 w-3 ml-1" />
-              צפה כלקוח
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                if (onManageCredentials) {
-                  onManageCredentials(client);
-                }
-              }}
-              className="border-blue-500 text-blue-600 hover:bg-blue-50 flex-1 text-xs"
-            >
-              <User className="h-3 w-3 ml-1" />
-              ניהול גישה
-            </Button>
-          </div>
-
-          {/* Client credentials display */}
-          <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border-t">
-            <div className="font-medium mb-1">פרטי התחברות:</div>
-            <div>משתמש: {defaultEmail}</div>
-            <div>סיסמה: {defaultPassword}</div>
-            <div className="mt-1">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={async () => {
-                  try {
-                    const response = await fetch(`/api/clients/${client.id}/send-credentials`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        username: defaultEmail,
-                        password: defaultPassword
-                      })
-                    });
-
-                    const result = await response.json();
-
-                    if (response.ok) {
-                      alert(`✅ ${result.message}\nנשלח ל: ${result.details.sentTo}`);
-                    } else {
-                      alert(`❌ שגיאה: ${result.message}`);
-                    }
-                  } catch (error) {
-                    alert('❌ שגיאה בשליחת האימייל. אנא נסה שוב.');
-                  }
-                }}
-                className="border-purple-500 text-purple-600 hover:bg-purple-50 flex-1 text-xs"
-              >
-                <User className="h-3 w-3 ml-1" />
-                שלח פרטים
-              </Button>
-            </div>
-          </div>
+        <div className="flex space-x-reverse space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => onView(client)}
+            className="flex-1"
+            data-testid="client-view-details"
+          >
+            צפה בפרטים
+          </Button>
         </div>
       </CardContent>
     </Card>

@@ -7,7 +7,7 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema } from "@shared/schema";
 import { z } from "zod";
 import express from "express"; // Import express to use its Router
-import { emailService } from "./emailService"; // Assuming emailService is in './emailService'
+import { emailService } from "./email-service"; // Import from email-service.ts
 import crypto from 'crypto'; // Import crypto for token generation
 
 // Extend Express types
@@ -305,10 +305,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updatedUser = await storage.updateUser(user.id, updateData);
 
-      // Update session
+      // Update session with proper typing
       req.user = {
-        ...req.user,
-        ...updateData
+        id: user.id,
+        email: updateData.email || user.email,
+        fullName: updateData.fullName || user.fullName,
+        role: user.role,
+        agencyId: user.agencyId,
+        avatar: updateData.avatar || user.avatar
       };
 
       const { password, ...safeUser } = updatedUser;

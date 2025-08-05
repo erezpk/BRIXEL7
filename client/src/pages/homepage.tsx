@@ -708,10 +708,8 @@ export default function Homepage() {
               <h3 className="font-semibold mb-4">תמיכה</h3>
               <ul className="space-y-2 text-gray-400">
                 <li>
-                  <Link href="/help">
-                    <Button variant="link" className="hover:text-white transition-colors cursor-pointer text-gray-400 p-0 h-auto font-normal">
-                      מרכז עזרה
-                    </Button>
+                  <Link href="/help" className="hover:text-white transition-colors cursor-pointer text-gray-400">
+                    מרכז עזרה
                   </Link>
                 </li>
               </ul>

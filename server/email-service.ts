@@ -47,7 +47,7 @@ class EmailService {
     };
 
     if (emailConfig.auth.user && emailConfig.auth.pass) {
-      this.transporter = nodemailer.createTransporter(emailConfig);
+      this.transporter = nodemailer.createTransport(emailConfig);
     } else {
       console.warn('SMTP credentials not configured. Email service will be disabled.');
     }
