@@ -481,7 +481,9 @@ export default function ClientDashboard() {
               <Button variant="ghost" size="sm">
                 <Bell className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => {
+                window.open('/client-settings', '_blank');
+              }}>
                 <Settings className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="sm" onClick={() => setActiveTab('profile')}>
@@ -576,17 +578,7 @@ export default function ClientDashboard() {
                 <User className="h-5 w-5" />
                 הפרופיל שלי
               </button>
-              <button
-                onClick={() => setActiveTab('settings')}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-right rounded-lg transition-colors ${
-                  activeTab === 'settings' 
-                    ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-700' 
-                    : 'text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <Settings className="h-5 w-5" />
-                הגדרות
-              </button>
+              
             </div>
           </nav>
         </div>
@@ -836,40 +828,7 @@ export default function ClientDashboard() {
             </div>
           )}
 
-          {/* Settings Tab */}
-          {activeTab === 'settings' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-gray-900">הגדרות</h1>
-              </div>
-
-              <div className="grid gap-6">
-                {/* Lead Sync Settings */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Settings className="h-5 w-5" />
-                      הגדרות לידים
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                      <div>
-                        <h3 className="font-medium text-blue-800">חיבור לפלטפורמות פרסום</h3>
-                        <p className="text-sm text-blue-600">חבר את חשבונות הפרסום שלך לסנכרון אוטומטי של לידים</p>
-                      </div>
-                      <Button onClick={() => {
-                        window.open('/client-settings', '_blank');
-                      }}>
-                        <Settings className="h-4 w-4 ml-2" />
-                        נהל חיבורים
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          )}
+          
 
           {/* Profile Tab */}
           {activeTab === 'profile' && (
