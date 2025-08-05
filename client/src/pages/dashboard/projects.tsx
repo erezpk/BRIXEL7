@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import { type Project, type Client, type InsertProject, type InsertClient } from "@shared/schema";
 
@@ -52,6 +53,7 @@ export default function Projects() {
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const { data = [], isLoading } = useQuery<ProjectWithRelations[]>({
     queryKey: ["projects"],
@@ -155,8 +157,9 @@ export default function Projects() {
       name: projectData.name,
       description: projectData.description,
       type: projectData.type,
-      clientId: projectData.clientId || null,
+      clientId: projectData.clientId === "none" ? null : projectData.clientId || null,
       status: 'planning' as const,
+      createdBy: user?.id || '',
     };
 
     createProjectMutation.mutate(projectPayload);
@@ -252,9 +255,10 @@ export default function Projects() {
 
       {/* New Project Modal */}
       <Dialog open={showNewProjectModal} onOpenChange={setShowNewProjectModal}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" aria-describedby="new-project-description">
           <DialogHeader>
             <DialogTitle className="text-right font-rubik">פרויקט חדש</DialogTitle>
+            <div id="new-project-description" className="sr-only">צור פרויקט חדש עבור הלקוח שלך</div>
           </DialogHeader>
           
           <form onSubmit={handleProjectSubmit} className="space-y-6">
@@ -313,7 +317,7 @@ export default function Projects() {
                     <SelectValue placeholder="בחר לקוח" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">ללא לקוח</SelectItem>
+                    <SelectItem value="none">ללא לקוח</SelectItem>
                     {clients?.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name}
