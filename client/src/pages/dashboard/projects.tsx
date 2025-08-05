@@ -57,11 +57,26 @@ export default function Projects() {
 
   const { data = [], isLoading } = useQuery<ProjectWithRelations[]>({
     queryKey: ["projects"],
-    queryFn: () => fetch("/api/projects").then((r) => r.json()),
+    queryFn: async () => {
+      const response = await fetch("/api/projects");
+      if (!response.ok) {
+        return [];
+      }
+      const result = await response.json();
+      return Array.isArray(result) ? result : [];
+    },
   });
 
   const { data: clients } = useQuery<Client[]>({
     queryKey: ['/api/clients'],
+    queryFn: async () => {
+      const response = await fetch("/api/clients");
+      if (!response.ok) {
+        return [];
+      }
+      const result = await response.json();
+      return Array.isArray(result) ? result : [];
+    },
     staleTime: 30000,
   });
 
