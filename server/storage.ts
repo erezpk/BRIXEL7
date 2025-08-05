@@ -150,11 +150,6 @@ export class DatabaseStorage implements IStorage {
     const result = await this.db.select().from(users).where(eq(users.email, email)).limit(1);
     const user = result[0] || null;
 
-    // Ensure fullName is available for backward compatibility
-    if (user && !user.fullName && (user.firstName || user.lastName)) {
-      user.fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-    }
-
     return user;
   }
 
@@ -550,8 +545,6 @@ export class DatabaseStorage implements IStorage {
         .update(users)
         .set({
           fullName: name,
-          firstName: name.split(' ')[0] || '',
-          lastName: name.split(' ').slice(1).join(' ') || '',
           avatar: avatar,
           profileImageUrl: avatar,
           lastLogin: new Date(),
@@ -563,25 +556,19 @@ export class DatabaseStorage implements IStorage {
       return updatedUser[0];
     } else {
       // Create new user
-      const nameParts = name.split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-
       const newUser = await this.db
         .insert(users)
         .values({
           id: crypto.randomUUID(),
           email,
           fullName: name,
-          firstName,
-          lastName,
           avatar: avatar,
           profileImageUrl: avatar,
           role: 'client',
           isActive: true,
           lastLogin: new Date(),
-          createdAt: new Date(), // Added createdAt
-          updatedAt: new Date() // Added updatedAt
+          createdAt: new Date(),
+          updatedAt: new Date()
         })
         .returning();
 
