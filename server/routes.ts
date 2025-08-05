@@ -1410,6 +1410,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email routes
+  router.post('/api/email/test', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const { to, subject, message } = req.body;
+      const user = req.user!;
+      
+      if (!emailService.isConfigured()) {
+        return res.status(400).json({ 
+          message: 'שירות האימייל לא מוגדר. אנא הגדר את פרטי ה-SMTP במשתני הסביבה.' 
+        });
+      }
+
+      const success = await emailService.sendEmail({
+        to,
+        subject: subject || 'בדיקת שירות אימייל',
+        html: `
+          <div dir="rtl" style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
+            <h2>בדיקת שירות אימייל</h2>
+            <p>שלום,</p>
+            <p>${message || 'זהו אימייל בדיקה ממערכת AgencyCRM.'}</p>
+            <p>שלח על ידי: ${user.fullName} (${user.email})</p>
+            <p>בברכה,<br>צוות AgencyCRM</p>
+          </div>
+        `,
+        text: message || 'זהו אימייל בדיקה ממערכת AgencyCRM.'
+      });
+
+      if (success) {
+        res.json({ message: 'האימייל נשלח בהצלחה!' });
+      } else {
+        res.status(500).json({ message: 'שגיאה בשליחת האימייל' });
+      }
+    } catch (error) {
+      console.error('Email test error:', error);
+      res.status(500).json({ message: 'שגיאה בשליחת האימייל' });
+    }
+  });
+
+  router.get('/api/email/status', requireAuth, async (req, res) => {
+    try {
+      const isConfigured = emailService.isConfigured();
+      res.json({ 
+        configured: isConfigured,
+        message: isConfigured ? 'שירות האימייל פעיל' : 'שירות האימייל לא מוגדר'
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בבדיקת סטטוס האימייל' });
+    }
+  });
+
   // Mount the router to the app
   app.use('/', router);
 

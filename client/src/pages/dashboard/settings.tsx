@@ -9,11 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertTriangle, Bell, Facebook, Chrome, Settings as SettingsIcon, Shield, Users, Palette, Zap, Plus, ExternalLink, Trash2, CheckCircle, RefreshCw } from "lucide-react";
+import { AlertTriangle, Bell, Facebook, Chrome, Settings as SettingsIcon, Shield, Users, Palette, Zap, Plus, ExternalLink, Trash2, CheckCircle, RefreshCw, Mail, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { rtlClass } from "@/lib/rtl";
 import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 
 interface AdAccount {
   id: string;
@@ -38,6 +39,7 @@ interface GoogleConnectionForm {
 }
 
 export default function Settings() {
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("integrations");
   const [isFacebookDialogOpen, setIsFacebookDialogOpen] = useState(false);
   const [isGoogleDialogOpen, setIsGoogleDialogOpen] = useState(false);
@@ -255,8 +257,9 @@ export default function Settings() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="integrations">אינטגרציות</TabsTrigger>
+          <TabsTrigger value="email">אימייל</TabsTrigger>
           <TabsTrigger value="notifications">התראות</TabsTrigger>
           <TabsTrigger value="leads">לידים</TabsTrigger>
           <TabsTrigger value="account">חשבון</TabsTrigger>
@@ -460,6 +463,64 @@ export default function Settings() {
                     </p>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="email" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                הגדרות אימייל
+              </CardTitle>
+              <CardDescription>
+                נהל את שירות האימייל ובדוק את החיבור למערכת
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Mail className="h-8 w-8 text-primary" />
+                  <div>
+                    <h3 className="font-medium">שירות אימייל</h3>
+                    <p className="text-sm text-muted-foreground">
+                      בדוק והגדר את שירות האימייל למערכת
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  variant="outline"
+                  onClick={() => setLocation('/dashboard/email-settings')}
+                  className="flex items-center gap-2"
+                >
+                  <SettingsIcon className="h-4 w-4" />
+                  הגדרות מתקדמות
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium mb-2">תבניות זמינות</h4>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>• אימייל ברוכים הבאים</p>
+                    <p>• הודעות על לידים חדשים</p>
+                    <p>• עדכוני פרויקטים</p>
+                    <p>• איפוס סיסמה</p>
+                  </div>
+                </div>
+
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium mb-2">אפשרויות תמיכה</h4>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>• Gmail SMTP</p>
+                    <p>• SMTP כללי</p>
+                    <p>• בדיקת חיבור</p>
+                    <p>• שליחת אימיילי בדיקה</p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

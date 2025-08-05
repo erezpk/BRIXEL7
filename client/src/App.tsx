@@ -25,6 +25,7 @@ import ProjectDetails from "@/pages/dashboard/ProjectDetails";
 import Tasks from "@/pages/dashboard/tasks";
 import Team from "@/pages/dashboard/team";
 import Reports from "@/pages/dashboard/reports";
+import EmailSettings from "@/pages/dashboard/email-settings";
 import ClientDashboard from "@/pages/client-portal/client-dashboard";
 import Profile from "@/pages/dashboard/profile";
 import Settings from "@/pages/dashboard/settings";
@@ -159,6 +160,14 @@ export default function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <Reports />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          <Route path="/dashboard/email-settings">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <EmailSettings />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
