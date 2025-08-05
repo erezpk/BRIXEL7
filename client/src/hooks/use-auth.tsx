@@ -1,23 +1,28 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { auth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, db, doc, setDoc, getDoc, type User as FirebaseUser } from "@/lib/firebase";
 
 interface User {
   id: string;
   email: string;
+  fullName?: string;
   firstName?: string;
   lastName?: string;
   role: string;
   agencyId?: string;
-  profileImageUrl?: string;
+  avatar?: string;
+  phone?: string;
+  company?: string;
+  bio?: string;
+  isActive?: boolean;
+  lastLogin?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  firebaseUser: FirebaseUser | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, userData: Partial<User>) => Promise<void>;
-  logout: () => Promise<void>;
+  login: (userData: User) => void;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,88 +33,44 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setFirebaseUser(firebaseUser);
-      
-      if (firebaseUser) {
-        // Get user data from Firestore
-        try {
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data() as User;
-            setUser({
-              id: firebaseUser.uid,
-              email: firebaseUser.email!,
-              ...userData
-            });
-          } else {
-            // Create basic user profile if it doesn't exist
-            const basicUser: User = {
-              id: firebaseUser.uid,
-              email: firebaseUser.email!,
-              role: 'agency_admin'
-            };
-            await setDoc(doc(db, 'users', firebaseUser.uid), basicUser);
-            setUser(basicUser);
-          }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-        }
-      } else {
-        setUser(null);
+    // Check for existing login token
+    const token = localStorage.getItem('authToken');
+    const userData = localStorage.getItem('userData');
+    
+    if (token && userData) {
+      try {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
       }
-      
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
+    }
+    
+    setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-      throw new Error(error.message);
-    }
+  const login = (userData: User) => {
+    setUser(userData);
+    localStorage.setItem('authToken', 'logged-in');
+    localStorage.setItem('userData', JSON.stringify(userData));
   };
 
-  const register = async (email: string, password: string, userData: Partial<User>) => {
-    try {
-      const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Create user profile in Firestore
-      const newUser: User = {
-        id: firebaseUser.uid,
-        email: firebaseUser.email!,
-        role: 'agency_admin',
-        ...userData
-      };
-      
-      await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
-    } catch (error: any) {
-      throw new Error(error.message);
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error: any) {
-      throw new Error(error.message);
-    }
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
   };
 
   return (
     <AuthContext.Provider value={{
       user,
-      firebaseUser,
       isLoading,
       login,
-      register,
       logout
     }}>
       {children}

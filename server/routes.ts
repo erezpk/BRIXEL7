@@ -160,6 +160,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
+  // Get all users (development endpoint)
+  app.get('/api/dev/users', async (req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      res.json({
+        success: true,
+        count: allUsers.length,
+        users: allUsers.map(user => ({
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          hasPassword: !!user.password,
+          createdAt: user.createdAt
+        }))
+      });
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: 'שגיאה בקבלת משתמשים' });
+    }
+  });
+
+  // Create test user
+  app.post('/api/dev/create-user', async (req, res) => {
+    try {
+      // Delete existing user first
+      await storage.deleteUserByEmail('test@example.com');
+
+      const user = await storage.createUserWithPassword(
+        'test@example.com',
+        'Test User',
+        '123456',
+        'team_member'
+      );
+
+      res.json({
+        success: true,
+        message: 'משתמש נוצר בהצלחה',
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role
+        }
+      });
+    } catch (error: any) {
+      console.error('Error creating test user:', error);
+      res.status(500).json({
+        message: 'שגיאה ביצירת משתמש',
+        error: error.message
+      });
+    }
+  });
+
+  // Login endpoint
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: 'אימייל וסיסמה נדרשים' });
+      }
+
+      console.log('Login attempt for:', email);
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        console.log('User not found for email:', email);
+        return res.status(401).json({ message: 'אימייל או סיסמה שגויים' });
+      }
+
+      console.log('User found:', user.email, 'Has password:', !!user.password);
+
+      if (!user.password) {
+        console.log('User has no password:', email);
+        return res.status(401).json({ message: 'אימייל או סיסמה שגויים' });
+      }
+
+      // Verify password
+      console.log('Comparing password for user:', email);
+      const isValidPassword = await storage.validatePassword(password, user.password);
+      console.log('Password valid:', isValidPassword);
+
+      if (!isValidPassword) {
+        console.log('Invalid password for user:', email);
+        return res.status(401).json({ message: 'אימייל או סיסמה שגויים' });
+      }
+
+      console.log('Login successful for user:', email);
+
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          avatar: user.avatar
+        }
+      });
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({ message: 'שגיאה בהתחברות' });
+    }
+  });
+
+  // Register endpoint  
+  app.post('/api/auth/register', async (req, res) => {
+    try {
+      const { email, fullName, password } = req.body;
+
+      if (!email || !fullName || !password) {
+        return res.status(400).json({ message: 'כל השדות נדרשים' });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: 'משתמש עם האימייל הזה כבר קיים' });
+      }
+
+      const user = await storage.createUserWithPassword(email, fullName, password, 'team_member');
+
+      res.json({
+        success: true,
+        message: 'משתמש נוצר בהצלחה',
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role
+        }
+      });
+    } catch (error: any) {
+      console.error('Register error:', error);
+      if (error.code === '23505') {
+        return res.status(400).json({ message: 'משתמש עם האימייל הזה כבר קיים' });
+      }
+      res.status(500).json({ message: 'שגיאה ביצירת משתמש' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
