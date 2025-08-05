@@ -8,10 +8,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
+import { FcGoogle } from "react-icons/fc";
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const { user, isLoading, login, isLoginLoading, loginError, loginMutation } = useAuth();
+  const { user, isLoading, login, loginWithGoogle, isLoginLoading, isGoogleLoginLoading, loginError, googleLoginError, loginMutation, googleLoginMutation } = useAuth();
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
@@ -63,6 +64,28 @@ export default function Login() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await googleLoginMutation.mutateAsync();
+      
+      if (result?.user) {
+        toast({
+          title: "התחברות הצליחה",
+          description: "ברוכים הבאים למערכת",
+        });
+        setTimeout(() => {
+          setLocation("/dashboard");
+        }, 100);
+      }
+    } catch (error: any) {
+      toast({
+        title: "שגיאה בהתחברות עם Google",
+        description: error?.message || "אירעה שגיאה בהתחברות",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -150,7 +173,7 @@ export default function Login() {
             <Button 
               type="submit" 
               className="w-full" 
-              disabled={isLoginLoading}
+              disabled={isLoginLoading || isGoogleLoginLoading}
               data-testid="button-submit"
             >
               {isLoginLoading ? "מתחבר..." : "כניסה"}
@@ -161,6 +184,33 @@ export default function Login() {
                 שגיאה בהתחברות. אנא נסה שוב.
               </div>
             )}
+
+            {googleLoginError && (
+              <div className="text-sm text-red-600 text-center" data-testid="google-login-error">
+                שגיאה בהתחברות עם Google. אנא נסה שוב.
+              </div>
+            )}
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-muted-foreground">או</span>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleGoogleLogin}
+              disabled={isLoginLoading || isGoogleLoginLoading}
+              data-testid="button-google-login"
+            >
+              <FcGoogle className="mr-2 h-4 w-4" />
+              {isGoogleLoginLoading ? "מתחבר עם Google..." : "התחבר עם Google"}
+            </Button>
           </form>
           
           <div className="mt-6 text-center">

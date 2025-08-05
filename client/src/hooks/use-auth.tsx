@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { signInWithGoogle } from "@/lib/firebase";
 
 interface User {
   id: string;
@@ -100,6 +101,15 @@ export function useAuth() {
     },
   });
 
+  const googleLoginMutation = useMutation({
+    mutationFn: async () => {
+      return await signInWithGoogle();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+    },
+  });
+
   const logoutMutation = useMutation({
     mutationFn: async () => {
       await apiRequest({
@@ -117,14 +127,18 @@ export function useAuth() {
     user,
     isLoading,
     login: loginMutation.mutate,
+    loginWithGoogle: googleLoginMutation.mutate,
     signup: signupMutation.mutate,
     logout: logoutMutation.mutate,
     isLoginLoading: loginMutation.isPending,
+    isGoogleLoginLoading: googleLoginMutation.isPending,
     isSignupLoading: signupMutation.isPending,
     isLogoutLoading: logoutMutation.isPending,
     loginError: loginMutation.error,
+    googleLoginError: googleLoginMutation.error,
     signupError: signupMutation.error,
     loginMutation,
+    googleLoginMutation,
     signupMutation,
     logoutMutation,
   };

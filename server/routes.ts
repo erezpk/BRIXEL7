@@ -9,6 +9,7 @@ import { z } from "zod";
 import express from "express"; // Import express to use its Router
 import { emailService } from "./email-service"; // Import from email-service.ts
 import crypto from 'crypto'; // Import crypto for token generation
+import { verifyGoogleToken } from "./google-auth"; // Import Google authentication
 
 // Extend Express types
 declare global {
@@ -190,6 +191,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ user: req.user });
     } else {
       res.status(401).json({ message: 'לא מחובר' });
+    }
+  });
+
+  // Google OAuth route
+  router.post('/api/auth/google', async (req, res) => {
+    try {
+      const { idToken } = req.body;
+
+      if (!idToken) {
+        return res.status(400).json({ message: 'חסר ID token' });
+      }
+
+      // Verify the Google ID token
+      const googleUser = await verifyGoogleToken(idToken);
+
+      // Check if user already exists
+      let user = await storage.getUserByEmail(googleUser.email);
+
+      if (user) {
+        // User exists, log them in
+        req.login(user, (err) => {
+          if (err) {
+            return res.status(500).json({ message: 'שגיאה בהתחברות' });
+          }
+          res.json({ user: req.user, message: 'התחברות עם Google הצליחה' });
+        });
+      } else {
+        // New user - need to decide how to handle this
+        // For now, we'll create a basic user without agency
+        // In production, you might want to redirect to a signup flow
+        const newUser = await storage.createUser({
+          email: googleUser.email,
+          password: 'google-oauth-user', // Placeholder password for OAuth users
+          fullName: googleUser.name,
+          role: 'client', // Default role, can be changed later
+          agencyId: null, // Will need to be assigned later
+          isActive: true,
+          avatar: googleUser.picture,
+        });
+
+        req.login(newUser, (err) => {
+          if (err) {
+            return res.status(500).json({ message: 'שגיאה בהתחברות' });
+          }
+          res.json({ 
+            user: req.user, 
+            message: 'הרשמה והתחברות עם Google הצליחו',
+            isNewUser: true 
+          });
+        });
+      }
+    } catch (error) {
+      console.error('Google OAuth error:', error);
+      res.status(400).json({ message: 'שגיאה באימות Google' });
     }
   });
 
