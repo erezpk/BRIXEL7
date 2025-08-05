@@ -3,7 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useAuth, AuthProvider } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
 
 import Homepage from "@/pages/homepage";
@@ -44,6 +44,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, setLocation]);
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!isLoading && user) {
+      const redirectPath = user.role === 'client' ? '/client-portal' : '/dashboard';
+      setLocation(redirectPath);
+    }
+  }, [user, isLoading, setLocation]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -59,60 +67,157 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function Router() {
-  const { user, isLoading } = useAuth();
-
+export default function App() {
   return (
-    <Switch>
-      {isLoading || !user ? (
-        <>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Switch>
           <Route path="/" component={Homepage} />
           <Route path="/login" component={Login} />
           <Route path="/signup" component={Signup} />
           <Route path="/forgot-password" component={ForgotPassword} />
           <Route path="/reset-password" component={ResetPassword} />
-        </>
-      ) : (
-        <>
-          <Route path="/" component={Homepage} />
-          <Route path="/dashboard" nest>
-            <DashboardLayout>
-              <Route path="/" component={Dashboard} />
-              <Route path="/clients" component={Clients} />
-              <Route path="/clients/:id" component={ClientDetails} />
-              <Route path="/projects" component={Projects} />
-              <Route path="/projects/new" component={NewProject} />
-              <Route path="/projects/:id" component={ProjectDetails} />
-              <Route path="/tasks" component={Tasks} />
-              <Route path="/assets" component={Assets} />
-              <Route path="/team" component={Team} />
-              <Route path="/profile" component={Profile} />
-              <Route path="/settings" component={Settings} />
-              <Route path="/team-member" component={TeamMemberDashboard} />
-            </DashboardLayout>
-          </Route>
-          <Route path="/client-portal" component={ClientDashboard} />
-          <Route path="/client-portal-new" component={ClientDashboardNew} />
-          <Route path="/client-projects/:id" component={ClientProjectDetails} />
-          <Route path="/team-dashboard" component={TeamDashboardPage} />
-          <Route path="/leads" component={LeadsManagementPage} />
-          <Route path="/help" component={HelpCenter} />
-        </>
-      )}
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
 
-export default function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </AuthProvider>
+          {/* DASHBOARD */}
+          <Route path="/dashboard">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Dashboard />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/dashboard/clients">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Clients />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/dashboard/clients/:id">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ClientDetails />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          {/* PROJECTS LIST */}
+          <Route
+            path="/dashboard/projects"
+            component={() => (
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Projects />
+                </DashboardLayout>
+              </ProtectedRoute>
+            )}
+          />
+
+          {/* NEW PROJECT */}
+          <Route
+            path="/dashboard/projects/new"
+            component={() => (
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <NewProject />
+                </DashboardLayout>
+              </ProtectedRoute>
+            )}
+          />
+
+          {/* PROJECT DETAILS */}
+          <Route
+            path="/dashboard/project-details/:projectId"
+            component={() => (
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <ProjectDetails />
+                </DashboardLayout>
+              </ProtectedRoute>
+            )}
+          />
+
+          {/* LEGACY PROJECT DETAILS ROUTE */}
+          <Route
+            path="/dashboard/projects/:projectId"
+            component={() => (
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <ProjectDetails />
+                </DashboardLayout>
+              </ProtectedRoute>
+            )}
+          />
+
+          <Route path="/dashboard/tasks">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Tasks />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/dashboard/assets">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Assets />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/dashboard/team">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Team />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          <Route path="/dashboard/team-dashboard">
+            <ProtectedRoute>
+              <TeamDashboardPage />
+            </ProtectedRoute>
+          </Route>
+
+          <Route path="/dashboard/leads">
+            <ProtectedRoute>
+              <LeadsManagementPage />
+            </ProtectedRoute>
+          </Route>
+
+          {/* ADDED PROFILE AND SETTINGS ROUTES */}
+          <Route path="/dashboard/profile">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Profile />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/dashboard/settings">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Settings />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          {/* CLIENT PORTAL - Standalone authentication */}
+          <Route path="/client-portal" component={ClientDashboard} />
+          <Route path="/client-portal/new" component={ClientDashboardNew} />
+          <Route path="/client-portal/project/:projectId" component={ClientProjectDetails} />
+          <Route path="/team" component={TeamDashboardPage} />
+          <Route path="/leads" component={LeadsManagementPage} />
+
+
+          {/* ADDED HELP CENTER ROUTE */}
+          <Route path="/help" component={HelpCenter} />
+
+          {/* ADDED TEAM MEMBER DASHBOARD ROUTE */}
+          <Route path="/dashboard/team-member" component={TeamMemberDashboard} />
+
+
+          <Route component={NotFound} />
+        </Switch>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }

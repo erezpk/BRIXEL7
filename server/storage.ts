@@ -1,4 +1,4 @@
-import {
+import { 
   agencies, users, clients, projects, tasks, taskComments, digitalAssets, agencyTemplates, activityLog, passwordResetTokens,
   adAccounts, leads, chatConversations, chatMessages, teamInvitations, notifications,
   type Agency, type InsertAgency,
@@ -136,15 +136,11 @@ export interface IStorage {
   createTeamInvitation(invitation: InsertTeamInvitation): Promise<TeamInvitation>;
   getTeamInvitation(token: string): Promise<TeamInvitation | undefined>;
   acceptTeamInvitation(token: string): Promise<void>;
-  updateTeamInvitation(token: string, status: string): Promise<TeamInvitation>;
 
   // Notifications
   createNotification(notification: InsertNotification): Promise<Notification>;
   getUserNotifications(userId: string): Promise<Notification[]>;
   markNotificationAsRead(id: string): Promise<void>;
-
-  // Firebase Sync
-  syncAllUsersWithFirebase(): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -540,79 +536,43 @@ export class DatabaseStorage implements IStorage {
     return;
   }
 
-  async createOrUpdateUserFromGoogle(email: string, name: string, picture?: string): Promise<User> {
-    try {
-      console.log('Creating/updating user from Google:', email);
+  async createOrUpdateUserFromGoogle(email: string, name: string, avatar?: string): Promise<User> {
+    const existingUser = await this.getUserByEmail(email);
 
-      // Check if user exists
-      const existingUser = await this.getUserByEmail(email);
+    if (existingUser) {
+      // Update existing user
+      const updatedUser = await this.db
+        .update(users)
+        .set({
+          fullName: name,
+          avatar: avatar,
+          profileImageUrl: avatar,
+          lastLogin: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, existingUser.id))
+        .returning();
 
-      if (existingUser) {
-        console.log('User exists, updating:', email);
-        // Update user info from Google
-        const updatedUser = await db.update(users)
-          .set({
-            fullName: name,
-            avatar: picture,
-            lastLogin: new Date(),
-            isEmailVerified: true
-          })
-          .where(eq(users.email, email))
-          .returning()
-          .execute();
+      return updatedUser[0];
+    } else {
+      // Create new user
+      const newUser = await this.db
+        .insert(users)
+        .values({
+          id: crypto.randomUUID(),
+          email,
+          fullName: name,
+          avatar: avatar,
+          profileImageUrl: avatar,
+          role: 'client',
+          isActive: true,
+          lastLogin: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
 
-        return updatedUser[0];
-      } else {
-        console.log('Creating new user from Google:', email);
-        // Create new user with appropriate role based on email
-        const role = email.includes('@admin.') ? 'admin' :
-                    email.includes('@team.') ? 'team_member' : 'client';
-
-        const newUser = await db.insert(users)
-          .values({
-            email,
-            fullName: name,
-            avatar: picture,
-            role,
-            password: null, // No password for Google users
-            isEmailVerified: true,
-            lastLogin: new Date(),
-            createdAt: new Date()
-          })
-          .returning()
-          .execute();
-
-        console.log('New Google user created:', newUser[0].id);
-        return newUser[0];
-      }
-    } catch (error) {
-      console.error('Error creating/updating user from Google:', error);
-      throw error;
-    }
-  }
-
-  async createUserWithPassword(email: string, fullName: string, password: string, role: string = 'client') {
-    try {
-      console.log('Creating user with password:', { email, fullName, role });
-
-      const bcrypt = await import('bcryptjs');
-      const hashedPassword = await bcrypt.default.hash(password, 10);
-
-      const [user] = await this.db.insert(users).values({
-        email,
-        fullName,
-        password: hashedPassword,
-        role,
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }).returning();
-
-      console.log('User created successfully:', user.email);
-      return user;
-    } catch (error) {
-      console.error('Error in createUserWithPassword:', error);
-      throw error;
+      return newUser[0];
     }
   }
 
@@ -645,7 +605,7 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async getLeadsByAgency(agencyId: string): Promise<Lead[]>{
+  async getLeadsByAgency(agencyId: string): Promise<Lead[]> {
     return this.db.query.leads.findMany({
       where: eq(leads.agencyId, agencyId),
       orderBy: [desc(leads.createdAt)]
@@ -700,7 +660,7 @@ export class DatabaseStorage implements IStorage {
 
     // Update conversation's last message timestamp
     await this.db.update(chatConversations)
-      .set({
+      .set({ 
         lastMessageAt: new Date(),
         unreadCount: sql`${chatConversations.unreadCount} + 1`
       })
@@ -734,19 +694,11 @@ export class DatabaseStorage implements IStorage {
 
   async acceptTeamInvitation(token: string): Promise<void> {
     await this.db.update(teamInvitations)
-      .set({
+      .set({ 
         status: 'accepted',
         acceptedAt: new Date()
       })
       .where(eq(teamInvitations.token, token));
-  }
-
-  async updateTeamInvitation(token: string, status: string): Promise<TeamInvitation> {
-    const [updated] = await this.db.update(teamInvitations)
-      .set({ status, updatedAt: new Date() })
-      .where(eq(teamInvitations.token, token))
-      .returning();
-    return updated;
   }
 
   // Notifications
@@ -765,30 +717,11 @@ export class DatabaseStorage implements IStorage {
 
   async markNotificationAsRead(id: string): Promise<void> {
     await this.db.update(notifications)
-      .set({
+      .set({ 
         isRead: true,
         readAt: new Date()
       })
       .where(eq(notifications.id, id));
-  }
-
-  async syncAllUsersWithFirebase(): Promise<any> {
-    try {
-      console.log('Starting Firebase user sync...');
-
-      // Get all users from local database
-      const localUsers = await db.select().from(users);
-      console.log(`Found ${localUsers.length} users in local database`);
-
-      return {
-        success: true,
-        message: `Synced ${localUsers.length} users`,
-        users: localUsers.map(u => ({ id: u.id, email: u.email, role: u.role }))
-      };
-    } catch (error) {
-      console.error('Error syncing users with Firebase:', error);
-      throw error;
-    }
   }
 }
 

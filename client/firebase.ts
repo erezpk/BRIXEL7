@@ -1,14 +1,13 @@
-
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDGoJLBzYEsWm3tqDZHXKYvuuDZqJgVEXg",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "brixel7-ed00e.firebaseapp.com",
   projectId: "brixel7-ed00e",
   storageBucket: "brixel7-ed00e.firebasestorage.app",
   messagingSenderId: "483318017359",
-  appId: "1:483318017359:web:3a28590b65f9aeaa8d293a",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
   measurementId: "G-10K9Y627RN"
 };
 
@@ -17,13 +16,15 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 const provider = new GoogleAuthProvider();
-provider.addScope('email');
-provider.addScope('profile');
 
 // Call this function when the user clicks on the "Login" button
 export function loginWithGoogle() {
+  console.log("Google login button clicked");
   console.log("Starting Google sign in...");
-  return signInWithRedirect(auth, provider);
+  signInWithRedirect(auth, provider).catch((error) => {
+    console.error("Google sign in error:", error);
+    console.error("Google authentication failed:", error);
+  });
 }
 
 // Call this function on page load when the user is redirected back to your site
@@ -32,6 +33,9 @@ export function handleGoogleRedirect() {
   return getRedirectResult(auth)
     .then(async (result) => {
       if (result) {
+        // This gives you a Google Access Token. You can use it to access Google APIs.
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        const token = credential?.accessToken;
         const user = result.user;
 
         console.log("Google redirect result received:", { 
@@ -39,7 +43,7 @@ export function handleGoogleRedirect() {
           userName: user.displayName 
         });
 
-        // Send user data to backend for sync
+        // Send the ID token to your backend
         if (user) {
           try {
             const idToken = await user.getIdToken();
@@ -55,7 +59,7 @@ export function handleGoogleRedirect() {
                 idToken,
                 email: user.email,
                 name: user.displayName,
-                picture: user.photoURL
+                avatar: user.photoURL
               }),
             });
 
@@ -79,7 +83,14 @@ export function handleGoogleRedirect() {
       }
     })
     .catch((error) => {
-      console.error("Google redirect error:", error);
+      // Handle Errors here.
+      const errorCode = error.code;
+      const errorMessage = error.message;
+      // The email of the user's account used.
+      const email = error.customData?.email;
+      // The AuthCredential type that was used.
+      const credential = GoogleAuthProvider.credentialFromError(error);
+      console.error("Google redirect error:", { errorCode, errorMessage, email });
       throw error;
     });
 }
