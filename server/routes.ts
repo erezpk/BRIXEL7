@@ -1155,31 +1155,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Send invitation email
+      let emailSent = false;
       if (emailService.isConfigured()) {
-        const loginUrl = `${req.protocol}://${req.get('host')}/login`;
-        
-        const emailSent = await emailService.sendEmail({
-          to: newUser.email,
-          subject: `הזמנה להצטרף ל-${agency.name}`,
-          html: `
-            <div dir="rtl" style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
-              <h2>הזמנה להצטרף כחבר צוות</h2>
-              <p>שלום ${newUser.fullName},</p>
-              <p>הוזמנת להצטרף כחבר צוות ב-${agency.name}.</p>
-              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <p><strong>פרטי ההתחברות:</strong></p>
-                <p><strong>אימייל:</strong> ${newUser.email}</p>
-                <p><strong>סיסמה זמנית:</strong> ${userData.password}</p>
-                <p><strong>קישור למערכת:</strong> <a href="${loginUrl}">${loginUrl}</a></p>
+        try {
+          const loginUrl = `${req.protocol}://${req.get('host')}/login`;
+          
+          emailSent = await emailService.sendEmail({
+            to: newUser.email,
+            subject: `הזמנה להצטרף ל-${agency.name}`,
+            html: `
+              <div dir="rtl" style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
+                <h2>הזמנה להצטרף כחבר צוות</h2>
+                <p>שלום ${newUser.fullName},</p>
+                <p>הוזמנת להצטרף כחבר צוות ב-${agency.name}.</p>
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <p><strong>פרטי ההתחברות:</strong></p>
+                  <p><strong>אימייל:</strong> ${newUser.email}</p>
+                  <p><strong>סיסמה זמנית:</strong> ${userData.password}</p>
+                  <p><strong>קישור למערכת:</strong> <a href="${loginUrl}">${loginUrl}</a></p>
+                </div>
+                <p>מומלץ לשנות את הסיסמה בכניסה הראשונה.</p>
+                <p>בברכה,<br>צוות ${agency.name}</p>
               </div>
-              <p>מומלץ לשנות את הסיסמה בכניסה הראשונה.</p>
-              <p>בברכה,<br>צוות ${agency.name}</p>
-            </div>
-          `,
-          text: `שלום ${newUser.fullName}, הוזמנת להצטרף כחבר צוות ב-${agency.name}. פרטי התחברות: ${newUser.email} / ${userData.password}. קישור: ${loginUrl}`
-        });
+            `,
+            text: `שלום ${newUser.fullName}, הוזמנת להצטרף כחבר צוות ב-${agency.name}. פרטי התחברות: ${newUser.email} / ${userData.password}. קישור: ${loginUrl}`
+          });
 
-        console.log(`Team invitation email sent to ${newUser.email}: ${emailSent ? 'Success' : 'Failed'}`);
+          console.log(`Team invitation email sent to ${newUser.email}: ${emailSent ? 'Success' : 'Failed'}`);
+        } catch (emailError) {
+          console.error('Error sending invitation email:', emailError);
+        }
       }
 
       // Log activity
@@ -1641,67 +1646,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(template);
     } catch (error) {
       console.error('Error updating client card template:', error);
-      res.status(500).json({ message: 'שגיאה בעדכון תבנית כרטיס לקוח' });
-    }
-  });
-
-  router.delete('/api/client-card-templates/:id', requireAuth, requireUserWithAgency, async (req, res) => {
-    try {
-      const { id } = req.params;
-      await storage.deleteClientCardTemplate(id);
-      res.json({ success: true });
-    } catch (error) {
-      console.error('Error deleting client card template:', error);
-      res.status(500).json({ message: 'שגיאה במחיקת תבנית כרטיס לקוח' });
-    }dy,
-        agencyId: req.user!.agencyId!,
-        createdBy: req.user!.id,
-      });
-
-      const template = await storage.createClientCardTemplate(templateData);
-
-      await storage.logActivity({
-        agencyId: req.user!.agencyId!,
-        userId: req.user!.id,
-        action: 'created',
-        entityType: 'client_template',
-        entityId: template.id,
-        details: { templateName: template.name },
-      });
-
-      res.json(template);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
-      }
-      res.status(500).json({ message: 'שגיאה ביצירת תבנית כרטיס לקוח' });
-    }
-  });
-
-  router.put('/api/client-card-templates/:id', requireAuth, requireUserWithAgency, async (req, res) => {
-    try {
-      const template = await storage.getClientCardTemplate(req.params.id);
-      if (!template || template.agencyId !== req.user!.agencyId) {
-        return res.status(404).json({ message: 'תבנית לא נמצאה' });
-      }
-
-      const updateData = insertClientCardTemplateSchema.partial().parse(req.body);
-      const updatedTemplate = await storage.updateClientCardTemplate(req.params.id, updateData);
-
-      await storage.logActivity({
-        agencyId: req.user!.agencyId!,
-        userId: req.user!.id,
-        action: 'updated',
-        entityType: 'client_template',
-        entityId: updatedTemplate.id,
-        details: { templateName: updatedTemplate.name },
-      });
-
-      res.json(updatedTemplate);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
-      }
       res.status(500).json({ message: 'שגיאה בעדכון תבנית כרטיס לקוח' });
     }
   });
