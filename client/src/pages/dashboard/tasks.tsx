@@ -42,6 +42,8 @@ export default function Tasks() {
   const [assigneeFilter, setAssigneeFilter] = useState("all");
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
+  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -78,6 +80,49 @@ export default function Tasks() {
     },
   });
 
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      const response = await apiRequest('DELETE', `/api/tasks/${taskId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+      toast({
+        title: "המשימה נמחקה בהצלחה",
+        description: "המשימה נמחקה בהצלחה",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "שגיאה במחיקת המשימה",
+        description: error?.message || "אירעה שגיאה לא צפויה",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMultipleTasksMutation = useMutation({
+    mutationFn: async (taskIds: string[]) => {
+      const response = await apiRequest('POST', '/api/tasks/delete-multiple', { taskIds });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+      setSelectedTasks([]);
+      toast({
+        title: "המשימות נמחקו בהצלחה",
+        description: "המשימות הנבחרות נמחקו בהצלחה",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "שגיאה במחיקת המשימות",
+        description: error?.message || "אירעה שגיאה לא צפויה",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleTaskUpdate = (taskId: string, updates: Partial<Task>) => {
     updateTaskMutation.mutate({ taskId, updates });
   };
@@ -88,6 +133,41 @@ export default function Tasks() {
       title: "טיימר משימה",
       description: action === 'start' ? "הטיימר התחיל" : action === 'pause' ? "הטיימר הושהה" : "הטיימר הופסק",
     });
+  };
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setShowNewTaskModal(true);
+  };
+
+  const handleDeleteTask = (taskId: string) => {
+    if (confirm('האם אתה בטוח שברצונך למחוק את המשימה?')) {
+      deleteTaskMutation.mutate(taskId);
+    }
+  };
+
+  const handleSelectTask = (taskId: string, selected: boolean) => {
+    if (selected) {
+      setSelectedTasks(prev => [...prev, taskId]);
+    } else {
+      setSelectedTasks(prev => prev.filter(id => id !== taskId));
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedTasks.length === 0) return;
+    
+    if (confirm(`האם אתה בטוח שברצונך למחוק ${selectedTasks.length} משימות?`)) {
+      deleteMultipleTasksMutation.mutate(selectedTasks);
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedTasks(filteredTasks.map(task => task.id));
+    } else {
+      setSelectedTasks([]);
+    }
   };
 
   const filteredTasks = React.useMemo(() => {
@@ -205,11 +285,40 @@ export default function Tasks() {
           projects={projects}
           onTaskUpdate={handleTaskUpdate}
           onTaskTimer={handleTaskTimer}
+          onEditTask={handleEditTask}
+          onDeleteTask={handleDeleteTask}
         />
       ) : (
         <Card>
-          <CardHeader>
-            <CardTitle>משימות - תצוגת טבלה</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>משימות - תצוגת טבלה</CardTitle>
+              {selectedTasks.length > 0 && (
+                <div className="flex items-center gap-4 mt-2">
+                  <span className="text-sm text-muted-foreground">
+                    {selectedTasks.length} משימות נבחרו
+                  </span>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteSelected}
+                    disabled={deleteMultipleTasksMutation.isPending}
+                  >
+                    <Trash2 className="h-4 w-4 ml-1" />
+                    מחק נבחרות
+                  </Button>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={selectedTasks.length === filteredTasks.length && filteredTasks.length > 0}
+                onChange={(e) => handleSelectAll(e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm">בחר הכל</span>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -219,6 +328,11 @@ export default function Tasks() {
                   task={task}
                   users={users}
                   projects={projects}
+                  isTableView={true}
+                  isSelected={selectedTasks.includes(task.id)}
+                  onSelect={handleSelectTask}
+                  onEdit={handleEditTask}
+                  onDelete={handleDeleteTask}
                 />
               ))}
             </div>
@@ -228,7 +342,11 @@ export default function Tasks() {
 
       <NewTaskModal 
         isOpen={showNewTaskModal} 
-        onClose={() => setShowNewTaskModal(false)}
+        onClose={() => {
+          setShowNewTaskModal(false);
+          setEditingTask(null);
+        }}
+        editingTask={editingTask}
       />
     </div>
   );

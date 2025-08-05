@@ -19,9 +19,11 @@ interface KanbanBoardProps {
   projects: Project[];
   onTaskUpdate: (taskId: string, updates: Partial<Task>) => void;
   onTaskTimer?: (taskId: string, action: 'start' | 'pause' | 'stop') => void;
+  onEditTask?: (task: Task) => void;
+  onDeleteTask?: (taskId: string) => void;
 }
 
-export function KanbanBoard({ tasks, users, projects, onTaskUpdate, onTaskTimer }: KanbanBoardProps) {
+export function KanbanBoard({ tasks, users, projects, onTaskUpdate, onTaskTimer, onEditTask, onDeleteTask }: KanbanBoardProps) {
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [activeTimers, setActiveTimers] = useState<Record<string, number>>({});
 
@@ -51,7 +53,7 @@ export function KanbanBoard({ tasks, users, projects, onTaskUpdate, onTaskTimer 
 
   const handleDrop = (e: React.DragEvent, newStatus: string) => {
     e.preventDefault();
-    
+
     if (draggedTask && draggedTask.status !== newStatus) {
       onTaskUpdate(draggedTask.id, { status: newStatus });
     }
@@ -68,7 +70,7 @@ export function KanbanBoard({ tasks, users, projects, onTaskUpdate, onTaskTimer 
         return newTimers;
       });
     }
-    
+
     onTaskTimer?.(taskId, action);
   };
 
@@ -110,7 +112,7 @@ export function KanbanBoard({ tasks, users, projects, onTaskUpdate, onTaskTimer 
                   </Badge>
                 </CardTitle>
               </CardHeader>
-              
+
               <CardContent className="space-y-3 flex-1">
                 {statusTasks.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
@@ -127,12 +129,14 @@ export function KanbanBoard({ tasks, users, projects, onTaskUpdate, onTaskTimer 
                       className="cursor-move"
                     >
                       <div className="relative">
-                        <TaskCard 
-                          task={task} 
+                        <TaskCard
+                          task={task}
                           projects={projects}
                           users={users}
+                          onEdit={onEditTask}
+                          onDelete={onDeleteTask}
                         />
-                        
+
                         {/* Timer Controls */}
                         <div className="absolute bottom-2 left-2 flex items-center gap-1">
                           {activeTimers[task.id] ? (

@@ -18,9 +18,10 @@ import { CalendarIcon } from "lucide-react";
 interface NewTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
+  editingTask?: Task | null;
 }
 
-export default function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
+export default function NewTaskModal({ isOpen, onClose, editingTask }: NewTaskModalProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
@@ -35,6 +36,35 @@ export default function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
     dueDate: null as Date | null,
     estimatedHours: "",
   });
+
+  // Initialize form with editing task data
+  React.useEffect(() => {
+    if (editingTask) {
+      setFormData({
+        title: editingTask.title || "",
+        description: editingTask.description || "",
+        status: editingTask.status as any || "new",
+        priority: editingTask.priority as any || "medium",
+        clientId: editingTask.clientId || "none",
+        projectId: editingTask.projectId || "none",
+        assignedTo: editingTask.assignedTo || "none",
+        dueDate: editingTask.dueDate ? new Date(editingTask.dueDate) : null,
+        estimatedHours: editingTask.estimatedHours?.toString() || "",
+      });
+    } else {
+      setFormData({
+        title: "",
+        description: "",
+        status: "new",
+        priority: "medium",
+        clientId: "none",
+        projectId: "none",
+        assignedTo: "none",
+        dueDate: null,
+        estimatedHours: "",
+      });
+    }
+  }, [editingTask, isOpen]);
 
   // Fetch clients
   const { data: clients } = useQuery<Client[]>({
