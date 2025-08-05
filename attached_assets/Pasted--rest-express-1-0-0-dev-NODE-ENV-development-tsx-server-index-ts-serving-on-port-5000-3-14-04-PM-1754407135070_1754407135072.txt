@@ -1,0 +1,382 @@
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+serving on port 5000
+3:14:04 PM [express] GET / 200 in 69ms
+3:14:04 PM [express] GET /@vite/client 200 in 72ms
+3:14:05 PM [express] GET /@react-refresh 304 in 753ms
+3:14:05 PM [express] GET /@fs/home/runner/workspace/node_modules/vite/dist/client/env.mjs 304 in 23ms
+3:14:05 PM [express] GET /src/main.tsx?v=8p5QpjbffJcUbcGkhWRt2 200 in 905ms
+Browserslist: browsers data (caniuse-lite) is 10 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+3:14:06 PM [express] GET /src/App.tsx?v=8p5QpjbffJcUbcGkhWRt2 200 in 1208ms
+3:14:08 PM [express] GET /src/index.css?v=8p5QpjbffJcUbcGkhWRt2 200 in 3675ms
+3:14:10 PM [express] GET /src/lib/queryClient.ts 304 in 3896ms
+3:14:10 PM [express] GET /src/pages/homepage.tsx 304 in 4486ms
+3:14:11 PM [express] GET /src/hooks/use-auth.tsx 200 in 4915ms
+3:14:11 PM [express] GET /src/pages/auth/register.tsx 304 in 1017ms
+3:14:11 PM [express] GET /src/pages/auth/login.tsx 304 in 1061ms
+3:14:11 PM [express] GET /src/pages/auth/reset-password.tsx 304 in 97ms
+3:14:11 PM [express] GET /src/components/ui/toaster.tsx 304 in 5034ms
+3:14:11 PM [express] GET /src/components/ui/tooltip.tsx 304 in 5049ms
+3:14:11 PM [express] GET /src/pages/auth/forgot-password.tsx 304 in 281ms
+3:14:11 PM [express] GET /src/components/layout/dashboard-layout.tsx 304 in 1ms
+3:14:11 PM [express] GET /src/pages/dashboard/dashboard.tsx 304
+3:14:11 PM [express] GET /src/pages/dashboard/clients.tsx 304
+3:14:11 PM [express] GET /src/pages/dashboard/client-details.tsx 304
+3:14:11 PM [express] GET /src/pages/dashboard/projects.tsx 304 in 1ms
+3:14:11 PM [express] GET /src/pages/dashboard/ProjectDetails.tsx 304 in 3ms
+3:14:11 PM [express] GET /src/pages/client-portal/client-dashboard-new.tsx 304 in 12ms
+3:14:11 PM [express] GET /src/pages/dashboard/tasks.tsx 304 in 1ms
+3:14:11 PM [express] GET /src/pages/dashboard/assets.tsx 304
+3:14:11 PM [express] GET /src/pages/dashboard/team.tsx 304
+3:14:12 PM [express] GET /src/pages/client-portal/project-details.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/pages/client-portal/client-dashboard.tsx 304 in 230ms
+3:14:12 PM [express] GET /src/pages/dashboard/projects/NewProject.tsx 304 in 398ms
+3:14:12 PM [express] GET /src/pages/dashboard/profile.tsx 304
+3:14:12 PM [express] GET /src/pages/dashboard/settings.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/pages/team-dashboard.tsx 304
+3:14:12 PM [express] GET /src/pages/leads-management.tsx 304 in 5ms
+3:14:12 PM [express] GET /src/pages/not-found.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/pages/help-center.tsx 304
+3:14:12 PM [express] GET /src/components/ui/input.tsx 304
+3:14:12 PM [express] GET /src/pages/dashboard/team-member-dashboard.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/components/ui/button.tsx 304
+3:14:12 PM [express] GET /src/components/ui/card.tsx 304
+3:14:12 PM [express] GET / 200 in 527ms
+3:14:12 PM [express] GET /src/components/ui/label.tsx 304
+3:14:12 PM [express] GET /src/hooks/use-toast.ts 304
+3:14:12 PM [express] GET /src/components/ui/toast.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/lib/utils.ts 304
+3:14:12 PM [express] GET /src/hooks/use-mobile.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/components/layout/sidebar.tsx 304
+3:14:12 PM [express] GET /src/components/layout/header.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/components/dashboard/stats-card.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/components/dashboard/recent-activity.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/components/ui/skeleton.tsx 304
+3:14:12 PM [express] GET /src/components/ui/dialog.tsx 304
+3:14:12 PM [express] GET /src/components/ui/textarea.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/components/ui/select.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/components/ui/table.tsx 304
+3:14:12 PM [express] GET /src/components/clients/client-card.tsx 304
+3:14:12 PM [express] GET /src/components/modals/new-client-modal.tsx 304
+3:14:12 PM [express] GET /src/components/ui/badge.tsx 304 in 3ms
+3:14:12 PM [express] GET /src/components/ui/tabs.tsx 304
+3:14:12 PM [express] GET /src/components/ui/progress.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/components/assets/domain-card.tsx 304
+3:14:12 PM [express] GET /src/components/tasks/kanban-board.tsx 304
+3:14:12 PM [express] GET /src/components/modals/new-task-modal.tsx 304
+3:14:12 PM [express] GET /src/components/ui/avatar.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/components/ui/dropdown-menu.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/lib/auth.ts 304 in 1ms
+3:14:12 PM [express] GET /src/components/modals/invite-team-member-modal.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/components/team/team-dashboard.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/components/chat/chat-widget.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/components/ui/switch.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/components/ui/separator.tsx 304
+3:14:12 PM [express] GET /src/components/leads/leads-list.tsx 304
+3:14:12 PM [express] GET /src/components/ui/accordion.tsx 304 in 15ms
+3:14:12 PM [express] GET /src/components/ui/popover.tsx 304
+3:14:12 PM [express] GET /src/components/tasks/task-card.tsx 304
+3:14:12 PM [express] GET /src/components/ui/calendar.tsx 304
+3:14:12 PM [express] GET /src/components/ui/scroll-area.tsx 304 in 1ms
+3:14:12 PM [express] GET /src/components/ui/checkbox.tsx 304
+3:14:12 PM [express] GET / 200 in 34ms
+3:14:13 PM [express] GET /@vite/client 200 in 20ms
+3:14:13 PM [express] GET /@vite/client 304 in 1ms
+3:14:14 PM [express] GET /src/main.tsx?v=SJKpzG-G7eYuPcVFcSnix 200
+3:14:14 PM [express] GET /src/main.tsx?v=lhoMy0qx5WI88DK1_We3W 200 in 1ms
+3:14:15 PM [express] GET /@react-refresh 304 in 1ms
+3:14:15 PM [express] GET /@fs/home/runner/workspace/node_modules/vite/dist/client/env.mjs 304
+3:14:16 PM [express] GET /@fs/home/runner/workspace/node_modules/vite/dist/client/env.mjs 304 in 1ms
+3:14:16 PM [express] GET /@react-refresh 304
+3:14:16 PM [express] GET /src/App.tsx?v=SJKpzG-G7eYuPcVFcSnix 200 in 1ms
+3:14:16 PM [express] GET /src/index.css?v=SJKpzG-G7eYuPcVFcSnix 200 in 1ms
+3:14:17 PM [express] GET /src/App.tsx?v=lhoMy0qx5WI88DK1_We3W 200 in 1ms
+3:14:17 PM [express] GET /src/index.css?v=lhoMy0qx5WI88DK1_We3W 200 in 1ms
+3:14:17 PM [express] GET /src/lib/queryClient.ts 304 in 1ms
+3:14:17 PM [express] GET /src/components/ui/toaster.tsx 304
+3:14:17 PM [express] GET /src/lib/queryClient.ts 304 in 1ms
+3:14:17 PM [express] GET /src/components/ui/tooltip.tsx 304 in 1ms
+3:14:17 PM [express] GET /src/hooks/use-auth.tsx 304
+3:14:17 PM [express] GET /src/components/ui/toaster.tsx 304 in 1ms
+3:14:17 PM [express] GET /src/pages/homepage.tsx 304 in 1ms
+3:14:17 PM [express] GET /src/pages/auth/login.tsx 304
+3:14:17 PM [express] GET /src/components/ui/tooltip.tsx 304
+3:14:17 PM [express] GET /src/hooks/use-auth.tsx 304 in 1ms
+3:14:18 PM [express] GET /src/pages/auth/register.tsx 304
+3:14:18 PM [express] GET /src/pages/auth/forgot-password.tsx 304
+3:14:18 PM [express] GET /src/pages/homepage.tsx 304 in 1ms
+3:14:18 PM [express] GET /src/pages/auth/login.tsx 304 in 1ms
+3:14:18 PM [express] GET /src/pages/auth/reset-password.tsx 304
+3:14:18 PM [express] GET /src/components/layout/dashboard-layout.tsx 304 in 1ms
+3:14:18 PM [express] GET /src/pages/auth/register.tsx 304
+3:14:18 PM [express] GET /src/pages/auth/forgot-password.tsx 304
+3:14:18 PM [express] GET /src/pages/dashboard/dashboard.tsx 304
+3:14:18 PM [express] GET /src/pages/auth/reset-password.tsx 304
+3:14:18 PM [express] GET /src/pages/dashboard/clients.tsx 304 in 1ms
+3:14:18 PM [express] GET /src/pages/dashboard/client-details.tsx 304 in 1ms
+3:14:18 PM [express] GET /src/components/layout/dashboard-layout.tsx 304 in 1ms
+3:14:18 PM [express] GET /src/pages/dashboard/dashboard.tsx 304 in 1ms
+3:14:18 PM [express] GET /src/pages/dashboard/clients.tsx 304
+3:14:18 PM [express] GET /src/pages/dashboard/projects.tsx 304 in 1ms
+3:14:18 PM [express] GET /src/pages/dashboard/projects/NewProject.tsx 304
+3:14:19 PM [express] GET /src/pages/dashboard/client-details.tsx 304 in 1ms
+3:14:19 PM [express] GET /src/pages/dashboard/tasks.tsx 304
+3:14:19 PM [express] GET /src/pages/dashboard/ProjectDetails.tsx 304 in 1ms
+3:14:19 PM [express] GET /src/pages/dashboard/projects.tsx 304
+3:14:19 PM [express] GET /src/pages/dashboard/assets.tsx 304 in 1ms
+3:14:19 PM [express] GET /src/pages/dashboard/projects/NewProject.tsx 304 in 1ms
+3:14:19 PM [express] GET /src/pages/dashboard/ProjectDetails.tsx 304
+3:14:19 PM [express] GET /src/pages/dashboard/team.tsx 304
+3:14:19 PM [express] GET /src/pages/client-portal/client-dashboard.tsx 304
+3:14:19 PM [express] GET /src/pages/client-portal/client-dashboard-new.tsx 304
+3:14:19 PM [express] GET /src/pages/dashboard/tasks.tsx 304 in 1ms
+3:14:19 PM [express] GET /src/pages/dashboard/assets.tsx 304
+3:14:19 PM [express] GET /src/pages/dashboard/team.tsx 304
+3:14:19 PM [express] GET /src/pages/client-portal/client-dashboard.tsx 304
+3:14:19 PM [express] GET /src/pages/client-portal/project-details.tsx 304 in 1ms
+3:14:19 PM [express] GET /src/pages/dashboard/profile.tsx 304 in 1ms
+3:14:20 PM [express] GET /src/pages/client-portal/client-dashboard-new.tsx 304
+3:14:20 PM [express] GET /src/pages/client-portal/project-details.tsx 304
+3:14:20 PM [express] GET /src/pages/dashboard/settings.tsx 304
+3:14:20 PM [express] GET /src/pages/team-dashboard.tsx 304 in 1ms
+3:14:20 PM [express] GET /src/pages/dashboard/profile.tsx 304
+3:14:20 PM [express] GET /src/pages/leads-management.tsx 304 in 1ms
+3:14:20 PM [express] GET /src/pages/dashboard/settings.tsx 304 in 1ms
+3:14:20 PM [express] GET /src/pages/not-found.tsx 304
+3:14:20 PM [express] GET /src/pages/team-dashboard.tsx 304 in 1ms
+3:14:20 PM [express] GET /src/pages/help-center.tsx 304
+3:14:20 PM [express] GET /src/pages/dashboard/team-member-dashboard.tsx 304 in 1ms
+3:14:20 PM [express] GET /src/pages/leads-management.tsx 304 in 1ms
+3:14:20 PM [express] GET /src/pages/not-found.tsx 304
+3:14:20 PM [express] GET /src/hooks/use-toast.ts 304 in 1ms
+3:14:20 PM [express] GET /src/pages/help-center.tsx 304 in 1ms
+3:14:20 PM [express] GET /src/components/ui/toast.tsx 304
+3:14:20 PM [express] GET /src/pages/dashboard/team-member-dashboard.tsx 304
+3:14:20 PM [express] GET /src/lib/utils.ts 200 in 1ms
+3:14:20 PM [express] GET /src/components/ui/button.tsx 200 in 1ms
+3:14:20 PM [express] GET /src/hooks/use-toast.ts 304 in 1ms
+3:14:21 PM [express] GET /src/components/ui/toast.tsx 304
+3:14:21 PM [express] GET /src/components/ui/card.tsx 200
+3:14:21 PM [express] GET /src/lib/utils.ts 304 in 1ms
+3:14:21 PM [express] GET /src/components/ui/button.tsx 304
+3:14:21 PM [express] GET /src/components/ui/card.tsx 304 in 1ms
+3:14:21 PM [express] GET /src/components/ui/input.tsx 200
+3:14:21 PM [express] GET /src/components/ui/label.tsx 200 in 1ms
+3:14:21 PM [express] GET /src/hooks/use-mobile.tsx 304 in 1ms
+3:14:21 PM [express] GET /src/components/ui/input.tsx 304
+3:14:21 PM [express] GET /src/components/layout/sidebar.tsx 304
+3:14:21 PM [express] GET /src/components/ui/label.tsx 304 in 1ms
+3:14:21 PM [express] GET /src/hooks/use-mobile.tsx 304 in 1ms
+3:14:21 PM [express] GET /src/components/layout/header.tsx 304
+3:14:21 PM [express] GET /src/components/dashboard/stats-card.tsx 304
+3:14:21 PM [express] GET /src/components/layout/sidebar.tsx 304
+3:14:21 PM [express] GET /src/components/dashboard/recent-activity.tsx 304 in 1ms
+3:14:21 PM [express] GET /src/components/layout/header.tsx 304
+3:14:22 PM [express] GET /src/components/ui/select.tsx 304
+3:14:22 PM [express] GET /src/components/ui/skeleton.tsx 304
+3:14:22 PM [express] GET /src/components/ui/dialog.tsx 304 in 1ms
+3:14:22 PM [express] GET /src/components/clients/client-card.tsx 304
+3:14:22 PM [express] GET /src/components/ui/skeleton.tsx 304
+3:14:22 PM [express] GET /src/components/ui/textarea.tsx 304
+3:14:22 PM [express] GET /src/components/ui/select.tsx 304
+3:14:22 PM [express] GET /src/components/modals/new-client-modal.tsx 304
+3:14:22 PM [express] GET /src/components/dashboard/stats-card.tsx 304
+3:14:22 PM [express] GET /src/components/ui/badge.tsx 304 in 1ms
+3:14:22 PM [express] GET /src/components/ui/tabs.tsx 304 in 1ms
+3:14:22 PM [express] GET /src/components/dashboard/recent-activity.tsx 304
+3:14:22 PM [express] GET /src/components/ui/dialog.tsx 304
+3:14:22 PM [express] GET /src/components/clients/client-card.tsx 304
+3:14:22 PM [express] GET /src/components/modals/new-client-modal.tsx 304 in 1ms
+3:14:22 PM [express] GET /src/components/ui/textarea.tsx 304
+3:14:22 PM [express] GET /src/components/ui/badge.tsx 304
+3:14:22 PM [express] GET /src/components/tasks/kanban-board.tsx 304
+3:14:23 PM [express] GET /src/components/ui/tabs.tsx 304 in 9ms
+3:14:23 PM [express] GET /src/components/tasks/kanban-board.tsx 304 in 1ms
+3:14:23 PM [express] GET /src/components/modals/new-task-modal.tsx 304 in 1ms
+3:14:23 PM [express] GET /src/components/assets/domain-card.tsx 304 in 1ms
+3:14:23 PM [express] GET /src/components/ui/avatar.tsx 304 in 2ms
+3:14:23 PM [express] GET /src/components/modals/new-task-modal.tsx 304
+3:14:23 PM [express] GET /src/components/assets/domain-card.tsx 304
+3:14:23 PM [express] GET /src/components/ui/dropdown-menu.tsx 304 in 1ms
+3:14:23 PM [express] GET /src/lib/auth.ts 304
+3:14:23 PM [express] GET /src/components/ui/avatar.tsx 304
+3:14:23 PM [express] GET /src/components/modals/invite-team-member-modal.tsx 304 in 1ms
+3:14:23 PM [express] GET /src/components/ui/dropdown-menu.tsx 304
+3:14:24 PM [express] GET /src/lib/auth.ts 304
+3:14:24 PM [express] GET /src/components/modals/invite-team-member-modal.tsx 304
+3:14:24 PM [express] GET /src/components/ui/progress.tsx 304 in 1ms
+3:14:24 PM [express] GET /src/components/ui/table.tsx 304 in 1ms
+3:14:24 PM [express] GET /src/components/ui/progress.tsx 304
+3:14:24 PM [express] GET /src/components/ui/table.tsx 304 in 1ms
+3:14:24 PM [express] GET /src/components/ui/switch.tsx 304
+3:14:24 PM [express] GET /src/components/ui/separator.tsx 304
+3:14:24 PM [express] GET /src/components/ui/switch.tsx 304
+3:14:24 PM [express] GET /src/components/ui/separator.tsx 304
+3:14:25 PM [express] GET /src/components/chat/chat-widget.tsx 304 in 1ms
+3:14:25 PM [express] GET /src/components/team/team-dashboard.tsx 304
+3:14:25 PM [express] GET /src/components/chat/chat-widget.tsx 304 in 1ms
+3:14:25 PM [express] GET /src/components/team/team-dashboard.tsx 304 in 6ms
+3:14:25 PM [express] GET /src/components/leads/leads-list.tsx 304 in 4ms
+3:14:25 PM [express] GET /src/components/ui/accordion.tsx 304
+3:14:25 PM [express] GET /src/components/leads/leads-list.tsx 304
+3:14:25 PM [express] GET /src/components/ui/accordion.tsx 304 in 1ms
+3:14:25 PM [express] GET /src/components/ui/popover.tsx 304 in 1ms
+3:14:25 PM [express] GET /src/components/tasks/task-card.tsx 304 in 1ms
+3:14:26 PM [express] GET /src/components/ui/calendar.tsx 304
+3:14:26 PM [express] GET /src/components/ui/popover.tsx 304
+3:14:26 PM [express] GET /src/components/ui/scroll-area.tsx 304 in 1ms
+3:14:26 PM [express] GET /src/components/tasks/task-card.tsx 304
+3:14:26 PM [express] GET /src/components/ui/calendar.tsx 304 in 1ms
+3:14:27 PM [express] GET /src/components/ui/scroll-area.tsx 304
+3:14:27 PM [express] GET /src/components/ui/checkbox.tsx 304
+3:14:27 PM [express] GET /src/components/ui/checkbox.tsx 304
+Login attempt for: errz190@gmail.com
+User found: errz190@gmail.com Has password: true
+Comparing password for user: errz190@gmail.com
+Password valid: false
+3:15:21 PM [express] POST /api/auth/login 401 in 2635ms :: {"message":"אימייל או סיסמה שגויים"}
+3:15:36 PM [express] GET / 200 in 5ms
+3:15:37 PM [express] GET /@vite/client 304 in 1ms
+3:15:37 PM [express] GET /src/main.tsx?v=_S-VEl0mvU6HtMDD6uGEC 200
+3:15:38 PM [express] GET /@react-refresh 304 in 1ms
+3:15:38 PM [express] GET /@fs/home/runner/workspace/node_modules/vite/dist/client/env.mjs 304 in 1ms
+3:15:38 PM [express] GET /src/index.css?v=_S-VEl0mvU6HtMDD6uGEC 200 in 1ms
+3:15:38 PM [express] GET /src/App.tsx?v=_S-VEl0mvU6HtMDD6uGEC 200 in 1ms
+3:15:38 PM [express] GET /src/components/ui/tooltip.tsx 304
+3:15:38 PM [express] GET /src/hooks/use-auth.tsx 304
+3:15:38 PM [express] GET /src/lib/queryClient.ts 304 in 1ms
+3:15:38 PM [express] GET /src/components/ui/toaster.tsx 304 in 1ms
+3:15:38 PM [express] GET /src/pages/homepage.tsx 304 in 1ms
+3:15:38 PM [express] GET /src/pages/auth/login.tsx 304 in 1ms
+3:15:38 PM [express] GET /src/pages/auth/forgot-password.tsx 304 in 1ms
+3:15:38 PM [express] GET /src/pages/auth/register.tsx 304
+3:15:38 PM [express] GET /src/pages/auth/reset-password.tsx 304 in 1ms
+3:15:38 PM [express] GET /src/components/layout/dashboard-layout.tsx 304 in 1ms
+3:15:38 PM [express] GET /src/pages/dashboard/dashboard.tsx 304 in 1ms
+3:15:38 PM [express] GET /src/pages/dashboard/clients.tsx 304 in 1ms
+3:15:38 PM [express] GET /src/pages/dashboard/client-details.tsx 304 in 1ms
+3:15:38 PM [express] GET /src/pages/dashboard/projects.tsx 304 in 1ms
+3:15:38 PM [express] GET /src/pages/dashboard/projects/NewProject.tsx 304
+3:15:38 PM [express] GET /src/pages/dashboard/ProjectDetails.tsx 304 in 1ms
+3:15:38 PM [express] GET /src/pages/dashboard/tasks.tsx 304
+3:15:38 PM [express] GET /src/pages/dashboard/assets.tsx 304 in 1ms
+3:15:38 PM [express] GET /src/pages/dashboard/team.tsx 304
+3:15:39 PM [express] GET /src/pages/client-portal/client-dashboard-new.tsx 304
+3:15:39 PM [express] GET /src/pages/client-portal/client-dashboard.tsx 304 in 1ms
+3:15:39 PM [express] GET /src/pages/client-portal/project-details.tsx 304 in 1ms
+3:15:39 PM [express] GET /src/pages/dashboard/profile.tsx 304
+3:15:39 PM [express] GET /src/pages/dashboard/settings.tsx 304
+3:15:39 PM [express] GET /src/pages/team-dashboard.tsx 304
+3:15:39 PM [express] GET /src/pages/leads-management.tsx 304 in 2ms
+3:15:39 PM [express] GET /src/pages/not-found.tsx 304
+3:15:39 PM [express] GET /src/pages/help-center.tsx 304
+3:15:39 PM [express] GET /src/hooks/use-toast.ts 304
+3:15:39 PM [express] GET /src/pages/dashboard/team-member-dashboard.tsx 304 in 1ms
+3:15:39 PM [express] GET /src/components/ui/toast.tsx 304 in 1ms
+3:15:39 PM [express] GET /src/lib/utils.ts 304 in 1ms
+3:15:39 PM [express] GET /src/components/ui/button.tsx 304 in 1ms
+3:15:39 PM [express] GET /src/components/ui/card.tsx 304
+3:15:39 PM [express] GET /src/components/ui/input.tsx 304 in 1ms
+3:15:39 PM [express] GET /src/components/ui/label.tsx 304
+3:15:39 PM [express] GET /src/hooks/use-mobile.tsx 304 in 1ms
+3:15:39 PM [express] GET / 200 in 6ms
+3:15:39 PM [express] GET /src/main.tsx?v=P04BY-DXa9lthZIWl-j5t 200
+3:15:40 PM [express] GET / 200 in 3ms
+3:15:40 PM [express] GET /@vite/client 200 in 14ms
+3:15:40 PM [express] GET /src/main.tsx?v=z1vkFRVpwNLwxKOwpMPiO 200 in 1ms
+3:15:41 PM [express] GET /@fs/home/runner/workspace/node_modules/vite/dist/client/env.mjs 304
+3:15:41 PM [express] GET /@react-refresh 304
+3:15:41 PM [express] GET /src/App.tsx?v=z1vkFRVpwNLwxKOwpMPiO 200
+3:15:41 PM [express] GET /src/index.css?v=z1vkFRVpwNLwxKOwpMPiO 200 in 1ms
+3:15:41 PM [express] GET /src/components/ui/toaster.tsx 304
+3:15:41 PM [express] GET /src/lib/queryClient.ts 304
+3:15:41 PM [express] GET /src/components/ui/tooltip.tsx 304
+3:15:41 PM [express] GET /src/hooks/use-auth.tsx 304
+3:15:41 PM [express] GET /src/pages/homepage.tsx 304
+3:15:41 PM [express] GET /src/pages/auth/register.tsx 304
+3:15:41 PM [express] GET /src/pages/auth/login.tsx 304
+3:15:41 PM [express] GET /src/pages/auth/forgot-password.tsx 304 in 1ms
+3:15:42 PM [express] GET /src/pages/auth/reset-password.tsx 304 in 1ms
+3:15:42 PM [express] GET /src/components/layout/dashboard-layout.tsx 304
+3:15:42 PM [express] GET /src/pages/dashboard/dashboard.tsx 304 in 1ms
+3:15:42 PM [express] GET /src/pages/dashboard/clients.tsx 304
+3:15:42 PM [express] GET /src/pages/dashboard/client-details.tsx 304
+3:15:42 PM [express] GET /src/pages/dashboard/projects/NewProject.tsx 304 in 1ms
+3:15:42 PM [express] GET /src/pages/dashboard/projects.tsx 304
+3:15:42 PM [express] GET /src/pages/dashboard/ProjectDetails.tsx 304
+3:15:42 PM [express] GET /src/pages/dashboard/tasks.tsx 304
+3:15:42 PM [express] GET /src/pages/dashboard/assets.tsx 304
+3:15:42 PM [express] GET /src/pages/client-portal/client-dashboard.tsx 304
+3:15:42 PM [express] GET /src/pages/dashboard/team.tsx 304 in 1ms
+3:15:42 PM [express] GET /src/pages/client-portal/client-dashboard-new.tsx 304
+3:15:42 PM [express] GET /src/pages/dashboard/profile.tsx 304 in 1ms
+3:15:42 PM [express] GET /src/pages/client-portal/project-details.tsx 304
+3:15:42 PM [express] GET /src/pages/dashboard/settings.tsx 304
+3:15:42 PM [express] GET /src/pages/team-dashboard.tsx 304 in 1ms
+3:15:42 PM [express] GET /src/pages/leads-management.tsx 304
+3:15:42 PM [express] GET /src/pages/not-found.tsx 304
+3:15:42 PM [express] GET /src/pages/help-center.tsx 304
+3:15:42 PM [express] GET /src/hooks/use-toast.ts 304
+3:15:42 PM [express] GET /src/components/ui/toast.tsx 304 in 1ms
+3:15:42 PM [express] GET /src/lib/utils.ts 200 in 1ms
+3:15:42 PM [express] GET /src/components/ui/button.tsx 200 in 1ms
+3:15:42 PM [express] GET /src/pages/dashboard/team-member-dashboard.tsx 304 in 1ms
+3:15:42 PM [express] GET /src/components/ui/card.tsx 200
+3:15:42 PM [express] GET /src/components/ui/input.tsx 200
+3:15:42 PM [express] GET /src/components/ui/label.tsx 200
+3:15:42 PM [express] GET /src/hooks/use-mobile.tsx 200
+3:15:42 PM [express] GET /src/components/layout/sidebar.tsx 200 in 1ms
+3:15:42 PM [express] GET /src/components/dashboard/stats-card.tsx 200 in 1ms
+3:15:42 PM [express] GET /src/components/layout/header.tsx 200
+3:15:43 PM [express] GET /src/components/dashboard/recent-activity.tsx 200
+3:15:43 PM [express] GET /src/components/ui/skeleton.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/components/ui/dialog.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/components/ui/textarea.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/components/ui/select.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/components/clients/client-card.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/components/modals/new-client-modal.tsx 200 in 2ms
+3:15:43 PM [express] GET /src/components/ui/badge.tsx 200
+3:15:43 PM [express] GET /src/components/ui/tabs.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/components/tasks/kanban-board.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/components/modals/new-task-modal.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/components/assets/domain-card.tsx 200
+3:15:43 PM [express] GET /src/components/ui/avatar.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/components/ui/dropdown-menu.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/lib/auth.ts 200 in 1ms
+3:15:43 PM [express] GET /src/components/modals/invite-team-member-modal.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/components/ui/progress.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/components/ui/switch.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/components/ui/table.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/components/ui/separator.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/components/team/team-dashboard.tsx 200 in 2ms
+3:15:43 PM [express] GET /src/components/chat/chat-widget.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/components/leads/leads-list.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/components/ui/accordion.tsx 200 in 1ms
+3:15:43 PM [express] GET /src/components/ui/calendar.tsx 304
+3:15:43 PM [express] GET /src/components/ui/scroll-area.tsx 304
+3:15:43 PM [express] GET /src/components/tasks/task-card.tsx 304
+3:15:43 PM [express] GET /src/components/ui/popover.tsx 304 in 1ms
+3:15:44 PM [express] GET /src/components/ui/checkbox.tsx 304
+3:18:30 PM [vite] hmr update /src/pages/auth/login.tsx, /src/index.css?v=8p5QpjbffJcUbcGkhWRt2
+3:18:32 PM [vite] Internal server error: Failed to resolve import "../../firebase" from "client/src/pages/auth/login.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/src/pages/auth/login.tsx:32:54
+  42 |      const handleGoogleRedirect = async () => {
+  43 |        try {
+  44 |          const { handleGoogleRedirect: handleGoogleRedirect2 } = await import("../../firebase");
+     |                                                                               ^
+  45 |          const result = await handleGoogleRedirect2();
+  46 |          if (result && result.success) {
+      at TransformPluginContext._formatError (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:49258:41)
+      at TransformPluginContext.error (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:49253:16)
+      at normalizeUrl (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:64291:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async <anonymous> (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:64423:39)
+      at async Promise.all (index 12)
+      at async TransformPluginContext.transform (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:64350:7)
+      at async PluginContainer.transform (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:49099:18)
+      at async loadAndTransform (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:51977:27)
+      at async viteTransformMiddleware (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:62105:24)
