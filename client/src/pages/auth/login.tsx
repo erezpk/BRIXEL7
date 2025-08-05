@@ -11,7 +11,7 @@ import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const { login, isLoginLoading, loginError } = useAuth();
+  const { login, isLoginLoading, loginError, loginMutation } = useAuth();
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
@@ -25,30 +25,22 @@ export default function Login() {
     e.preventDefault();
     
     try {
-      await new Promise((resolve, reject) => {
-        login({
-          email: formData.email,
-          password: formData.password,
-        }, {
-          onSuccess: () => {
-            toast({
-              title: "התחברות הצליחה",
-              description: "ברוכים הבאים למערכת",
-            });
-            setLocation("/dashboard");
-            resolve(true);
-          },
-          onError: (error: any) => {
-            toast({
-              title: "שגיאה בהתחברות",
-              description: error?.message || "אימייל או סיסמה שגויים",
-              variant: "destructive",
-            });
-            reject(error);
-          },
-        });
+      const result = await loginMutation.mutateAsync({
+        email: formData.email,
+        password: formData.password,
       });
-    } catch (error) {
+      
+      toast({
+        title: "התחברות הצליחה",
+        description: "ברוכים הבאים למערכת",
+      });
+      setLocation("/dashboard");
+    } catch (error: any) {
+      toast({
+        title: "שגיאה בהתחברות",
+        description: error?.message || "אימייל או סיסמה שגויים",
+        variant: "destructive",
+      });
       console.error('Login error:', error);
     }
   };
