@@ -70,6 +70,7 @@ export default function Login() {
       }
 
       // No Firebase fallback - show the backend error
+      const result = await backendResponse.json();
       toast({
         title: "שגיאה בהתחברות", 
         description: result.message || "אימייל או סיסמה שגויים",

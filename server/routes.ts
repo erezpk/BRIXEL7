@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { firebaseSync } from "./firebase-sync";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { users } from "@shared/schema";
+import { users } from "../shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
