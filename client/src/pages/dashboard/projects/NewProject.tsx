@@ -7,12 +7,49 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowRight } from 'lucide-react';
 
-// This file does not import apiRequest, so no changes are needed.
-// If this was a file that imported apiRequest, the import statement
-// would be changed from:
-// import { apiRequest } from "@/lib/utils";
-// to:
-// import { apiRequest } from "@/lib/queryClient";
+export default function NewProject() {
+  return (
+    <div className="max-w-2xl mx-auto p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-right font-rubik">פרויקט חדש</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name" className="text-right">שם הפרויקט</Label>
+            <Input id="name" placeholder="הכנס שם הפרויקט" className="text-right" />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-right">תיאור</Label>
+            <Textarea id="description" placeholder="תיאור הפרויקט" className="text-right" />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="client" className="text-right">לקוח</Label>
+            <Select>
+              <SelectTrigger>
+                <SelectValue placeholder="בחר לקוח" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="client1">לקוח 1</SelectItem>
+                <SelectItem value="client2">לקוח 2</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex justify-end space-x-reverse space-x-2">
+            <Button variant="outline">ביטול</Button>
+            <Button>
+              צור פרויקט
+              <ArrowRight className="mr-2 h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function NewProject() {
   return (
