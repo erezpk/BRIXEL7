@@ -1,4 +1,4 @@
-import { 
+import {
   agencies, users, clients, projects, tasks, taskComments, digitalAssets, agencyTemplates, activityLog, passwordResetTokens,
   adAccounts, leads, chatConversations, chatMessages, teamInvitations, notifications,
   type Agency, type InsertAgency,
@@ -136,6 +136,7 @@ export interface IStorage {
   createTeamInvitation(invitation: InsertTeamInvitation): Promise<TeamInvitation>;
   getTeamInvitation(token: string): Promise<TeamInvitation | undefined>;
   acceptTeamInvitation(token: string): Promise<void>;
+  updateTeamInvitation(token: string, status: string): Promise<TeamInvitation>;
 
   // Notifications
   createNotification(notification: InsertNotification): Promise<Notification>;
@@ -537,42 +538,34 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createOrUpdateUserFromGoogle(email: string, name: string, avatar?: string): Promise<User> {
-    const existingUser = await this.getUserByEmail(email);
+    // Check if user exists
+    let user = await this.getUserByEmail(email);
 
-    if (existingUser) {
+    if (user) {
       // Update existing user
-      const updatedUser = await this.db
-        .update(users)
+      const [updated] = await this.db.update(users)
         .set({
           fullName: name,
           avatar: avatar,
-          profileImageUrl: avatar,
           lastLogin: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, existingUser.id))
-        .returning();
-
-      return updatedUser[0];
-    } else {
-      // Create new user
-      const newUser = await this.db
-        .insert(users)
-        .values({
-          id: crypto.randomUUID(),
-          email,
-          fullName: name,
-          avatar: avatar,
-          profileImageUrl: avatar,
-          role: 'client',
-          isActive: true,
-          lastLogin: new Date(),
-          createdAt: new Date(),
           updatedAt: new Date()
         })
+        .where(eq(users.email, email))
         .returning();
-
-      return newUser[0];
+      return updated;
+    } else {
+      // Create new user
+      const [created] = await this.db.insert(users).values({
+        email,
+        fullName: name,
+        role: 'client', // Default role for Google sign-in users
+        isActive: true,
+        avatar: avatar,
+        lastLogin: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }).returning();
+      return created;
     }
   }
 
@@ -660,7 +653,7 @@ export class DatabaseStorage implements IStorage {
 
     // Update conversation's last message timestamp
     await this.db.update(chatConversations)
-      .set({ 
+      .set({
         lastMessageAt: new Date(),
         unreadCount: sql`${chatConversations.unreadCount} + 1`
       })
@@ -694,11 +687,19 @@ export class DatabaseStorage implements IStorage {
 
   async acceptTeamInvitation(token: string): Promise<void> {
     await this.db.update(teamInvitations)
-      .set({ 
+      .set({
         status: 'accepted',
         acceptedAt: new Date()
       })
       .where(eq(teamInvitations.token, token));
+  }
+
+  async updateTeamInvitation(token: string, status: string): Promise<TeamInvitation> {
+    const [updated] = await this.db.update(teamInvitations)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(teamInvitations.token, token))
+      .returning();
+    return updated;
   }
 
   // Notifications
@@ -717,7 +718,7 @@ export class DatabaseStorage implements IStorage {
 
   async markNotificationAsRead(id: string): Promise<void> {
     await this.db.update(notifications)
-      .set({ 
+      .set({
         isRead: true,
         readAt: new Date()
       })

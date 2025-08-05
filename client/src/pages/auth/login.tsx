@@ -13,9 +13,9 @@ import { useMutation } from "@tanstack/react-query";
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const { user, isLoading, login, isLoginLoading, loginError, loginMutation } = useAuth();
+  const { user, isLoading, login, isLoginLoading, loginError, loginMutation: authLoginMutation } = useAuth();
   const { toast } = useToast();
-  
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -40,7 +40,7 @@ export default function Login() {
             title: "התחברות הצליחה",
             description: "ברוכים הבאים למערכת",
           });
-          
+
           // Redirect based on user role
           const redirectPath = result.user?.role === 'client' ? '/client-portal' : '/dashboard';
           setTimeout(() => {
@@ -52,17 +52,61 @@ export default function Login() {
         // Only show error if it's not the domain authorization error
         if (!error.message?.includes('unauthorized-domain')) {
           toast({
-            title: "שגיאה באימות Google", 
+            title: "שגיאה באימות Google",
             description: "אנא נסה שוב",
             variant: "destructive",
           });
         }
       }
     };
-    
+
     checkRedirect();
   }, [toast, setLocation]);
 
+  // Mutation for regular login (using the existing loginMutation from useAuth hook)
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.email || !formData.password) {
+      toast({
+        title: "שגיאה",
+        description: "אנא מלא את כל השדות",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const result = await authLoginMutation.mutateAsync({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (result?.user) {
+        toast({
+          title: "התחברות הצליחה",
+          description: "ברוכים הבאים למערכת",
+        });
+
+        // Redirect based on user role
+        const redirectPath = result.user.role === 'client' ? '/client-portal' : '/dashboard';
+
+        // רגע קצר לפני הפניה כדי שהמערכת תעדכן את הסטטוס
+        setTimeout(() => {
+          setLocation(redirectPath);
+        }, 100);
+      }
+    } catch (error: any) {
+      toast({
+        title: "שגיאה בהתחברות",
+        description: error?.message || "אימייל או סיסמה שגויים",
+        variant: "destructive",
+      });
+      console.error('Login error:', error);
+    }
+  };
+
+  // Mutation for Google sign-in using the firebase loginWithGoogle function
   const googleLoginMutation = useMutation({
     mutationFn: async () => {
       console.log('Starting Google sign in...');
@@ -97,39 +141,6 @@ export default function Login() {
     googleLoginMutation.mutate();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      const result = await loginMutation.mutateAsync({
-        email: formData.email,
-        password: formData.password,
-      });
-      
-      if (result?.user) {
-        toast({
-          title: "התחברות הצליחה",
-          description: "ברוכים הבאים למערכת",
-        });
-        
-        // Redirect based on user role
-        const redirectPath = result.user.role === 'client' ? '/client-portal' : '/dashboard';
-        
-        // רגע קצר לפני הפניה כדי שהמערכת תעדכן את הסטטוס
-        setTimeout(() => {
-          setLocation(redirectPath);
-        }, 100);
-      }
-    } catch (error: any) {
-      toast({
-        title: "שגיאה בהתחברות",
-        description: error?.message || "אימייל או סיסמה שגויים",
-        variant: "destructive",
-      });
-      console.error('Login error:', error);
-    }
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -149,9 +160,9 @@ export default function Login() {
             הכנסו את פרטי החשבון שלכם כדי להתחבר
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email" data-testid="label-email">אימייל</Label>
               <Input
@@ -166,7 +177,7 @@ export default function Login() {
                 data-testid="input-email"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password" data-testid="label-password">סיסמה</Label>
               <div className="relative">
@@ -197,14 +208,14 @@ export default function Login() {
                 </Button>
               </div>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-reverse space-x-2">
                 <Checkbox
                   id="rememberMe"
                   name="rememberMe"
                   checked={formData.rememberMe}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked) =>
                     setFormData(prev => ({ ...prev, rememberMe: checked as boolean }))
                   }
                   data-testid="checkbox-remember-me"
@@ -219,17 +230,17 @@ export default function Login() {
                 </Button>
               </Link>
             </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoginLoading}
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={authLoginMutation.isPending || googleLoginMutation.isPending}
               data-testid="button-submit"
             >
-              {isLoginLoading ? "מתחבר..." : "כניסה"}
+              {authLoginMutation.isPending ? "מתחבר..." : "כניסה"}
             </Button>
-            
-            {loginError && (
+
+            {authLoginMutation.error && (
               <div className="text-sm text-red-600 text-center" data-testid="login-error">
                 שגיאה בהתחברות. אנא נסה שוב.
               </div>
@@ -245,7 +256,7 @@ export default function Login() {
                 <span className="bg-white px-2 text-gray-500">או</span>
               </div>
             </div>
-            
+
             <Button
               type="button"
               variant="outline"
@@ -287,7 +298,7 @@ export default function Login() {
               כניסה עם Replit
             </Button>
           </div>
-          
+
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               אין לך חשבון?{" "}
