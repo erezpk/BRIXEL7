@@ -23,8 +23,8 @@ export const loadGoogleOAuth = (): Promise<void> => {
 
 // Get client ID from environment - using a generic one for localhost/dev
 const getClientId = () => {
-  // Generic Google Client ID that works with localhost and common dev domains
-  return "1234567890-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com";
+  // Replace this with your actual Google OAuth Client ID from Google Cloud Console
+  return "YOUR_ACTUAL_CLIENT_ID_HERE.apps.googleusercontent.com";
 };
 
 // Initialize Google OAuth
