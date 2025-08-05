@@ -194,20 +194,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Google OAuth route
-  router.post('/api/auth/google', async (req, res) => {
+  // Simple Google OAuth route (without Firebase)
+  router.post('/api/auth/google-simple', async (req, res) => {
     try {
-      const { idToken } = req.body;
+      const { userInfo } = req.body;
 
-      if (!idToken) {
-        return res.status(400).json({ message: 'חסר ID token' });
+      if (!userInfo || !userInfo.email) {
+        return res.status(400).json({ message: 'חסרים נתוני משתמש' });
       }
 
-      // Verify the Google ID token
-      const googleUser = await verifyGoogleToken(idToken);
-
       // Check if user already exists
-      let user = await storage.getUserByEmail(googleUser.email);
+      let user = await storage.getUserByEmail(userInfo.email);
 
       if (user) {
         // User exists, log them in
@@ -218,17 +215,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.json({ user: req.user, message: 'התחברות עם Google הצליחה' });
         });
       } else {
-        // New user - need to decide how to handle this
-        // For now, we'll create a basic user without agency
-        // In production, you might want to redirect to a signup flow
+        // New user - create account
         const newUser = await storage.createUser({
-          email: googleUser.email,
+          email: userInfo.email,
           password: 'google-oauth-user', // Placeholder password for OAuth users
-          fullName: googleUser.name,
+          fullName: userInfo.name || userInfo.email,
           role: 'client', // Default role, can be changed later
           agencyId: null, // Will need to be assigned later
           isActive: true,
-          avatar: googleUser.picture,
+          avatar: userInfo.picture,
         });
 
         req.login(newUser, (err) => {
@@ -244,7 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error('Google OAuth error:', error);
-      res.status(400).json({ message: 'שגיאה באימות Google' });
+      res.status(500).json({ message: 'שגיאה באימות Google' });
     }
   });
 
