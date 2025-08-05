@@ -621,99 +621,53 @@ export default function ClientDashboard() {
     }, 3000);
   };
 
-  // Add email sending functionality
-  const sendEmailMutation = useMutation({
-    mutationFn: async ({ type, data }: { type: string; data: any }) => {
-      // Simulate email sending API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      switch (type) {
-        case 'credentials':
-          return { 
-            success: true, 
-            message: `פרטי התחברות נשלחו לכתובת ${data.email}`,
-            type: 'פרטי התחברות'
-          };
-        case 'reset-password':
-          return { 
-            success: true, 
-            message: `קישור איפוס סיסמה נשלח לכתובת ${data.email}`,
-            type: 'איפוס סיסמה'
-          };
-        case 'project-update':
-          return { 
-            success: true, 
-            message: `עדכון פרויקט נשלח לכתובת ${data.email}`,
-            type: 'עדכון פרויקט'
-          };
-        case 'welcome':
-          return { 
-            success: true, 
-            message: `אימייל ברוכים הבאים נשלח לכתובת ${data.email}`,
-            type: 'ברוכים הבאים'
-          };
-        default:
-          return { 
-            success: true, 
-            message: `אימייל נשלח בהצלחה לכתובת ${data.email}`,
-            type: 'הודעה כללית'
-          };
+  // Real password reset functionality
+  const realPasswordResetMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          email: profileData.email 
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'שגיאה בשליחת קישור איפוס סיסמה');
       }
+
+      return response.json();
     },
     onSuccess: (result) => {
       toast({
-        title: "אימייל נשלח בהצלחה",
-        description: result.message
+        title: "קישור איפוס סיסמה נשלח",
+        description: `נשלח קישור איפוס סיסמה לכתובת ${profileData.email}`
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         variant: "destructive",
         title: "שגיאה בשליחת אימייל",
-        description: "אירעה שגיאה בעת שליחת האימייל. אנא נסה שוב מאוחר יותר."
+        description: error.message || "אירעה שגיאה בעת שליחת קישור איפוס הסיסמה"
       });
     }
   });
 
-  const handleSendCredentialsEmail = () => {
-    const emailData = {
-      email: profileData.email,
-      name: profileData.fullName,
-      credentials: {
-        username: profileData.email,
-        password: '••••••••'
-      }
-    };
-    
-    sendEmailMutation.mutate({ 
-      type: 'credentials', 
-      data: emailData 
-    });
-  };
+  const handleRealPasswordReset = () => {
+    if (!profileData.email) {
+      toast({
+        variant: "destructive",
+        title: "שגיאה",
+        description: "לא נמצאה כתובת אימייל בפרופיל"
+      });
+      return;
+    }
 
-  const handleSendWelcomeEmail = () => {
-    const emailData = {
-      email: profileData.email,
-      name: profileData.fullName
-    };
-    
-    sendEmailMutation.mutate({ 
-      type: 'welcome', 
-      data: emailData 
-    });
-  };
-
-  const handleSendPasswordResetEmail = () => {
-    const emailData = {
-      email: profileData.email,
-      name: profileData.fullName,
-      resetUrl: `${window.location.origin}/reset-password?token=demo-token`
-    };
-    
-    sendEmailMutation.mutate({ 
-      type: 'reset-password', 
-      data: emailData 
-    });
+    realPasswordResetMutation.mutate();
   };
 
   const handleNotificationChange = (type: keyof typeof notifications, value: boolean) => {
@@ -1353,88 +1307,16 @@ export default function ClientDashboard() {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={handleSendPasswordResetEmail}
-                        disabled={sendEmailMutation.isPending}
+                        onClick={handleRealPasswordReset}
+                        disabled={realPasswordResetMutation.isPending}
                       >
-                        {sendEmailMutation.isPending ? 'שולח...' : 'שלח קישור איפוס סיסמה'}
-                      </Button>
-                      
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={handleSendCredentialsEmail}
-                        disabled={sendEmailMutation.isPending}
-                        className="mr-2"
-                      >
-                        {sendEmailMutation.isPending ? 'שולח...' : 'שלח פרטי התחברות באימייל'}
-                      </Button>
-                      
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={handleSendWelcomeEmail}
-                        disabled={sendEmailMutation.isPending}
-                        className="mr-2"
-                      >
-                        {sendEmailMutation.isPending ? 'שולח...' : 'שלח אימייל ברוכים הבאים'}
+                        {realPasswordResetMutation.isPending ? 'שולח...' : 'שלח קישור איפוס סיסמה'}
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Email Actions */}
-                <Card className={isDarkMode ? 'bg-gray-800 border-gray-700' : ''}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Mail className="h-5 w-5" />
-                      פעולות אימייל
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
-                      <h4 className={`font-medium mb-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-800'}`}>שליחת הודעות אוטומטיות</h4>
-                      <p className={`text-sm mb-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-                        שלח הודעות אימייל אוטומטיות ללקוחות ולצוות
-                      </p>
-                      
-                      <div className="flex flex-wrap gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="default"
-                          onClick={() => sendEmailMutation.mutate({ 
-                            type: 'project-update', 
-                            data: { email: profileData.email, name: profileData.fullName } 
-                          })}
-                          disabled={sendEmailMutation.isPending}
-                        >
-                          עדכון פרויקט
-                        </Button>
-                        
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => toast({
-                            title: "בקרוב",
-                            description: "תכונה זו תהיה זמינה בקרוב"
-                          })}
-                        >
-                          דוח חודשי
-                        </Button>
-                        
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => toast({
-                            title: "בקרוב", 
-                            description: "תכונה זו תהיה זמינה בקרוב"
-                          })}
-                        >
-                          תזכורת פגישה
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                
               </div>
             </div>
           )}
