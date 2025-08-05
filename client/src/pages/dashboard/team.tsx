@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,11 +19,15 @@ import { getUserRole } from "@/lib/auth";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import InviteTeamMemberModal from "@/components/modals/invite-team-member-modal";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Team() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: teamMembers, isLoading } = useQuery<User[]>({
     queryKey: ['/api/team'],
@@ -40,14 +44,36 @@ export default function Team() {
     return matchesSearch && matchesRole;
   });
 
+  const deactivateMemberMutation = useMutation({
+    mutationFn: async (memberId: string) => {
+      const response = await apiRequest('PUT', `/api/team/${memberId}/toggle-active`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team'] });
+      toast({
+        title: "סטטוס חבר הצוות עודכן",
+        description: "סטטוס הפעילות של חבר הצוות עודכן בהצלחה",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "שגיאה בעדכון סטטוס",
+        description: error?.message || "אירעה שגיאה לא צפויה",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEditMember = (member: User) => {
     // TODO: Implement edit member modal
     console.log('Edit member:', member);
   };
 
   const handleDeactivateMember = (member: User) => {
-    // TODO: Implement deactivate member confirmation
-    console.log('Deactivate member:', member);
+    if (window.confirm(`האם אתה בטוח שברצונך ${member.isActive ? 'להשבית' : 'להפעיל'} את ${member.fullName}?`)) {
+      deactivateMemberMutation.mutate(member.id!);
+    }
   };
 
   const getRoleColor = (role: string) => {

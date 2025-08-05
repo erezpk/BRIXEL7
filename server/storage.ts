@@ -20,25 +20,26 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   validatePassword(password: string, hash: string): Promise<boolean>;
   hashPassword(password: string): Promise<string>;
-  
+
   // Agencies
   getAgency(id: string): Promise<Agency | undefined>;
   getAgencyBySlug(slug: string): Promise<Agency | undefined>;
   createAgency(agency: InsertAgency): Promise<Agency>;
   updateAgency(id: string, agency: Partial<InsertAgency>): Promise<Agency>;
-  
+
   // Users
   getUser(id: string): Promise<User | undefined>;
+  getUserById(id: string): Promise<User | undefined>;
   getUsersByAgency(agencyId: string): Promise<User[]>;
   updateUser(id: string, user: Partial<InsertUser>): Promise<User>;
-  
+
   // Clients
   getClient(id: string): Promise<Client | undefined>;
   getClientsByAgency(agencyId: string): Promise<Client[]>;
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: string, client: Partial<InsertClient>): Promise<Client>;
   deleteClient(id: string): Promise<void>;
-  
+
   // Projects
   getProject(id: string): Promise<Project | undefined>;
   getProjectsByAgency(agencyId: string): Promise<Project[]>;
@@ -46,7 +47,7 @@ export interface IStorage {
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: string, project: Partial<InsertProject>): Promise<Project>;
   deleteProject(id: string): Promise<void>;
-  
+
   // Tasks
   getTask(id: string): Promise<Task | undefined>;
   getTasksByAgency(agencyId: string, filters?: {
@@ -59,11 +60,11 @@ export interface IStorage {
   createTask(task: InsertTask): Promise<Task>;
   updateTask(id: string, task: Partial<InsertTask>): Promise<Task>;
   deleteTask(id: string): Promise<void>;
-  
+
   // Task Comments
   getTaskComments(taskId: string): Promise<TaskComment[]>;
   createTaskComment(comment: InsertTaskComment): Promise<TaskComment>;
-  
+
   // Digital Assets
   getDigitalAsset(id: string): Promise<DigitalAsset | undefined>;
   getDigitalAssetsByAgency(agencyId: string): Promise<DigitalAsset[]>;
@@ -71,16 +72,16 @@ export interface IStorage {
   createDigitalAsset(asset: InsertDigitalAsset): Promise<DigitalAsset>;
   updateDigitalAsset(id: string, asset: Partial<InsertDigitalAsset>): Promise<DigitalAsset>;
   deleteDigitalAsset(id: string): Promise<void>;
-  
+
   // Templates
   getAgencyTemplates(agencyId: string): Promise<AgencyTemplate[]>;
   getPublicTemplates(): Promise<AgencyTemplate[]>;
   createAgencyTemplate(template: InsertAgencyTemplate): Promise<AgencyTemplate>;
-  
+
   // Activity Log
   logActivity(log: Omit<ActivityLog, 'id' | 'createdAt'>): Promise<void>;
   getActivityLog(agencyId: string, limit?: number): Promise<ActivityLog[]>;
-  
+
   // Dashboard Stats
   getDashboardStats(agencyId: string): Promise<{
     activeProjects: number;
@@ -92,8 +93,15 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user || undefined;
+    return db.query.users.findFirst({
+      where: eq(users.email, email),
+    });
+  }
+
+  async getUserById(id: string): Promise<User | undefined> {
+    return db.query.users.findFirst({
+      where: eq(users.id, id),
+    });
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -133,12 +141,12 @@ export class DatabaseStorage implements IStorage {
 
   async updateAgency(id: string, updateAgency: Partial<InsertAgency>): Promise<Agency> {
     const updateData: any = { ...updateAgency, updatedAt: new Date() };
-    
+
     // Handle settings properly
     if (updateAgency.settings) {
       updateData.settings = updateAgency.settings;
     }
-    
+
     const [agency] = await db
       .update(agencies)
       .set(updateData)
@@ -241,7 +249,7 @@ export class DatabaseStorage implements IStorage {
     projectId?: string;
   }): Promise<Task[]> {
     const conditions = [eq(tasks.agencyId, agencyId)];
-    
+
     if (filters?.status) {
       conditions.push(eq(tasks.status, filters.status));
     }
@@ -254,7 +262,7 @@ export class DatabaseStorage implements IStorage {
     if (filters?.projectId) {
       conditions.push(eq(tasks.projectId, filters.projectId));
     }
-    
+
     return db.select().from(tasks).where(and(...conditions)).orderBy(desc(tasks.createdAt));
   }
 
@@ -272,12 +280,12 @@ export class DatabaseStorage implements IStorage {
 
   async updateTask(id: string, updateTask: Partial<InsertTask>): Promise<Task> {
     const updateData: any = { ...updateTask, updatedAt: new Date() };
-    
+
     // Handle tags array properly
     if (updateTask.tags) {
       updateData.tags = Array.isArray(updateTask.tags) ? updateTask.tags : [];
     }
-    
+
     const [task] = await db
       .update(tasks)
       .set(updateData)
@@ -371,7 +379,7 @@ export class DatabaseStorage implements IStorage {
   }> {
     const today = new Date();
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    
+
     const [activeProjectsResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(projects)

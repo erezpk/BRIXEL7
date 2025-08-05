@@ -93,10 +93,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.user) {
       return res.status(401).json({ message: 'נדרשת התחברות' });
     }
-    
+
     const userAgencyId = req.user.agencyId;
     const requestedAgencyId = req.params.agencyId || req.body.agencyId;
-    
+
     if (req.user.role === 'super_admin' || userAgencyId === requestedAgencyId) {
       return next();
     }
@@ -127,7 +127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const data = signupSchema.parse(req.body);
-      
+
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(data.email);
       if (existingUser) {
@@ -139,7 +139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .replace(/[^a-z0-9\u0590-\u05FF]/g, '-')
         .replace(/-+/g, '-')
         .replace(/^-+|-+$/g, '');
-      
+
       const agency = await storage.createAgency({
         name: data.agencyName,
         slug: agencySlug,
@@ -217,11 +217,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get client's projects and tasks stats
       const projects = await storage.getProjectsByClient(user.id);
       const tasks = await storage.getTasksByUser(user.id);
-      
+
       const activeProjects = projects.filter(p => p.status === 'active').length;
       const tasksInProgress = tasks.filter(t => t.status === 'in_progress').length;
       const completedTasks = tasks.filter(t => t.status === 'completed').length;
-      
+
       res.json({
         activeProjects,
         tasksInProgress,
@@ -276,14 +276,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/clients', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
-      
+
       const clientData = insertClientSchema.parse({
         ...req.body,
         agencyId: user.agencyId!,
       });
-      
+
       const client = await storage.createClient(clientData);
-      
+
       // Log activity
       await storage.logActivity({
         agencyId: user.agencyId!,
@@ -293,7 +293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityId: client.id,
         details: { clientName: client.name },
       });
-      
+
       res.json(client);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -324,7 +324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updateData = insertClientSchema.partial().parse(req.body);
       const updatedClient = await storage.updateClient(req.params.id, updateData);
-      
+
       await storage.logActivity({
         agencyId: req.user!.agencyId!,
         userId: req.user!.id,
@@ -333,7 +333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityId: updatedClient.id,
         details: { clientName: updatedClient.name },
       });
-      
+
       res.json(updatedClient);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -351,7 +351,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       await storage.deleteClient(req.params.id);
-      
+
       await storage.logActivity({
         agencyId: req.user!.agencyId!,
         userId: req.user!.id,
@@ -360,7 +360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityId: req.params.id,
         details: { clientName: client.name },
       });
-      
+
       res.json({ message: 'לקוח נמחק בהצלחה' });
     } catch (error) {
       res.status(500).json({ message: 'שגיאה במחיקת לקוח' });
@@ -372,7 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const clientId = req.query.clientId as string;
       let projects;
-      
+
       if (clientId) {
         projects = await storage.getProjectsByClient(clientId);
         // Verify client belongs to user's agency
@@ -383,7 +383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         projects = await storage.getProjectsByAgency(req.user!.agencyId!);
       }
-      
+
       res.json(projects);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בטעינת פרויקטים' });
@@ -397,9 +397,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agencyId: req.user!.agencyId!,
         createdBy: req.user!.id,
       });
-      
+
       const project = await storage.createProject(projectData);
-      
+
       await storage.logActivity({
         agencyId: req.user!.agencyId!,
         userId: req.user!.id,
@@ -408,7 +408,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityId: project.id,
         details: { projectName: project.name },
       });
-      
+
       res.json(project);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -427,7 +427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         clientId: req.query.clientId as string,
         projectId: req.query.projectId as string,
       };
-      
+
       const tasks = await storage.getTasksByAgency(req.user!.agencyId!, filters);
       res.json(tasks);
     } catch (error) {
@@ -442,9 +442,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agencyId: req.user!.agencyId!,
         createdBy: req.user!.id,
       });
-      
+
       const task = await storage.createTask(taskData);
-      
+
       await storage.logActivity({
         agencyId: req.user!.agencyId!,
         userId: req.user!.id,
@@ -453,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityId: task.id,
         details: { taskTitle: task.title },
       });
-      
+
       res.json(task);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -472,7 +472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updateData = insertTaskSchema.partial().parse(req.body);
       const updatedTask = await storage.updateTask(req.params.id, updateData);
-      
+
       await storage.logActivity({
         agencyId: req.user!.agencyId!,
         userId: req.user!.id,
@@ -481,7 +481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityId: updatedTask.id,
         details: { taskTitle: updatedTask.title },
       });
-      
+
       res.json(updatedTask);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -518,9 +518,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         taskId: req.params.id,
         userId: req.user!.id,
       });
-      
+
       const comment = await storage.createTaskComment(commentData);
-      
+
       await storage.logActivity({
         agencyId: req.user!.agencyId!,
         userId: req.user!.id,
@@ -529,7 +529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityId: task.id,
         details: { taskTitle: task.title },
       });
-      
+
       res.json(comment);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -544,7 +544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const clientId = req.query.clientId as string;
       let assets;
-      
+
       if (clientId) {
         assets = await storage.getDigitalAssetsByClient(clientId);
         // Verify client belongs to user's agency
@@ -555,7 +555,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         assets = await storage.getDigitalAssetsByAgency(req.user!.agencyId!);
       }
-      
+
       res.json(assets);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בטעינת נכסים דיגיטליים' });
@@ -568,9 +568,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         agencyId: req.user!.agencyId!,
       });
-      
+
       const asset = await storage.createDigitalAsset(assetData);
-      
+
       await storage.logActivity({
         agencyId: req.user!.agencyId!,
         userId: req.user!.id,
@@ -579,7 +579,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityId: asset.id,
         details: { assetName: asset.name, assetType: asset.type },
       });
-      
+
       res.json(asset);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -604,26 +604,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/team/invite', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
-      
+
       // Only agency admins can invite team members
       if (user.role !== 'agency_admin') {
         return res.status(403).json({ message: 'רק מנהלי סוכנות יכולים להזמין חברי צוות' });
       }
-      
+
       const userData = insertUserSchema.parse({
         ...req.body,
         agencyId: user.agencyId!,
         isActive: true,
       });
-      
+
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(userData.email);
       if (existingUser) {
         return res.status(400).json({ message: 'משתמש כבר קיים עם אימייל זה' });
       }
-      
+
       const newUser = await storage.createUser(userData);
-      
+
       // Log activity
       await storage.logActivity({
         agencyId: user.agencyId!,
@@ -633,7 +633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityId: newUser.id,
         details: { userName: newUser.fullName, userEmail: newUser.email },
       });
-      
+
       // Remove password from response
       const { password, ...safeUser } = newUser;
       res.json(safeUser);
@@ -642,6 +642,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
       }
       res.status(500).json({ message: 'שגיאה בהזמנת חבר צוות' });
+    }
+  });
+
+  app.put('/api/team/:id/toggle-active', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const memberId = req.params.id;
+
+      // Only agency admins can deactivate team members
+      if (user.role !== 'agency_admin') {
+        return res.status(403).json({ message: 'רק מנהלי סוכנות יכולים לשנות סטטוס חברי צוות' });
+      }
+
+      // Get the member to toggle
+      const member = await storage.getUserById(memberId);
+      if (!member) {
+        return res.status(404).json({ message: 'חבר הצוות לא נמצא' });
+      }
+
+      // Make sure the member belongs to the same agency
+      if (member.agencyId !== user.agencyId) {
+        return res.status(403).json({ message: 'אין הרשאה לשנות סטטוס חבר צוות זה' });
+      }
+
+      // Can't deactivate yourself
+      if (member.id === user.id) {
+        return res.status(400).json({ message: 'לא ניתן לשנות את הסטטוס של עצמך' });
+      }
+
+      const updatedMember = await storage.updateUser(memberId, { isActive: !member.isActive });
+
+      res.json({ 
+        message: `חבר הצוות ${updatedMember.isActive ? 'הופעל' : 'הושבת'} בהצלחה`, 
+        user: { ...updatedMember, password: undefined } 
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בשינוי סטטוס חבר הצוות' });
     }
   });
 
