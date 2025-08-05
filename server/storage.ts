@@ -20,6 +20,7 @@ import {
 import { db } from "./db";
 import { eq, and, desc, asc, like, gte, lte, isNull, or, sql, gt } from "drizzle-orm";
 import bcrypt from "bcrypt";
+import crypto from 'crypto';
 
 export interface IStorage {
   // Auth
@@ -107,18 +108,18 @@ export interface IStorage {
 
   // Google OAuth
   createOrUpdateUserFromGoogle(email: string, name: string, avatar?: string): Promise<User>;
-  
+
   // Ad Accounts
   getAdAccountsByClient(clientId: string): Promise<AdAccount[]>;
   createAdAccount(adAccount: InsertAdAccount): Promise<AdAccount>;
   updateAdAccount(id: string, adAccount: Partial<InsertAdAccount>): Promise<AdAccount>;
-  
+
   // Leads
   getLeadsByClient(clientId: string): Promise<Lead[]>;
   getLeadsByAgency(agencyId: string): Promise<Lead[]>;
   createLead(lead: InsertLead): Promise<Lead>;
   updateLead(id: string, lead: Partial<InsertLead>): Promise<Lead>;
-  
+
   // Chat
   getChatConversationsByUser(userId: string): Promise<ChatConversation[]>;
   getChatConversation(id: string): Promise<ChatConversation | undefined>;
@@ -126,12 +127,12 @@ export interface IStorage {
   getChatMessages(conversationId: string): Promise<ChatMessage[]>;
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   markMessagesAsRead(conversationId: string, userId: string): Promise<void>;
-  
+
   // Team Invitations
   createTeamInvitation(invitation: InsertTeamInvitation): Promise<TeamInvitation>;
   getTeamInvitation(token: string): Promise<TeamInvitation | undefined>;
   acceptTeamInvitation(token: string): Promise<void>;
-  
+
   // Notifications
   createNotification(notification: InsertNotification): Promise<Notification>;
   getUserNotifications(userId: string): Promise<Notification[]>;
@@ -510,61 +511,52 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserPassword(userId: string, hashedPassword: string): Promise<void> {
-    await db.update(users)
-      .set({ password: hashedPassword })
-      .where(eq(users.id, userId));
+    const [user] = await db.update(users).set({ password: hashedPassword }).where(eq(users.id, userId)).returning();
+    return;
   }
 
   async createOrUpdateUserFromGoogle(email: string, name: string, avatar?: string): Promise<User> {
-    const existingUser = await this.getUserByEmail(email);
-    
-    if (existingUser) {
-      // Update avatar if provided
-      if (avatar && existingUser.avatar !== avatar) {
-        const updatedUser = await this.updateUser(existingUser.id, { avatar });
-        return updatedUser;
+    try {
+      // Check if user already exists
+      const existingUser = await this.getUserByEmail(email);
+
+      if (existingUser) {
+        // Update existing user with Google info
+        const updatedUser = await db
+          .update(users)
+          .set({ 
+            fullName: name,
+            avatar: avatar || existingUser.avatar,
+            isActive: true,
+            updatedAt: new Date()
+          })
+          .where(eq(users.email, email))
+          .returning();
+
+        return updatedUser[0];
+      } else {
+        // Create new user
+        const newUser = await db
+          .insert(users)
+          .values({
+            id: crypto.randomUUID(),
+            email,
+            fullName: name,
+            password: '', // Google users don't need a password
+            role: 'agency_admin', // First user becomes admin
+            agencyId: null, // Will be set when they create an agency
+            avatar: avatar || null,
+            isActive: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+          .returning();
+
+        return newUser[0];
       }
-      return existingUser;
-    }
-    
-    // Create new user
-    const userData = {
-      email,
-      fullName: name,
-      avatar: avatar || null,
-      password: '', // No password for Google users
-      role: 'client' as const,
-      isActive: true,
-      agencyId: null, // Will be set when they join an agency
-    };
-    
-    return this.createUser(userData);
-  }
-
-  // Google OAuth
-  async createOrUpdateUserFromGoogle(email: string, name: string, avatar?: string): Promise<User> {
-    const existingUser = await this.getUserByEmail(email);
-    
-    if (existingUser) {
-      // Update existing user's avatar and last login
-      const [updatedUser] = await db.update(users)
-        .set({ 
-          avatar: avatar || existingUser.avatar,
-          lastLogin: new Date()
-        })
-        .where(eq(users.id, existingUser.id))
-        .returning();
-      return updatedUser;
-    } else {
-      // Create new user with Google account
-      return this.createUser({
-        email,
-        password: '', // No password for Google users
-        fullName: name,
-        role: 'agency_admin', // Default role
-        avatar,
-        agencyId: null
-      });
+    } catch (error) {
+      console.error('Error creating/updating Google user:', error);
+      throw error;
     }
   }
 
@@ -649,7 +641,7 @@ export class DatabaseStorage implements IStorage {
 
   async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
     const [created] = await db.insert(chatMessages).values([message]).returning();
-    
+
     // Update conversation's last message timestamp
     await db.update(chatConversations)
       .set({ 
@@ -657,7 +649,7 @@ export class DatabaseStorage implements IStorage {
         unreadCount: sql`${chatConversations.unreadCount} + 1`
       })
       .where(eq(chatConversations.id, message.conversationId));
-    
+
     return created;
   }
 

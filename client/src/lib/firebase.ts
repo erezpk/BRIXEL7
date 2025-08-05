@@ -27,10 +27,15 @@ export const signInWithGoogle = () => {
 // Handle redirect result
 export const handleGoogleRedirect = async () => {
   try {
+    console.log('Checking for Google redirect result...');
     const result = await getRedirectResult(auth);
+    
     if (result) {
+      console.log('Google redirect result found:', result.user.email);
       const user = result.user;
       const token = await user.getIdToken();
+      
+      console.log('Got ID token, sending to backend...');
       
       // Send token to backend for verification and user creation/login
       const response = await fetch('/api/auth/google', {
@@ -46,12 +51,17 @@ export const handleGoogleRedirect = async () => {
         }),
       });
 
+      const data = await response.json();
+      console.log('Backend response:', data);
+
       if (response.ok) {
-        const data = await response.json();
         return data;
       } else {
-        throw new Error('Failed to authenticate with backend');
+        console.error('Backend authentication failed:', data);
+        throw new Error(data.message || 'Failed to authenticate with backend');
       }
+    } else {
+      console.log('No Google redirect result found');
     }
     return null;
   } catch (error) {

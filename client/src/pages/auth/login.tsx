@@ -54,18 +54,35 @@ export default function Login() {
 
   const googleLoginMutation = useMutation({
     mutationFn: async () => {
-      await signInWithGoogle();
+      console.log('Starting Google sign in...');
+      try {
+        await signInWithGoogle();
+        console.log('Google sign in redirect initiated');
+      } catch (error) {
+        console.error('Google sign in error:', error);
+        throw error;
+      }
     },
     onError: (error: Error) => {
+      console.error('Google authentication failed:', error);
       toast({
         title: "שגיאה באימות Google",
-        description: error.message,
+        description: error.message || "בעיה בהתחברות עם Google. אנא נסה שוב.",
         variant: "destructive",
       });
     },
   });
 
   const handleGoogleLogin = () => {
+    console.log('Google login button clicked');
+    if (!import.meta.env.VITE_FIREBASE_API_KEY) {
+      toast({
+        title: "שגיאה בהגדרות",
+        description: "Firebase לא מוגדר כראוי. אנא פנה למנהל המערכת.",
+        variant: "destructive",
+      });
+      return;
+    }
     googleLoginMutation.mutate();
   };
 
