@@ -45,6 +45,7 @@ export interface IStorage {
   getUserById(id: string): Promise<User | undefined>;
   getUsersByAgency(agencyId: string): Promise<User[]>;
   updateUser(id: string, user: Partial<InsertUser>): Promise<User>;
+  deleteUserByEmail(email: string): Promise<any>;
 
   // Clients
   getClient(id: string): Promise<Client | undefined>;
@@ -151,10 +152,23 @@ export class DatabaseStorage implements IStorage {
   constructor(private db: any) {} // Assuming db is injected or initialized elsewhere
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const result = await this.db.select().from(users).where(eq(users.email, email)).limit(1);
-    const user = result[0] || null;
+    try {
+      const results = await this.db.select().from(users).where(eq(users.email, email));
+      return results[0] || undefined;
+    } catch (error) {
+      console.error('Get user by email error:', error);
+      throw error;
+    }
+  }
 
-    return user;
+  async deleteUserByEmail(email: string): Promise<any> {
+    try {
+      const result = await this.db.delete(users).where(eq(users.email, email));
+      return result;
+    } catch (error) {
+      console.error('Delete user by email error:', error);
+      throw error;
+    }
   }
 
   async getUserById(id: string): Promise<User | undefined> {

@@ -12,6 +12,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/login', async (req, res) => {
     try {
       const { email, password } = req.body;
+      console.log('Login attempt for:', email);
 
       if (!email || !password) {
         return res.status(400).json({ message: 'אנא הזן אימייל וסיסמה' });
@@ -21,8 +22,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUserByEmail(email);
       
       if (!user) {
+        console.log('User not found:', email);
         return res.status(401).json({ message: 'אימייל או סיסמה שגויים' });
       }
+
+      console.log('User found:', user.email, 'Has password:', !!user.password);
 
       // Check if user has a password (not a Google-only user)
       if (!user.password) {
@@ -30,7 +34,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Verify password
+      console.log('Comparing password for user:', email);
       const isValidPassword = await bcrypt.compare(password, user.password);
+      console.log('Password valid:', isValidPassword);
       
       if (!isValidPassword) {
         return res.status(401).json({ message: 'אימייל או סיסמה שגויים' });
@@ -130,6 +136,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Check users error:', error);
       res.status(500).json({ message: 'שגיאה בבדיקת משתמשים' });
+    }
+  });
+
+  // Delete user route (for debugging)
+  app.delete('/api/users/:email', async (req, res) => {
+    try {
+      const { email } = req.params;
+      const result = await storage.deleteUserByEmail(email);
+      res.json({ 
+        success: true,
+        message: 'משתמש נמחק בהצלחה',
+        result 
+      });
+    } catch (error) {
+      console.error('Delete user error:', error);
+      res.status(500).json({ message: 'שגיאה במחיקת משתמש' });
     }
   });
 
