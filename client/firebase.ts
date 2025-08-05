@@ -3,13 +3,16 @@ import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult } fr
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebasestorage.app`,
+  authDomain: "brixel7-ed00e.firebaseapp.com",
+  projectId: "brixel7-ed00e",
+  storageBucket: "brixel7-ed00e.firebasestorage.app",
+  messagingSenderId: "483318017359",
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: "G-10K9Y627RN"
 };
 
 const app = initializeApp(firebaseConfig);
+
 export const auth = getAuth(app);
 
 const provider = new GoogleAuthProvider();
