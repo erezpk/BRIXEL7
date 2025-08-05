@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import * as nodemailer from 'nodemailer';
 
 interface EmailParams {
   to: string;
@@ -41,7 +41,7 @@ class EmailService {
         from: process.env.GMAIL_USER
       };
 
-      this.transporter = nodemailer.createTransporter(this.config);
+      this.transporter = nodemailer.createTransport(this.config);
       
       // Verify connection
       try {
@@ -67,7 +67,7 @@ class EmailService {
         from: process.env.SMTP_FROM || process.env.SMTP_USER
       };
 
-      this.transporter = nodemailer.createTransporter(this.config);
+      this.transporter = nodemailer.createTransport(this.config);
       
       // Verify connection
       try {
