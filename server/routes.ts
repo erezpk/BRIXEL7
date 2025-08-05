@@ -153,6 +153,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Quick endpoint to create the specific user from the error
+  app.post('/api/dev/create-user', async (req, res) => {
+    if (process.env.NODE_ENV !== 'development') {
+      return res.status(403).json({ message: 'Not allowed in production' });
+    }
+
+    try {
+      const user = await storage.createUserWithPassword(
+        'errz190@gmail.com', 
+        'Test User', 
+        '123456', 
+        'team_member'
+      );
+      
+      res.json({
+        success: true,
+        message: 'משתמש נוצר בהצלחה',
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role
+        }
+      });
+    } catch (error: any) {
+      console.error('Error creating test user:', error);
+      if (error.code === '23505') {
+        return res.status(400).json({ message: 'משתמש כבר קיים' });
+      }
+      res.status(500).json({ message: 'שגיאה ביצירת משתמש' });
+    }
+  });
+
   // Protected routes
   app.get("/api/protected", isAuthenticated, async (req, res) => {
     const userId = req.user?.claims?.sub;
