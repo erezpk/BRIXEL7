@@ -723,9 +723,11 @@ export default function Homepage() {
               <h3 className="font-semibold mb-4">תמיכה</h3>
               <ul className="space-y-2 text-gray-400">
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    מרכז עזרה
-                  </a>
+                  <Link href="/help">
+                    <a className="hover:text-white transition-colors">
+                      מרכז עזרה
+                    </a>
+                  </Link>
                 </li>
                 <li>
                   <a href="#" className="hover:text-white transition-colors">

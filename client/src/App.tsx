@@ -22,6 +22,7 @@ import Assets from "@/pages/dashboard/assets";
 import Team from "@/pages/dashboard/team";
 import ClientDashboard from "@/pages/client-portal/client-dashboard";
 import NotFound from "@/pages/not-found";
+import HelpCenter from "@/pages/help-center"; // Assuming HelpCenter component is in this path
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -134,6 +135,9 @@ export default function App() {
               <ClientDashboard />
             </ProtectedRoute>
           </Route>
+
+          {/* ADDED HELP CENTER ROUTE */}
+          <Route path="/help" component={HelpCenter} />
 
           <Route component={NotFound} />
         </Switch>
