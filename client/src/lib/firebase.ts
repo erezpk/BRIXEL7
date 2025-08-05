@@ -1,4 +1,3 @@
-
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult, signOut, onAuthStateChanged } from "firebase/auth";
@@ -23,6 +22,9 @@ const googleProvider = new GoogleAuthProvider();
 // Configure Google provider
 googleProvider.addScope('email');
 googleProvider.addScope('profile');
+googleProvider.setCustomParameters({
+  client_id: "232608649475-a0vnj0nicio02d3je93ul8s385adlsun.apps.googleusercontent.com"
+});
 
 export { auth, googleProvider };
 
@@ -36,14 +38,14 @@ export const handleGoogleRedirect = async () => {
   try {
     console.log('Checking for Google redirect result...');
     const result = await getRedirectResult(auth);
-    
+
     if (result) {
       console.log('Google redirect result found:', result.user.email);
       const user = result.user;
       const token = await user.getIdToken();
-      
+
       console.log('Got ID token, sending to backend...');
-      
+
       // Send token to backend for verification and user creation/login
       const response = await fetch('/api/auth/google', {
         method: 'POST',

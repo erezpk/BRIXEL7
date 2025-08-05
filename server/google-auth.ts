@@ -1,18 +1,14 @@
 import { OAuth2Client } from 'google-auth-library';
 
 // Use the correct Google Client ID for OAuth2Client
-const client = new OAuth2Client(process.env.VITE_FIREBASE_API_KEY);
+const GOOGLE_CLIENT_ID = "232608649475-a0vnj0nicio02d3je93ul8s385adlsun.apps.googleusercontent.com";
+const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 export async function verifyGoogleToken(idToken: string) {
   try {
-    if (!process.env.VITE_FIREBASE_API_KEY) {
-      console.error('VITE_FIREBASE_API_KEY is not configured');
-      return null;
-    }
-
     const ticket = await client.verifyIdToken({
       idToken,
-      audience: process.env.VITE_FIREBASE_API_KEY
+      audience: GOOGLE_CLIENT_ID
     });
     
     const payload = ticket.getPayload();
