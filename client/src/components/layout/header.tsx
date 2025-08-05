@@ -246,12 +246,18 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                 <DropdownMenuLabel>החשבון שלי</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 
-                <DropdownMenuItem data-testid="menu-profile">
+                <DropdownMenuItem 
+                  onClick={() => window.location.href = '/dashboard/profile'}
+                  data-testid="menu-profile"
+                >
                   <User className="ml-2 h-4 w-4" />
                   <span>פרופיל</span>
                 </DropdownMenuItem>
                 
-                <DropdownMenuItem data-testid="menu-settings">
+                <DropdownMenuItem 
+                  onClick={() => window.location.href = '/dashboard/settings'}
+                  data-testid="menu-settings"
+                >
                   <Settings className="ml-2 h-4 w-4" />
                   <span>הגדרות</span>
                 </DropdownMenuItem>

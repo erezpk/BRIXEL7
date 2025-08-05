@@ -21,6 +21,8 @@ import Tasks from "@/pages/dashboard/tasks";
 import Assets from "@/pages/dashboard/assets";
 import Team from "@/pages/dashboard/team";
 import ClientDashboard from "@/pages/client-portal/client-dashboard";
+import Profile from "@/pages/dashboard/profile";
+import Settings from "@/pages/dashboard/settings";
 import NotFound from "@/pages/not-found";
 import HelpCenter from "@/pages/help-center";
 
@@ -83,7 +85,7 @@ export default function App() {
               </ProtectedRoute>
             )}
           />
-          
+
           {/* NEW PROJECT */}
           <Route
             path="/dashboard/projects/new"
@@ -107,7 +109,7 @@ export default function App() {
               </ProtectedRoute>
             )}
           />
-          
+
           {/* LEGACY PROJECT DETAILS ROUTE */}
           <Route
             path="/dashboard/projects/:projectId"
@@ -138,6 +140,22 @@ export default function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <Team />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          {/* ADDED PROFILE AND SETTINGS ROUTES */}
+          <Route path="/dashboard/profile">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Profile />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/dashboard/settings">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Settings />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
