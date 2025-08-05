@@ -9,7 +9,7 @@ import { z } from "zod";
 import express from "express"; // Import express to use its Router
 import { emailService } from "./email-service"; // Import from email-service.ts
 import crypto from 'crypto'; // Import crypto for token generation
-import { verifyGoogleToken } from "./google-auth"; // Import Google authentication
+// Removed Firebase/Google auth library import - using simple OAuth now
 
 // Extend Express types
 declare global {

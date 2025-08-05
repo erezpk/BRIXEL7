@@ -62,57 +62,51 @@ const handleCredentialResponse = async (response: any) => {
   }
 };
 
-// Sign in with Google
+// Sign in with Google - simple popup method
 export const signInWithGoogle = async () => {
-  await initializeGoogleOAuth();
+  await loadGoogleOAuth();
   
   return new Promise((resolve, reject) => {
-    window.google.accounts.id.prompt((notification: any) => {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        // If popup is blocked, try the popup method
-        window.google.accounts.oauth2.initTokenClient({
-          client_id: "176530780857-crhjjri5cqa1cbcafd8ul795347n22s2.apps.googleusercontent.com",
-          scope: 'email profile',
-          callback: async (response: any) => {
-            try {
-              // Get user info using the access token
-              const userInfoResponse = await fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${response.access_token}`);
-              const userInfo = await userInfoResponse.json();
-              
-              // Create a simple ID token structure for backend
-              const simpleToken = btoa(JSON.stringify({
-                email: userInfo.email,
-                name: userInfo.name,
-                picture: userInfo.picture,
-                email_verified: userInfo.verified_email
-              }));
-              
-              // Send to backend
-              const backendResponse = await fetch('/api/auth/google-simple', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify({ userInfo, token: simpleToken }),
-              });
-
-              if (!backendResponse.ok) {
-                throw new Error('Failed to authenticate with backend');
-              }
-
-              const userData = await backendResponse.json();
-              resolve(userData);
-              
-              // Reload page to update authentication state
-              setTimeout(() => window.location.reload(), 100);
-              
-            } catch (error) {
-              reject(error);
-            }
+    const client = window.google.accounts.oauth2.initTokenClient({
+      client_id: "176530780857-crhjjri5cqa1cbcafd8ul795347n22s2.apps.googleusercontent.com",
+      scope: 'email profile',
+      callback: async (response: any) => {
+        try {
+          if (response.error) {
+            reject(new Error(response.error));
+            return;
           }
-        }).requestAccessToken();
+
+          // Get user info using the access token
+          const userInfoResponse = await fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${response.access_token}`);
+          const userInfo = await userInfoResponse.json();
+          
+          // Send to backend
+          const backendResponse = await fetch('/api/auth/google-simple', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ userInfo }),
+          });
+
+          if (!backendResponse.ok) {
+            const errorText = await backendResponse.text();
+            throw new Error(errorText || 'Failed to authenticate with backend');
+          }
+
+          const userData = await backendResponse.json();
+          resolve(userData);
+          
+        } catch (error) {
+          console.error('Google OAuth error:', error);
+          reject(error);
+        }
       }
     });
+    
+    // Request access token - this will open Google popup
+    client.requestAccessToken();
   });
 };

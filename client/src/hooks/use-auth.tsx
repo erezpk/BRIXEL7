@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { signInWithGoogle } from "@/lib/firebase";
+import { signInWithGoogle } from "@/lib/google-oauth";
 
 interface User {
   id: string;

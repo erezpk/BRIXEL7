@@ -68,17 +68,17 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     try {
-      const result = await googleLoginMutation.mutateAsync();
+      await googleLoginMutation.mutateAsync();
       
-      if (result?.user) {
-        toast({
-          title: "התחברות הצליחה",
-          description: "ברוכים הבאים למערכת",
-        });
-        setTimeout(() => {
-          setLocation("/dashboard");
-        }, 100);
-      }
+      toast({
+        title: "התחברות הצליחה",
+        description: "ברוכים הבאים למערכת",
+      });
+      
+      // Google OAuth will reload the page automatically after success
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error: any) {
       toast({
         title: "שגיאה בהתחברות עם Google",
