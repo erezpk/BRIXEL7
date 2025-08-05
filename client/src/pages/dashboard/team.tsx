@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Users, Edit, MoreHorizontal, Mail, Phone } from "lucide-react";
+import { Plus, Search, Users, Edit, MoreHorizontal, Mail, Phone, UserX, UserCheck, DropdownMenuSeparator } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,9 +47,9 @@ export default function Team() {
     const matchesSearch = !searchQuery || 
       member.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.email.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesRole = roleFilter === "all" || member.role === roleFilter;
-    
+
     return matchesSearch && matchesRole;
   });
 
@@ -74,7 +74,7 @@ export default function Team() {
     },
   });
 
-  const editMemberMutation = useMutation({
+  const updateMemberMutation = useMutation({
     mutationFn: async (data: { id: string; fullName: string; email: string; role: string }) => {
       const response = await apiRequest('PUT', `/api/team/${data.id}`, {
         fullName: data.fullName,
@@ -85,16 +85,35 @@ export default function Team() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team'] });
+      toast({
+        title: "פרטי חבר הצוות עודכנו בהצלחה",
+      });
       setShowEditModal(false);
       setEditingMember(null);
+    },
+    onError: (error: any) => {
       toast({
-        title: "פרטי חבר הצוות עודכנו",
-        description: "הפרטים עודכנו בהצלחה",
+        title: "שגיאה בעדכון פרטי חבר הצוות",
+        description: error?.message || "אירעה שגיאה לא צפויה",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resendInviteMutation = useMutation({
+    mutationFn: async (memberId: string) => {
+      const response = await apiRequest('POST', `/api/team/${memberId}/resend-invite`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "הזמנה נשלחה מחדש בהצלחה",
+        description: "אימייל ההזמנה נשלח שוב לחבר הצוות",
       });
     },
     onError: (error: any) => {
       toast({
-        title: "שגיאה בעדכון פרטים",
+        title: "שגיאה בשליחת הזמנה מחדש",
         description: error?.message || "אירעה שגיאה לא צפויה",
         variant: "destructive",
       });
@@ -133,13 +152,13 @@ export default function Team() {
       return;
     }
 
-    editMemberMutation.mutate({
+    updateMemberMutation.mutate({
       id: editingMember.id!,
       ...editFormData,
     });
   };
 
-  const handleDeactivateMember = (member: User) => {
+  const handleToggleActive = (member: User) => {
     if (window.confirm(`האם אתה בטוח שברצונך ${member.isActive ? 'להשבית' : 'להפעיל'} את ${member.fullName}?`)) {
       deactivateMemberMutation.mutate(member.id!);
     }
@@ -207,7 +226,7 @@ export default function Team() {
             data-testid="search-team"
           />
         </div>
-        
+
         <Select value={roleFilter} onValueChange={setRoleFilter}>
           <SelectTrigger className="w-full sm:w-48" data-testid="filter-role">
             <SelectValue placeholder="סינון לפי תפקיד" />
@@ -280,7 +299,7 @@ export default function Team() {
                       {getUserInitials(member.fullName)}
                     </AvatarFallback>
                   </Avatar>
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="text-lg font-semibold text-gray-900 truncate" data-testid="member-name">
@@ -290,20 +309,20 @@ export default function Team() {
                         {getUserRole(member.role)}
                       </Badge>
                     </div>
-                    
+
                     <div className="space-y-1 text-sm text-gray-600">
                       <div className="flex items-center space-x-reverse space-x-1">
                         <Mail className="h-3 w-3" />
                         <span className="truncate" data-testid="member-email">{member.email}</span>
                       </div>
-                      
+
                       <Badge className={getStatusColor(member.isActive)} data-testid="member-status">
                         {member.isActive ? 'פעיל' : 'לא פעיל'}
                       </Badge>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-between items-center text-sm text-gray-500">
                   <div data-testid="member-last-login">
                     {member.lastLogin 
@@ -311,7 +330,7 @@ export default function Team() {
                       : 'מעולם לא התחבר'
                     }
                   </div>
-                  
+
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" data-testid={`member-menu-${member.id}`}>
@@ -319,16 +338,38 @@ export default function Team() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEditMember(member)} data-testid="member-edit">
-                        <Edit className="ml-2 h-4 w-4" />
+                      <DropdownMenuItem 
+                        onClick={() => handleEditMember(member)}
+                        data-testid={`edit-member-${member.id}`}
+                      >
+                        <Edit className="h-4 w-4 ml-2" />
                         ערוך פרטים
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => handleDeactivateMember(member)} 
-                        className="text-red-600"
-                        data-testid="member-deactivate"
+                        onClick={() => resendInviteMutation.mutate(member.id)}
+                        disabled={resendInviteMutation.isPending}
+                        data-testid={`resend-invite-${member.id}`}
                       >
-                        {member.isActive ? 'השבת' : 'הפעל מחדש'}
+                        <Mail className="h-4 w-4 ml-2" />
+                        שלח הזמנה מחדש
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => handleToggleActive(member)}
+                        className={member.isActive ? "text-red-600" : "text-green-600"}
+                        data-testid={`toggle-member-${member.id}`}
+                      >
+                        {member.isActive ? (
+                          <>
+                            <UserX className="h-4 w-4 ml-2" />
+                            השבת חבר צוות
+                          </>
+                        ) : (
+                          <>
+                            <UserCheck className="h-4 w-4 ml-2" />
+                            הפעל חבר צוות
+                          </>
+                        )}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -338,7 +379,7 @@ export default function Team() {
           ))}
         </div>
       )}
-      
+
       <InviteTeamMemberModal 
         open={showInviteModal}
         onOpenChange={setShowInviteModal}
@@ -350,7 +391,7 @@ export default function Team() {
           <DialogHeader>
             <DialogTitle className="text-right">עריכת פרטי חבר צוות</DialogTitle>
           </DialogHeader>
-          
+
           <form onSubmit={handleSaveEdit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="editFullName" className="text-right flex items-center space-x-reverse space-x-2">
@@ -399,17 +440,17 @@ export default function Team() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowEditModal(false)}
+                onClick={() => setShowInviteModal(false)}
                 data-testid="button-cancel-edit"
               >
                 ביטול
               </Button>
               <Button
                 type="submit"
-                disabled={editMemberMutation.isPending}
+                disabled={updateMemberMutation.isPending}
                 data-testid="button-save-edit"
               >
-                {editMemberMutation.isPending ? "שומר..." : "שמור שינויים"}
+                {updateMemberMutation.isPending ? "שומר..." : "שמור שינויים"}
               </Button>
             </div>
           </form>

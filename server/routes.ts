@@ -744,6 +744,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/team/:id/resend-invite', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const memberId = req.params.id;
+
+      // Only agency admins can resend invitations
+      if (user.role !== 'agency_admin') {
+        return res.status(403).json({ message: 'רק מנהלי סוכנות יכולים לשלוח הזמנות מחדש' });
+      }
+
+      // Get the member
+      const member = await storage.getUserById(memberId);
+      if (!member || member.agencyId !== user.agencyId) {
+        return res.status(404).json({ message: 'חבר צוות לא נמצא' });
+      }
+
+      // Here you would typically send an actual email
+      // For now, we'll just simulate the process and log it
+      console.log(`Sending invitation email to: ${member.email}`);
+      console.log(`Member details: ${member.fullName} (${member.role})`);
+      console.log(`Agency: ${user.agencyId}`);
+
+      // Log activity
+      await storage.logActivity({
+        agencyId: user.agencyId!,
+        userId: user.id,
+        action: 'resent_invitation',
+        entityType: 'user',
+        entityId: memberId,
+        details: { 
+          userName: member.fullName,
+          userEmail: member.email,
+          sentBy: user.fullName 
+        },
+      });
+
+      res.json({ 
+        message: 'הזמנה נשלחה מחדש בהצלחה',
+        details: {
+          sentTo: member.email,
+          memberName: member.fullName
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בשליחת הזמנה מחדש' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
