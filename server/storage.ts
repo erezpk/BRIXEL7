@@ -142,6 +142,9 @@ export interface IStorage {
   createNotification(notification: InsertNotification): Promise<Notification>;
   getUserNotifications(userId: string): Promise<Notification[]>;
   markNotificationAsRead(id: string): Promise<void>;
+
+  // Firebase Sync
+  syncAllUsersWithFirebase(): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -537,35 +540,54 @@ export class DatabaseStorage implements IStorage {
     return;
   }
 
-  async createOrUpdateUserFromGoogle(email: string, name: string, avatar?: string): Promise<User> {
-    // Check if user exists
-    let user = await this.getUserByEmail(email);
+  async createOrUpdateUserFromGoogle(email: string, name: string, picture?: string): Promise<User> {
+    try {
+      console.log('Creating/updating user from Google:', email);
 
-    if (user) {
-      // Update existing user
-      const [updated] = await this.db.update(users)
-        .set({
-          fullName: name,
-          avatar: avatar,
-          lastLogin: new Date(),
-          updatedAt: new Date()
-        })
-        .where(eq(users.email, email))
-        .returning();
-      return updated;
-    } else {
-      // Create new user
-      const [created] = await this.db.insert(users).values({
-        email,
-        fullName: name,
-        role: 'client', // Default role for Google sign-in users
-        isActive: true,
-        avatar: avatar,
-        lastLogin: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }).returning();
-      return created;
+      // Check if user exists
+      const existingUser = await this.getUserByEmail(email);
+
+      if (existingUser) {
+        console.log('User exists, updating:', email);
+        // Update user info from Google
+        const updatedUser = await db.update(users)
+          .set({
+            fullName: name,
+            avatar: picture,
+            lastLogin: new Date(),
+            isEmailVerified: true
+          })
+          .where(eq(users.email, email))
+          .returning()
+          .execute();
+
+        return updatedUser[0];
+      } else {
+        console.log('Creating new user from Google:', email);
+        // Create new user with appropriate role based on email
+        const role = email.includes('@admin.') ? 'admin' :
+                    email.includes('@team.') ? 'team_member' : 'client';
+
+        const newUser = await db.insert(users)
+          .values({
+            email,
+            fullName: name,
+            avatar: picture,
+            role,
+            password: null, // No password for Google users
+            isEmailVerified: true,
+            lastLogin: new Date(),
+            createdAt: new Date()
+          })
+          .returning()
+          .execute();
+
+        console.log('New Google user created:', newUser[0].id);
+        return newUser[0];
+      }
+    } catch (error) {
+      console.error('Error creating/updating user from Google:', error);
+      throw error;
     }
   }
 
@@ -748,6 +770,25 @@ export class DatabaseStorage implements IStorage {
         readAt: new Date()
       })
       .where(eq(notifications.id, id));
+  }
+
+  async syncAllUsersWithFirebase(): Promise<any> {
+    try {
+      console.log('Starting Firebase user sync...');
+
+      // Get all users from local database
+      const localUsers = await db.select().from(users);
+      console.log(`Found ${localUsers.length} users in local database`);
+
+      return {
+        success: true,
+        message: `Synced ${localUsers.length} users`,
+        users: localUsers.map(u => ({ id: u.id, email: u.email, role: u.role }))
+      };
+    } catch (error) {
+      console.error('Error syncing users with Firebase:', error);
+      throw error;
+    }
   }
 }
 

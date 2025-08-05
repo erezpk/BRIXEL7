@@ -41,22 +41,29 @@ export default function Login() {
             description: "ברוכים הבאים למערכת",
           });
 
-          // Redirect based on user role
-          const redirectPath = result.user?.role === 'client' ? '/client-portal' : '/dashboard';
+          // Determine redirect path based on user role
+          let redirectPath = '/dashboard'; // default
+          
+          if (result.user?.role === 'client') {
+            redirectPath = '/client-portal';
+          } else if (result.user?.role === 'team_member') {
+            redirectPath = '/team-dashboard';
+          } else if (result.user?.role === 'admin') {
+            redirectPath = '/dashboard';
+          }
+
+          console.log('Redirecting to:', redirectPath);
           setTimeout(() => {
             setLocation(redirectPath);
-          }, 100);
+          }, 500);
         }
       } catch (error) {
         console.error('Google auth error:', error);
-        // Only show error if it's not the domain authorization error
-        if (!error.message?.includes('unauthorized-domain')) {
-          toast({
-            title: "שגיאה באימות Google",
-            description: "אנא נסה שוב",
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "שגיאה באימות Google",
+          description: "אנא נסה שוב",
+          variant: "destructive",
+        });
       }
     };
 

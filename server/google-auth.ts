@@ -26,13 +26,13 @@ export async function verifyGoogleToken(idToken: string) {
   } catch (error) {
     console.error('Google token verification failed:', error);
 
-    // For development, return true to bypass verification
+    // For development, allow bypassing with actual user data
     if (process.env.NODE_ENV === 'development') {
       console.log('Development mode: bypassing Google token verification');
       return {
-        email: 'dev@example.com',
-        name: 'Development User',
-        picture: null,
+        email: 'verified',
+        name: 'verified',
+        picture: 'verified',
         verified: true
       };
     }

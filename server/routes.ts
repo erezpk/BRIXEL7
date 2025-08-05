@@ -10,7 +10,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Google OAuth route
   app.post('/api/auth/google', async (req, res) => {
     try {
-      const { email, name, picture } = req.body;
+      const { idToken, email, name, picture } = req.body;
 
       if (!email || !name) {
         return res.status(400).json({ message: 'Missing required fields' });
@@ -18,26 +18,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Google auth attempt for:', email);
 
-      // Verify Google token (bypassed in development)
-      const verified = await verifyGoogleToken(email); // NOTE: Changed verifyGoogleToken to accept email instead of idToken for simplicity in this context. If idToken is truly needed, this part needs to be adjusted.
-      if (!verified && process.env.NODE_ENV === 'production') {
+      // Verify Google token
+      let verified = null;
+      if (idToken) {
+        verified = await verifyGoogleToken(idToken);
+      }
+      
+      // In development, allow bypassing verification
+      if (!verified && process.env.NODE_ENV !== 'development') {
         return res.status(401).json({ message: 'טוקן Google לא תקין' });
       }
 
-
-      // Check if user exists in local database
-      let user = await storage.getUserByEmail(email);
-
-      if (!user) {
-        console.log('Creating new user from Google auth:', email);
-        user = await storage.createOrUpdateUserFromGoogle(email, name, picture);
-      } else {
-        console.log('User found, updating from Google auth:', email);
-        user = await storage.createOrUpdateUserFromGoogle(email, name, picture);
-      }
-
-      // Update last login
-      await storage.updateUser(user.id, { lastLogin: new Date() });
+      // Create or update user in local database
+      const user = await storage.createOrUpdateUserFromGoogle(email, name, picture);
 
       console.log('Google auth successful for user:', email);
 
@@ -48,12 +41,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: user.email,
           fullName: user.fullName,
           role: user.role,
-          avatar: picture
+          avatar: user.avatar
         }
       });
     } catch (error) {
       console.error('Google auth error:', error);
       res.status(500).json({ message: 'שגיאה בהתחברות Google' });
+    }
+  });
+
+  // Sync users endpoint
+  app.post('/api/dev/sync-users', async (req, res) => {
+    try {
+      const result = await storage.syncAllUsersWithFirebase();
+      res.json(result);
+    } catch (error) {
+      console.error('Error syncing users:', error);
+      res.status(500).json({ message: 'שגיאה בסנכרון משתמשים' });
     }
   });
 
