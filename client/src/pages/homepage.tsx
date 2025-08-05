@@ -12,6 +12,9 @@ import {
   ChevronLeft,
   Menu,
   X,
+  Mail,
+  Phone,
+  MapPin,
 } from "lucide-react";
 
 export default function Homepage() {
@@ -40,7 +43,7 @@ export default function Homepage() {
             </div>
 
             {/* Desktop Menu on right */}
-            <div className="hidden md:flex items-center space-x-8">
+            <div className="hidden md:flex items-center space-x-reverse space-x-8">
               <a
                 href="#features"
                 className="text-gray-600 hover:text-primary transition-colors"
@@ -62,14 +65,16 @@ export default function Homepage() {
               >
                 צור קשר
               </a>
-              <Link href="/login">
-                <Button variant="ghost" data-testid="nav-login">
-                  כניסה
-                </Button>
-              </Link>
-              <Link href="/signup">
-                <Button data-testid="nav-signup">הרשמה</Button>
-              </Link>
+              <div className="flex items-center space-x-reverse space-x-4">
+                <Link href="/login">
+                  <Button variant="ghost" data-testid="nav-login">
+                    כניסה
+                  </Button>
+                </Link>
+                <Link href="/signup">
+                  <Button data-testid="nav-signup">הרשמה</Button>
+                </Link>
+              </div>
             </div>
 
             {/* Mobile Menu Button */}
@@ -95,22 +100,22 @@ export default function Homepage() {
               className="md:hidden border-t border-gray-100 py-4"
               data-testid="mobile-menu"
             >
-              <div className="flex flex-col space-y-4">
+              <div className="flex flex-col space-y-4 text-right">
                 <a
                   href="#features"
-                  className="text-gray-600 hover:text-primary transition-colors"
+                  className="text-gray-600 hover:text-primary transition-colors py-2"
                 >
                   תכונות
                 </a>
                 <a
                   href="#pricing"
-                  className="text-gray-600 hover:text-primary transition-colors"
+                  className="text-gray-600 hover:text-primary transition-colors py-2"
                 >
                   מחירים
                 </a>
                 <a
                   href="#contact"
-                  className="text-gray-600 hover:text-primary transition-colors"
+                  className="text-gray-600 hover:text-primary transition-colors py-2"
                 >
                   צור קשר
                 </a>
@@ -345,6 +350,167 @@ export default function Homepage() {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section
+        id="pricing"
+        className="py-20 bg-gradient-to-bl from-gray-50 to-white"
+        data-testid="pricing-section"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2
+              className="text-4xl font-bold text-gray-900 mb-4 font-rubik"
+              data-testid="pricing-title"
+            >
+              תוכניות מחירים
+            </h2>
+            <p
+              className="text-xl text-gray-600"
+              data-testid="pricing-subtitle"
+            >
+              בחרו את התוכנית המתאימה לכם
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Basic Plan */}
+            <Card className="bg-white p-8 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardContent className="p-0">
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    תוכנית בסיסית
+                  </h3>
+                  <div className="text-4xl font-bold text-primary mb-2">
+                    ₪199
+                    <span className="text-lg text-gray-600 font-normal">/חודש</span>
+                  </div>
+                  <p className="text-gray-600">מושלם לסוכנויות קטנות</p>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-center text-right">
+                    <span className="ml-3">✓</span>
+                    עד 5 פרויקטים פעילים
+                  </li>
+                  <li className="flex items-center text-right">
+                    <span className="ml-3">✓</span>
+                    עד 3 חברי צוות
+                  </li>
+                  <li className="flex items-center text-right">
+                    <span className="ml-3">✓</span>
+                    ניהול משימות בסיסי
+                  </li>
+                  <li className="flex items-center text-right">
+                    <span className="ml-3">✓</span>
+                    תמיכה באימייל
+                  </li>
+                </ul>
+                <Button className="w-full">התחילו עכשיו</Button>
+              </CardContent>
+            </Card>
+
+            {/* Professional Plan */}
+            <Card className="bg-gradient-to-bl from-primary/5 to-white p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 border-2 border-primary relative">
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                <span className="bg-primary text-white px-4 py-2 rounded-full text-sm font-semibold">
+                  הכי פופולרי
+                </span>
+              </div>
+              <CardContent className="p-0">
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    תוכנית מקצועית
+                  </h3>
+                  <div className="text-4xl font-bold text-primary mb-2">
+                    ₪399
+                    <span className="text-lg text-gray-600 font-normal">/חודש</span>
+                  </div>
+                  <p className="text-gray-600">לסוכנויות בינוניות</p>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-center text-right">
+                    <span className="ml-3">✓</span>
+                    פרויקטים ללא הגבלה
+                  </li>
+                  <li className="flex items-center text-right">
+                    <span className="ml-3">✓</span>
+                    עד 15 חברי צוות
+                  </li>
+                  <li className="flex items-center text-right">
+                    <span className="ml-3">✓</span>
+                    ניהול משימות מתקדם
+                  </li>
+                  <li className="flex items-center text-right">
+                    <span className="ml-3">✓</span>
+                    דוחות ואנליטיקס
+                  </li>
+                  <li className="flex items-center text-right">
+                    <span className="ml-3">✓</span>
+                    פורטל לקוחות
+                  </li>
+                  <li className="flex items-center text-right">
+                    <span className="ml-3">✓</span>
+                    תמיכה טלפונית
+                  </li>
+                </ul>
+                <Button className="w-full">התחילו עכשיו</Button>
+              </CardContent>
+            </Card>
+
+            {/* Enterprise Plan */}
+            <Card className="bg-white p-8 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardContent className="p-0">
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    תוכנית ארגונית
+                  </h3>
+                  <div className="text-4xl font-bold text-primary mb-2">
+                    ₪799
+                    <span className="text-lg text-gray-600 font-normal">/חודש</span>
+                  </div>
+                  <p className="text-gray-600">לסוכנויות גדולות</p>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-center text-right">
+                    <span className="ml-3">✓</span>
+                    כל התכונות של התוכנית המקצועית
+                  </li>
+                  <li className="flex items-center text-right">
+                    <span className="ml-3">✓</span>
+                    חברי צוות ללא הגבלה
+                  </li>
+                  <li className="flex items-center text-right">
+                    <span className="ml-3">✓</span>
+                    אוטומציות מתקדמות
+                  </li>
+                  <li className="flex items-center text-right">
+                    <span className="ml-3">✓</span>
+                    אינטגרציות מותאמות
+                  </li>
+                  <li className="flex items-center text-right">
+                    <span className="ml-3">✓</span>
+                    תמיכה 24/7
+                  </li>
+                  <li className="flex items-center text-right">
+                    <span className="ml-3">✓</span>
+                    מנהל חשבון ייעודי
+                  </li>
+                </ul>
+                <Button className="w-full">צרו קשר</Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="text-center mt-12">
+            <p className="text-gray-600 mb-4">
+              כל התוכניות כוללות 14 יום ניסיון חינם, ללא התחייבות
+            </p>
+            <p className="text-sm text-gray-500">
+              המחירים אינם כוללים מע"ם • ניתן לבטל בכל עת
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section
         className="py-20 bg-gradient-to-l from-primary/10 to-purple-50"
@@ -374,6 +540,117 @@ export default function Homepage() {
                 <ChevronLeft className="mr-2 h-5 w-5" />
               </Button>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section
+        id="contact"
+        className="py-20 bg-white"
+        data-testid="contact-section"
+      >
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2
+              className="text-4xl font-bold text-gray-900 mb-4 font-rubik"
+              data-testid="contact-title"
+            >
+              צרו קשר
+            </h2>
+            <p
+              className="text-xl text-gray-600"
+              data-testid="contact-subtitle"
+            >
+              יש לכם שאלות? אנחנו כאן לעזור
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* Contact Info */}
+            <div className="text-right">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-6">
+                דברו איתנו
+              </h3>
+              <div className="space-y-6">
+                <div className="flex items-center space-x-reverse space-x-4">
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <Mail className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">אימייל</p>
+                    <p className="text-gray-600">support@brixel7.com</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-reverse space-x-4">
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <Phone className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">טלפון</p>
+                    <p className="text-gray-600">03-1234567</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-reverse space-x-4">
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <MapPin className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">כתובת</p>
+                    <p className="text-gray-600">רחוב רוטשילד 1, תל אביב</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact Form */}
+            <Card className="shadow-lg">
+              <CardContent className="p-8">
+                <form className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 mb-2 text-right">
+                      שם מלא
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-right"
+                      placeholder="הזינו את שמכם המלא"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 mb-2 text-right">
+                      אימייל
+                    </label>
+                    <input
+                      type="email"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-right"
+                      placeholder="הזינו את כתובת האימייל"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 mb-2 text-right">
+                      נושא
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-right"
+                      placeholder="נושא הפנייה"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 mb-2 text-right">
+                      הודעה
+                    </label>
+                    <textarea
+                      rows={4}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-right resize-none"
+                      placeholder="כתבו את הודעתכם כאן..."
+                    ></textarea>
+                  </div>
+                  <Button className="w-full">שלחו הודעה</Button>
+                </form>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
