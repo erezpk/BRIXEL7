@@ -24,18 +24,35 @@ class EmailService {
   private config: EmailConfig | null = null;
 
   async initialize() {
+    console.log('🔄 Initializing email service...');
+    console.log('Gmail User:', process.env.GMAIL_USER ? 'Set' : 'Not set');
+    console.log('Gmail App Password:', process.env.GMAIL_APP_PASSWORD ? 'Set' : 'Not set');
+    
     // Check for Gmail credentials first
     if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
       this.config = {
         host: 'smtp.gmail.com',
         port: 587,
-        secure: false,
+        secure: false, // true for 465, false for other ports
         auth: {
           user: process.env.GMAIL_USER,
           pass: process.env.GMAIL_APP_PASSWORD
         },
         from: process.env.GMAIL_USER
       };
+
+      this.transporter = nodemailer.createTransporter(this.config);
+      
+      // Verify connection
+      try {
+        await this.transporter.verify();
+        console.log('✅ Gmail SMTP connection verified successfully');
+        console.log(`📧 Email service ready with Gmail: ${process.env.GMAIL_USER}`);
+      } catch (error) {
+        console.error('❌ Gmail SMTP verification failed:', error);
+        this.transporter = null;
+        this.config = null;
+      }
     }
     // Fallback to generic SMTP if configured
     else if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD) {
@@ -49,21 +66,21 @@ class EmailService {
         },
         from: process.env.SMTP_FROM || process.env.SMTP_USER
       };
-    }
 
-    if (this.config) {
       this.transporter = nodemailer.createTransporter(this.config);
       
       // Verify connection
       try {
         await this.transporter.verify();
-        console.log('✅ Email service initialized successfully');
+        console.log('✅ SMTP connection verified successfully');
       } catch (error) {
-        console.error('❌ Email service verification failed:', error);
+        console.error('❌ SMTP verification failed:', error);
         this.transporter = null;
+        this.config = null;
       }
     } else {
       console.warn('⚠️ Email service not configured - no SMTP credentials found');
+      console.warn('💡 To enable email: Set GMAIL_USER and GMAIL_APP_PASSWORD environment variables');
     }
   }
 
@@ -249,9 +266,6 @@ class EmailService {
 
 // Create singleton instance
 const emailService = new EmailService();
-
-// Initialize on startup
-emailService.initialize().catch(console.error);
 
 export { emailService, EmailService };
 export type { EmailParams };

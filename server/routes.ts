@@ -7,7 +7,7 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema } from "@shared/schema";
 import { z } from "zod";
 import express from "express"; // Import express to use its Router
-import { emailService } from "./email-service"; // Import from email-service.ts
+import { emailService } from "./email-service.js"; // Import from email-service.ts
 import crypto from 'crypto'; // Import crypto for token generation
 // Removed Firebase/Google auth library import - using simple OAuth now
 
@@ -1457,6 +1457,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בבדיקת סטטוס האימייל' });
+    }
+  });
+
+  // Email test connection endpoint (for email setup page)
+  router.post('/api/email/test-connection', async (req, res) => {
+    try {
+      const isConnected = await emailService.testConnection();
+      if (isConnected) {
+        res.json({ 
+          success: true, 
+          message: 'Email service is configured and ready',
+          provider: 'Gmail SMTP'
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: 'Email service not configured or connection failed' 
+        });
+      }
+    } catch (error) {
+      console.error('Email test connection error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Connection test failed' 
+      });
+    }
+  });
+
+  // Send test email endpoint (for email setup page)
+  router.post('/api/email/send-test', async (req, res) => {
+    try {
+      if (!emailService.isConfigured()) {
+        return res.status(500).json({ success: false, message: 'Email service not configured' });
+      }
+
+      const { to, subject, body } = req.body;
+      
+      if (!to || !subject || !body) {
+        return res.status(400).json({ success: false, message: 'Missing required fields' });
+      }
+
+      const success = await emailService.sendEmail({
+        to,
+        subject,
+        text: body,
+        html: `<div dir="rtl" style="font-family: Arial, sans-serif;">${body.replace(/\n/g, '<br>')}</div>`
+      });
+
+      if (success) {
+        res.json({ success: true, message: `Test email sent to ${to}` });
+      } else {
+        res.status(500).json({ success: false, message: 'Failed to send test email' });
+      }
+    } catch (error) {
+      console.error('Send test email error:', error);
+      res.status(500).json({ success: false, message: 'Failed to send test email' });
     }
   });
 

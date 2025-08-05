@@ -39,6 +39,10 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize email service
+  const { emailService } = await import("./email-service.js");
+  await emailService.initialize();
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

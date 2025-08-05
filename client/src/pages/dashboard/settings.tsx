@@ -492,7 +492,7 @@ export default function Settings() {
                 </div>
                 <Button 
                   variant="outline"
-                  onClick={() => setLocation('/dashboard/email-settings')}
+                  onClick={() => setLocation('/dashboard/email-setup')}
                   className="flex items-center gap-2"
                 >
                   <SettingsIcon className="h-4 w-4" />
