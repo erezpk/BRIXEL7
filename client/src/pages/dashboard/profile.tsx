@@ -32,7 +32,8 @@ export default function Profile() {
     email: user?.email || "",
     phone: user?.phone || "",
     company: user?.company || "",
-    bio: user?.bio || ""
+    bio: user?.bio || "",
+    avatar: user?.avatar || null
   });
 
   const updateProfileMutation = useMutation({
@@ -71,9 +72,26 @@ export default function Profile() {
       email: user?.email || "",
       phone: user?.phone || "",
       company: user?.company || "",
-      bio: user?.bio || ""
+      bio: user?.bio || "",
+      avatar: user?.avatar || null
     });
     setIsEditing(false);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageUrl = e.target?.result as string;
+        setFormData(prev => ({ ...prev, avatar: imageUrl }));
+        toast({
+          title: "תמונה הועלתה",
+          description: "תמונת הפרופיל עודכנה"
+        });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const getUserInitials = () => {
@@ -112,12 +130,29 @@ export default function Profile() {
         <Card className="md:col-span-1">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={user?.avatar || undefined} alt={user?.fullName} />
-                <AvatarFallback className="text-xl font-medium">
-                  {getUserInitials()}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-24 w-24">
+                  <AvatarImage src={formData.avatar || user?.avatar || undefined} alt={user?.fullName} />
+                  <AvatarFallback className="text-xl font-medium">
+                    {getUserInitials()}
+                  </AvatarFallback>
+                </Avatar>
+                {isEditing && (
+                  <button 
+                    onClick={() => document.getElementById('profile-avatar-upload')?.click()}
+                    className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-2 hover:bg-blue-600 transition-colors"
+                  >
+                    <Edit className="h-3 w-3" />
+                  </button>
+                )}
+                <input
+                  id="profile-avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </div>
             </div>
             <CardTitle className="text-xl">{user?.fullName}</CardTitle>
             <Badge variant="secondary" className="mx-auto">

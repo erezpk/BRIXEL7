@@ -130,6 +130,16 @@ export default function ClientDashboard() {
     projectId: ''
   });
 
+  const [profileData, setProfileData] = useState({
+    fullName: 'יוסי כהן',
+    email: 'yossi@example.com',
+    phone: '050-1234567',
+    company: 'חברת הדוגמא',
+    avatar: null as string | null
+  });
+
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -245,6 +255,32 @@ export default function ClientDashboard() {
     });
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageUrl = e.target?.result as string;
+        setProfileData(prev => ({ ...prev, avatar: imageUrl }));
+        // In real app, upload to server
+        toast({
+          title: "תמונה הועלתה",
+          description: "תמונת הפרופיל עודכנה בהצלחה"
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveProfile = () => {
+    // In real app, this would make an API call
+    toast({
+      title: "פרופיל עודכן",
+      description: "הפרטים שלך נשמרו בהצלחה"
+    });
+    setShowProfileModal(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Header */}
@@ -261,11 +297,15 @@ export default function ClientDashboard() {
               <Button variant="ghost" size="sm">
                 <Settings className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => setActiveTab('profile')}>
                 <User className="h-4 w-4" />
                 החשבון שלי
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => {
+                // Clear auth data and redirect to login
+                localStorage.removeItem('authToken');
+                window.location.href = '/auth/login';
+              }}>
                 <LogOut className="h-4 w-4 ml-2" />
                 יציאה
               </Button>
@@ -347,6 +387,17 @@ export default function ClientDashboard() {
               >
                 <MessageSquare className="h-5 w-5" />
                 הודעות
+              </button>
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-right rounded-lg transition-colors ${
+                  activeTab === 'profile' 
+                    ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-700' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <User className="h-5 w-5" />
+                הפרופיל שלי
               </button>
             </div>
           </nav>
@@ -654,6 +705,98 @@ export default function ClientDashboard() {
               </Card>
             </div>
           )}
+
+          {/* Profile Tab */}
+          {activeTab === 'profile' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h1 className="text-3xl font-bold text-gray-900">הפרופיל שלי</h1>
+                <Button onClick={() => setShowProfileModal(true)}>
+                  <Edit className="h-4 w-4 ml-2" />
+                  ערוך פרופיל
+                </Button>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-3">
+                {/* Profile Card */}
+                <Card className="md:col-span-1">
+                  <CardHeader className="text-center">
+                    <div className="flex justify-center mb-4">
+                      <div className="relative">
+                        {profileData.avatar ? (
+                          <img 
+                            src={profileData.avatar} 
+                            alt="Profile" 
+                            className="h-24 w-24 rounded-full object-cover border-4 border-white shadow-lg"
+                          />
+                        ) : (
+                          <div className="h-24 w-24 rounded-full bg-blue-500 flex items-center justify-center text-white text-2xl font-bold">
+                            {profileData.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                          </div>
+                        )}
+                        <button 
+                          onClick={() => document.getElementById('avatar-upload')?.click()}
+                          className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-1 hover:bg-blue-600 transition-colors"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </button>
+                        <input
+                          id="avatar-upload"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                      </div>
+                    </div>
+                    <CardTitle className="text-xl">{profileData.fullName}</CardTitle>
+                    <Badge variant="secondary" className="mx-auto">לקוח</Badge>
+                  </CardHeader>
+                  <CardContent className="text-center space-y-4">
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+                      <Mail className="h-4 w-4" />
+                      {profileData.email}
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+                      <Phone className="h-4 w-4" />
+                      {profileData.phone}
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+                      <Building className="h-4 w-4" />
+                      {profileData.company}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Activity Summary */}
+                <Card className="md:col-span-2">
+                  <CardHeader>
+                    <CardTitle>סיכום פעילות</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center p-4 bg-blue-50 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600">{clientProjects.length}</div>
+                        <div className="text-sm text-gray-600">פרויקטים פעילים</div>
+                      </div>
+                      <div className="text-center p-4 bg-green-50 rounded-lg">
+                        <div className="text-2xl font-bold text-green-600">{clientTasks.filter(t => t.status === 'completed').length}</div>
+                        <div className="text-sm text-gray-600">משימות הושלמו</div>
+                      </div>
+                      <div className="text-center p-4 bg-orange-50 rounded-lg">
+                        <div className="text-2xl font-bold text-orange-600">{clientAssets.length}</div>
+                        <div className="text-sm text-gray-600">נכסים דיגיטליים</div>
+                      </div>
+                      <div className="text-center p-4 bg-purple-50 rounded-lg">
+                        <div className="text-2xl font-bold text-purple-600">{messages.length}</div>
+                        <div className="text-sm text-gray-600">הודעות</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -877,6 +1020,97 @@ export default function ClientDashboard() {
               </Button>
               <Button onClick={handleSendMessage}>
                 שלח הודעה
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Profile Edit Modal */}
+      <Dialog open={showProfileModal} onOpenChange={setShowProfileModal}>
+        <DialogContent className="max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">עריכת פרופיל</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex justify-center mb-4">
+              <div className="relative">
+                {profileData.avatar ? (
+                  <img 
+                    src={profileData.avatar} 
+                    alt="Profile" 
+                    className="h-20 w-20 rounded-full object-cover border-4 border-white shadow-lg"
+                  />
+                ) : (
+                  <div className="h-20 w-20 rounded-full bg-blue-500 flex items-center justify-center text-white text-xl font-bold">
+                    {profileData.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </div>
+                )}
+                <button 
+                  onClick={() => document.getElementById('modal-avatar-upload')?.click()}
+                  className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-1 hover:bg-blue-600 transition-colors"
+                >
+                  <Edit className="h-3 w-3" />
+                </button>
+                <input
+                  id="modal-avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-right">שם מלא</Label>
+                <Input
+                  value={profileData.fullName}
+                  onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
+                  className="text-right"
+                  placeholder="הכנס שם מלא"
+                />
+              </div>
+              <div>
+                <Label className="text-right">אימייל</Label>
+                <Input
+                  type="email"
+                  value={profileData.email}
+                  onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                  className="text-right"
+                  placeholder="הכנס אימייל"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-right">טלפון</Label>
+                <Input
+                  value={profileData.phone}
+                  onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                  className="text-right"
+                  placeholder="הכנס טלפון"
+                />
+              </div>
+              <div>
+                <Label className="text-right">חברה</Label>
+                <Input
+                  value={profileData.company}
+                  onChange={(e) => setProfileData({ ...profileData, company: e.target.value })}
+                  className="text-right"
+                  placeholder="שם החברה"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowProfileModal(false)}>
+                ביטול
+              </Button>
+              <Button onClick={handleSaveProfile}>
+                שמור שינויים
               </Button>
             </div>
           </div>

@@ -73,7 +73,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
   const handleNotificationClick = (notificationId: string) => {
     setClickedNotifications(prev => new Set(Array.from(prev).concat(notificationId)));
   };
-  
+
   const isNotificationNew = (notification: any) => {
     const createdAt = new Date(notification.createdAt);
     const now = new Date();
@@ -148,7 +148,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                       {Array.isArray(notifications) && notifications.slice(0, 10).map((notification: any, index: number) => {
                         const isNew = isNotificationNew(notification);
                         const isClicked = clickedNotifications.has(notification.id || index.toString());
-                        
+
                         return (
                         <div
                           key={notification.id || index}
@@ -224,8 +224,8 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-reverse space-x-2 p-2" data-testid="user-menu-trigger">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.avatar || undefined} alt={user?.fullName} />
-                    <AvatarFallback className="font-medium">
+                    <AvatarImage src={user?.avatar || localStorage.getItem('userAvatar') || undefined} />
+                    <AvatarFallback className="text-sm">
                       {getUserInitials()}
                     </AvatarFallback>
                   </Avatar>
@@ -241,11 +241,11 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                   </div>
                 </Button>
               </DropdownMenuTrigger>
-              
+
               <DropdownMenuContent align="end" className="w-56" data-testid="user-menu">
                 <DropdownMenuLabel>החשבון שלי</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                
+
                 <DropdownMenuItem 
                   onClick={() => window.location.href = '/dashboard/profile'}
                   data-testid="menu-profile"
@@ -253,7 +253,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                   <User className="ml-2 h-4 w-4" />
                   <span>פרופיל</span>
                 </DropdownMenuItem>
-                
+
                 <DropdownMenuItem 
                   onClick={() => window.location.href = '/dashboard/settings'}
                   data-testid="menu-settings"
@@ -261,9 +261,9 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                   <Settings className="ml-2 h-4 w-4" />
                   <span>הגדרות</span>
                 </DropdownMenuItem>
-                
+
                 <DropdownMenuSeparator />
-                
+
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600" data-testid="menu-logout">
                   <LogOut className="ml-2 h-4 w-4" />
                   <span>יציאה</span>
