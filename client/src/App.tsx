@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
+import { lazy } from "react";
 
 import Homepage from "@/pages/homepage";
 import Login from "@/pages/auth/login";
@@ -145,7 +146,7 @@ export default function App() {
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
-          
+
           <Route path="/dashboard/reports">
             <ProtectedRoute>
               <DashboardLayout>
@@ -186,7 +187,18 @@ export default function App() {
           </Route>
 
           {/* CLIENT PORTAL - Standalone authentication */}
-          <Route path="/client-portal" component={ClientDashboard} />
+          <Route path="/client-portal" component={() => {
+          const urlParams = new URLSearchParams(window.location.search);
+          const clientId = urlParams.get('clientId');
+
+          if (clientId) {
+            return <ClientDashboard />;
+          } else {
+            return <ClientDashboard />;
+          }
+        }} />
+          {/* ADDED CLIENT SETTINGS ROUTE */}
+          <Route path="/client-settings" component={lazy(() => import("./pages/client-portal/client-settings"))} />
 
           {/* ADDED HELP CENTER ROUTE */}
           <Route path="/help" component={HelpCenter} />

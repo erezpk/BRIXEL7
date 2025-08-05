@@ -222,10 +222,25 @@ export default function ClientDashboard() {
       'google': '🔍',
       'facebook': '📘',
       'website': '🌐',
-      'referral': '👥'
+      'referral': '👥',
+      'facebook_ads': '📘',
+      'google_ads': '🔍'
     };
     
     return sourceIcons[source] || '❓';
+  };
+
+  const getSourceLabel = (source: string) => {
+    const sourceLabels: Record<string, string> = {
+      'google': 'Google',
+      'facebook': 'Facebook',
+      'website': 'אתר',
+      'referral': 'הפניה',
+      'facebook_ads': 'Facebook Ads',
+      'google_ads': 'Google Ads'
+    };
+    
+    return sourceLabels[source] || source;
   };
 
   // Mutations for leads
@@ -270,6 +285,39 @@ export default function ClientDashboard() {
       toast({
         variant: "destructive",
         title: "שגיאה",
+        description: error.message
+      });
+    }
+  });
+
+  // Sync leads from ad platforms
+  const syncLeadsMutation = useMutation({
+    mutationFn: async ({ platform, accountId }: { platform: string; accountId: string }) => {
+      const response = await fetch('/api/client/integrations/sync-leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ platform, accountId })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'שגיאה בסנכרון לידים');
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "לידים סונכרנו בהצלחה",
+        description: data.message
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/client/leads'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "שגיאה בסנכרון לידים",
         description: error.message
       });
     }
@@ -484,6 +532,17 @@ export default function ClientDashboard() {
                 <User className="h-5 w-5" />
                 הפרופיל שלי
               </button>
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-right rounded-lg transition-colors ${
+                  activeTab === 'settings' 
+                    ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-700' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <Settings className="h-5 w-5" />
+                הגדרות
+              </button>
             </div>
           </nav>
         </div>
@@ -628,10 +687,20 @@ export default function ClientDashboard() {
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold text-gray-900">ניהול לידים</h1>
-                <Button onClick={() => setShowLeadModal(true)}>
-                  <Plus className="h-4 w-4 ml-2" />
-                  הוסף ליד חדש
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => syncLeadsMutation.mutate({ platform: 'facebook', accountId: 'mock_account' })}
+                    disabled={syncLeadsMutation.isPending}
+                  >
+                    <Activity className="h-4 w-4 ml-2" />
+                    {syncLeadsMutation.isPending ? 'מסנכרן...' : 'סנכרן לידים'}
+                  </Button>
+                  <Button onClick={() => setShowLeadModal(true)}>
+                    <Plus className="h-4 w-4 ml-2" />
+                    הוסף ליד חדש
+                  </Button>
+                </div>
               </div>
 
               <Card>
@@ -658,7 +727,12 @@ export default function ClientDashboard() {
                           <TableCell className="text-right">
                             <div className="flex items-center gap-2 justify-end">
                               <span>{getSourceIcon(lead.source)}</span>
-                              <span className="capitalize">{lead.source}</span>
+                              <span>{getSourceLabel(lead.source)}</span>
+                              {(lead.source === 'facebook_ads' || lead.source === 'google_ads') && (
+                                <Badge variant="outline" className="text-xs">
+                                  סונכרן
+                                </Badge>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell className="text-right">{getStatusBadge(lead.status)}</TableCell>
@@ -715,6 +789,41 @@ export default function ClientDashboard() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          )}
+
+          {/* Settings Tab */}
+          {activeTab === 'settings' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h1 className="text-3xl font-bold text-gray-900">הגדרות</h1>
+              </div>
+
+              <div className="grid gap-6">
+                {/* Lead Sync Settings */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="h-5 w-5" />
+                      הגדרות לידים
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                      <div>
+                        <h3 className="font-medium text-blue-800">חיבור לפלטפורמות פרסום</h3>
+                        <p className="text-sm text-blue-600">חבר את חשבונות הפרסום שלך לסנכרון אוטומטי של לידים</p>
+                      </div>
+                      <Button onClick={() => {
+                        window.open('/client-settings', '_blank');
+                      }}>
+                        <Settings className="h-4 w-4 ml-2" />
+                        נהל חיבורים
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           )}
 

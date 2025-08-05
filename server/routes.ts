@@ -1082,6 +1082,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Client settings routes
+  router.get('/api/client/settings', requireAuth, async (req, res) => {
+    try {
+      // Return mock settings for now
+      const settings = {
+        leadSync: {
+          enabled: true,
+          autoAssign: true,
+          emailNotifications: true
+        },
+        adAccounts: {
+          facebook: [],
+          google: []
+        }
+      };
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת הגדרות' });
+    }
+  });
+
+  router.put('/api/client/settings', requireAuth, async (req, res) => {
+    try {
+      const settings = req.body;
+      
+      // In real implementation, save to database
+      console.log('Saving client settings:', settings);
+
+      // Log activity (if user has agency)
+      if (req.user!.agencyId) {
+        await storage.logActivity({
+          agencyId: req.user!.agencyId,
+          userId: req.user!.id,
+          action: 'updated',
+          entityType: 'settings',
+          entityId: req.user!.id,
+          details: { settingsType: 'client_settings' },
+        });
+      }
+
+      res.json({ message: 'הגדרות נשמרו בהצלחה' });
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בשמירת הגדרות' });
+    }
+  });
+
+  // Facebook Ads integration
+  router.post('/api/client/integrations/facebook/connect', requireAuth, async (req, res) => {
+    try {
+      const { accessToken, accountId } = req.body;
+      
+      if (!accessToken || !accountId) {
+        return res.status(400).json({ message: 'חסרים פרטי חיבור' });
+      }
+
+      // In real implementation, validate Facebook access token and get account info
+      // For now, return mock data
+      const mockResponse = {
+        userId: 'fb_user_123',
+        userName: 'John Doe',
+        accountId: accountId,
+        accountName: `Facebook Ad Account (${accountId})`,
+        accessToken: accessToken
+      };
+
+      // Log activity
+      if (req.user!.agencyId) {
+        await storage.logActivity({
+          agencyId: req.user!.agencyId,
+          userId: req.user!.id,
+          action: 'connected',
+          entityType: 'integration',
+          entityId: accountId,
+          details: { platform: 'facebook', accountId: accountId },
+        });
+      }
+
+      res.json(mockResponse);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בחיבור לפייסבוק אדס' });
+    }
+  });
+
+  // Google Ads integration
+  router.post('/api/client/integrations/google/connect', requireAuth, async (req, res) => {
+    try {
+      const { customerId, refreshToken } = req.body;
+      
+      if (!customerId || !refreshToken) {
+        return res.status(400).json({ message: 'חסרים פרטי חיבור' });
+      }
+
+      // In real implementation, validate Google refresh token and get account info
+      // For now, return mock data
+      const mockResponse = {
+        customerId: customerId,
+        customerName: `Google Ad Account (${customerId})`,
+        email: req.user!.email,
+        accessToken: 'mock_access_token',
+        refreshToken: refreshToken
+      };
+
+      // Log activity
+      if (req.user!.agencyId) {
+        await storage.logActivity({
+          agencyId: req.user!.agencyId,
+          userId: req.user!.id,
+          action: 'connected',
+          entityType: 'integration',
+          entityId: customerId,
+          details: { platform: 'google', customerId: customerId },
+        });
+      }
+
+      res.json(mockResponse);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בחיבור לגוגל אדס' });
+    }
+  });
+
+  // Sync leads from ad platforms
+  router.post('/api/client/integrations/sync-leads', requireAuth, async (req, res) => {
+    try {
+      const { platform, accountId } = req.body;
+      
+      // In real implementation, this would fetch leads from the respective platform
+      // and save them to the database
+      
+      const mockLeads = [
+        {
+          id: Date.now().toString(),
+          name: 'ליד מפייסבוק',
+          email: 'lead@example.com',
+          phone: '050-1234567',
+          source: platform,
+          status: 'new',
+          value: 5000,
+          notes: `ליד שהגיע מ-${platform} ads`,
+          clientId: req.user!.id,
+          createdAt: new Date().toISOString()
+        }
+      ];
+
+      // Log activity
+      if (req.user!.agencyId) {
+        await storage.logActivity({
+          agencyId: req.user!.agencyId,
+          userId: req.user!.id,
+          action: 'synced',
+          entityType: 'leads',
+          entityId: accountId,
+          details: { platform: platform, leadsCount: mockLeads.length },
+        });
+      }
+
+      res.json({ 
+        message: `סונכרנו ${mockLeads.length} לידים מ-${platform}`,
+        leads: mockLeads
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בסנכרון לידים' });
+    }
+  });
+
   // Team routes
   router.get('/api/team', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
