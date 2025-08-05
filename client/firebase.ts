@@ -27,8 +27,8 @@ export function loginWithGoogle() {
 // Call this function on page load when the user is redirected back to your site
 export function handleGoogleRedirect() {
   console.log("Checking for Google redirect result...");
-  getRedirectResult(auth)
-    .then((result) => {
+  return getRedirectResult(auth)
+    .then(async (result) => {
       if (result) {
         // This gives you a Google Access Token. You can use it to access Google APIs.
         const credential = GoogleAuthProvider.credentialFromResult(result);
@@ -40,27 +40,32 @@ export function handleGoogleRedirect() {
         
         // Send the ID token to your backend
         if (user) {
-          user.getIdToken().then((idToken) => {
-            // Send this token to your backend
-            fetch('/api/auth/google', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              credentials: 'include',
-              body: JSON.stringify({ idToken }),
-            }).then(response => {
-              if (response.ok) {
-                // Redirect to dashboard
-                window.location.href = '/dashboard';
-              } else {
-                console.error('Backend authentication failed');
-              }
-            });
+          const idToken = await user.getIdToken();
+          const response = await fetch('/api/auth/google', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ 
+              idToken,
+              email: user.email,
+              name: user.displayName,
+              avatar: user.photoURL
+            }),
           });
+          
+          if (response.ok) {
+            const data = await response.json();
+            return data;
+          } else {
+            console.error('Backend authentication failed');
+            throw new Error('Backend authentication failed');
+          }
         }
       } else {
         console.log("No Google redirect result found");
+        return null;
       }
     })
     .catch((error) => {
@@ -72,5 +77,6 @@ export function handleGoogleRedirect() {
       // The AuthCredential type that was used.
       const credential = GoogleAuthProvider.credentialFromError(error);
       console.error("Google redirect error:", error);
+      throw error;
     });
 }
