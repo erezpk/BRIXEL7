@@ -3,12 +3,12 @@ import { initializeApp } from "firebase/app";
 import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  apiKey: "AIzaSyDGoJLBzYEsWm3tqDZHXKYvuuDZqJgVEXg",
   authDomain: "brixel7-ed00e.firebaseapp.com",
   projectId: "brixel7-ed00e",
   storageBucket: "brixel7-ed00e.firebasestorage.app",
   messagingSenderId: "483318017359",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  appId: "1:483318017359:web:3a28590b65f9aeaa8d293a",
   measurementId: "G-10K9Y627RN"
 };
 
