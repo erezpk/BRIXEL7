@@ -61,9 +61,19 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-export default function App() {
-  const { user } = useAuth(); // Get user here to use in Route
+function DashboardRouteContent() {
+  const { user } = useAuth();
+  
+  return (
+    <DashboardLayout>
+      {user?.role === 'client' ? <ClientDashboard /> :
+       user?.role === 'team_member' ? <TeamDashboard /> :
+       <Dashboard />}
+    </DashboardLayout>
+  );
+}
 
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -79,11 +89,7 @@ export default function App() {
           {/* Updated dashboard route to render different dashboards based on user role */}
           <Route path="/dashboard">
             <ProtectedRoute>
-              <DashboardLayout>
-                {user?.role === 'client' ? <ClientDashboard /> :
-                 user?.role === 'team_member' ? <TeamDashboard /> :
-                 <Dashboard />}
-              </DashboardLayout>
+              <DashboardRouteContent />
             </ProtectedRoute>
           </Route>
 
