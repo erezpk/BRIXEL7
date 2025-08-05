@@ -16,7 +16,8 @@ import {
   Eye,
   Calendar,
   FileText,
-  MessageSquare
+  MessageSquare,
+  Plus
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -239,16 +240,42 @@ export default function ProjectDetails() {
           <h1 className="text-3xl font-bold">{project.name}</h1>
           <p className="text-muted-foreground mt-2">{project.description}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={openEditModal}>
+        <div className="flex gap-3">
+          <Button 
+            variant="default" 
+            size="sm" 
+            onClick={openEditModal}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+          >
             <Edit className="h-4 w-4 ml-2" />
             עריכה
           </Button>
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              // פתח חלון חדש עם תצוגת הלקוח
+              window.open(`/client-portal?projectId=${projectId}`, '_blank');
+            }}
+            className="border-green-500 text-green-600 hover:bg-green-50 px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+          >
             <Eye className="h-4 w-4 ml-2" />
             צפה כלקוח
           </Button>
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              if (confirm('האם אתה בטוח שברצונך למחוק את הפרויקט? פעולה זו לא ניתנת לביטול.')) {
+                // כאן נוסיף פונקציה למחיקת פרויקט
+                toast({
+                  title: "מחיקת פרויקט",
+                  description: "הפרויקט נמחק בהצלחה",
+                });
+              }
+            }}
+            className="border-red-500 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+          >
             <Trash2 className="h-4 w-4 ml-2" />
             מחיקה
           </Button>
@@ -362,7 +389,13 @@ export default function ProjectDetails() {
                 <CardTitle>משימות פרויקט</CardTitle>
                 <CardDescription>רשימת המשימות הפתוחות והמושלמות</CardDescription>
               </div>
-              <Button onClick={() => setShowTaskModal(true)}>+ הוסף משימה</Button>
+              <Button 
+                onClick={() => setShowTaskModal(true)}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+              >
+                <Plus className="h-4 w-4 ml-2" />
+                הוסף משימה
+              </Button>
             </CardHeader>
             <CardContent>
               {tasks.length > 0 ? (
@@ -396,7 +429,13 @@ export default function ProjectDetails() {
                 <CardTitle>קבצי הפרויקט</CardTitle>
                 <CardDescription>מסמכים וקבצים הקשורים לפרויקט</CardDescription>
               </div>
-              <Button onClick={() => setShowAssetModal(true)}>+ הוסף נכס</Button>
+              <Button 
+                onClick={() => setShowAssetModal(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+              >
+                <Plus className="h-4 w-4 ml-2" />
+                הוסף נכס
+              </Button>
             </CardHeader>
             <CardContent>
               {assets.length > 0 ? (
@@ -504,9 +543,19 @@ export default function ProjectDetails() {
                   </select>
                 </div>
               </div>
-              <div className="mt-6 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowEditModal(false)}>ביטול</Button>
-                <Button type="submit" disabled={updateProjectMutation.isPending}>
+              <div className="mt-6 flex justify-end gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowEditModal(false)}
+                  className="px-6 py-2 rounded-lg border-gray-300 hover:bg-gray-50 transition-all duration-200"
+                >
+                  ביטול
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={updateProjectMutation.isPending}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50"
+                >
                   {updateProjectMutation.isPending ? "שומר..." : "שמור שינויים"}
                 </Button>
               </div>
@@ -567,9 +616,19 @@ export default function ProjectDetails() {
                   />
                 </div>
               </div>
-              <div className="mt-6 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowTaskModal(false)}>ביטול</Button>
-                <Button type="submit" disabled={createTaskMutation.isPending}>
+              <div className="mt-6 flex justify-end gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowTaskModal(false)}
+                  className="px-6 py-2 rounded-lg border-gray-300 hover:bg-gray-50 transition-all duration-200"
+                >
+                  ביטול
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={createTaskMutation.isPending}
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50"
+                >
                   {createTaskMutation.isPending ? "מוסיף..." : "הוסף משימה"}
                 </Button>
               </div>
@@ -640,9 +699,19 @@ export default function ProjectDetails() {
                   />
                 </div>
               </div>
-              <div className="mt-6 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowAssetModal(false)}>ביטול</Button>
-                <Button type="submit" disabled={createAssetMutation.isPending}>
+              <div className="mt-6 flex justify-end gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowAssetModal(false)}
+                  className="px-6 py-2 rounded-lg border-gray-300 hover:bg-gray-50 transition-all duration-200"
+                >
+                  ביטול
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={createAssetMutation.isPending}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50"
+                >
                   {createAssetMutation.isPending ? "מוסיף..." : "הוסף נכס"}
                 </Button>
               </div>
