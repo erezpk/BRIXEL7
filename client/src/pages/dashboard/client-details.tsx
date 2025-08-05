@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,13 +14,25 @@ import {
   User,
   Calendar,
   FileText,
-  Folder
+  Folder,
+  Save,
+  X
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import { type Client, type Project } from "@shared/schema";
 
 export default function ClientDetails() {
   const [, params] = useRoute("/dashboard/clients/:id");
   const clientId = params?.id;
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState<Partial<Client>>({});
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: client, isLoading: clientLoading } = useQuery<Client>({
     queryKey: ['/api/clients', clientId],
@@ -30,6 +42,40 @@ export default function ClientDetails() {
   const { data: projects, isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
     select: (data) => data?.filter(p => p.clientId === clientId) || [],
+  });
+
+  const updateClientMutation = useMutation({
+    mutationFn: async (updatedClient: Partial<Client>) => {
+      const response = await fetch(`/api/clients/${clientId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedClient),
+      });
+      
+      if (!response.ok) {
+        throw new Error('שגיאה בעדכון הלקוח');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/clients', clientId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
+      setShowEditModal(false);
+      toast({
+        title: "הלקוח עודכן בהצלחה",
+        description: "פרטי הלקוח נשמרו במערכת",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "שגיאה בעדכון הלקוח",
+        description: "אנא נסה שוב מאוחר יותר",
+        variant: "destructive",
+      });
+    },
   });
 
   const getStatusColor = (status: string) => {
@@ -56,6 +102,33 @@ export default function ClientDetails() {
       default:
         return status;
     }
+  };
+
+  const handleEditClick = () => {
+    if (client) {
+      setEditFormData({
+        name: client.name,
+        contactName: client.contactName || '',
+        email: client.email || '',
+        phone: client.phone || '',
+        industry: client.industry || '',
+        status: client.status,
+        notes: client.notes || '',
+      });
+      setShowEditModal(true);
+    }
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateClientMutation.mutate(editFormData);
+  };
+
+  const handleInputChange = (field: keyof Client, value: string) => {
+    setEditFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   if (clientLoading) {
@@ -97,7 +170,7 @@ export default function ClientDetails() {
           <Badge className={getStatusColor(client.status)}>
             {getStatusText(client.status)}
           </Badge>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleEditClick}>
             <Edit className="h-4 w-4 ml-2" />
             ערוך לקוח
           </Button>
@@ -273,6 +346,126 @@ export default function ClientDetails() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Client Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-right font-rubik">ערוך לקוח</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="clientName" className="text-right">שם הלקוח *</Label>
+              <Input
+                id="clientName"
+                value={editFormData.name || ''}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                placeholder="הכנס שם הלקוח"
+                className="text-right"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="contactName" className="text-right">איש קשר</Label>
+              <Input
+                id="contactName"
+                value={editFormData.contactName || ''}
+                onChange={(e) => handleInputChange('contactName', e.target.value)}
+                placeholder="שם איש הקשר"
+                className="text-right"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-right">אימייל</Label>
+              <Input
+                id="email"
+                type="email"
+                value={editFormData.email || ''}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                placeholder="כתובת אימייל"
+                className="text-right"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="text-right">טלפון</Label>
+              <Input
+                id="phone"
+                value={editFormData.phone || ''}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                placeholder="מספר טלפון"
+                className="text-right"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="industry" className="text-right">תחום עיסוק</Label>
+              <Select value={editFormData.industry || ''} onValueChange={(value) => handleInputChange('industry', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="בחר תחום עיסוק" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="technology">טכנולוגיה</SelectItem>
+                  <SelectItem value="healthcare">בריאות</SelectItem>
+                  <SelectItem value="education">חינוך</SelectItem>
+                  <SelectItem value="finance">פיננסים</SelectItem>
+                  <SelectItem value="retail">קמעונאות</SelectItem>
+                  <SelectItem value="food">מזון ומשקאות</SelectItem>
+                  <SelectItem value="real-estate">נדל"ן</SelectItem>
+                  <SelectItem value="legal">משפטים</SelectItem>
+                  <SelectItem value="consulting">ייעוץ</SelectItem>
+                  <SelectItem value="other">אחר</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status" className="text-right">סטטוס</Label>
+              <Select value={editFormData.status || ''} onValueChange={(value) => handleInputChange('status', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="בחר סטטוס" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">פעיל</SelectItem>
+                  <SelectItem value="inactive">לא פעיל</SelectItem>
+                  <SelectItem value="pending">ממתין</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="notes" className="text-right">הערות</Label>
+              <Textarea
+                id="notes"
+                value={editFormData.notes || ''}
+                onChange={(e) => handleInputChange('notes', e.target.value)}
+                placeholder="הערות נוספות"
+                className="text-right"
+                rows={3}
+              />
+            </div>
+            
+            <div className="flex space-x-reverse space-x-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowEditModal(false)}
+              >
+                ביטול
+              </Button>
+              <Button
+                type="submit"
+                disabled={updateClientMutation.isPending}
+              >
+                {updateClientMutation.isPending ? "שומר..." : "שמור"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
