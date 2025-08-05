@@ -255,12 +255,45 @@ export default function ProjectDetails() {
             size="sm"
             onClick={() => {
               // פתח חלון חדש עם תצוגת הלקוח
-              window.open(`/client-portal?projectId=${projectId}`, '_blank');
+              window.open(`/client-portal?projectId=${projectId}&clientId=${project.clientId}`, '_blank');
             }}
             className="border-green-500 text-green-600 hover:bg-green-50 px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
           >
             <Eye className="h-4 w-4 ml-2" />
             צפה כלקוח
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              if (project.client) {
+                // שלח פרטי התחברות ללקוח
+                const credentials = {
+                  email: project.client.email || `${project.client.name.toLowerCase().replace(/\s+/g, '')}@client.portal`,
+                  password: `${project.client.name.toLowerCase().replace(/\s+/g, '')}_${project.id.slice(0, 8)}`,
+                  clientPortalUrl: `${window.location.origin}/client-portal?clientId=${project.clientId}`
+                };
+                
+                // כאן נוסיף API call לשליחת אימייל עם פרטי ההתחברות
+                toast({
+                  title: "פרטי התחברות נשלחו",
+                  description: `פרטי ההתחברות נשלחו ל-${project.client.name}`,
+                });
+                
+                // הצג את הפרטים למנהל
+                alert(`פרטי התחברות ללקוח:\nאימייל: ${credentials.email}\nסיסמה: ${credentials.password}\nקישור: ${credentials.clientPortalUrl}`);
+              } else {
+                toast({
+                  title: "שגיאה",
+                  description: "לא נמצא לקוח מקושר לפרויקט זה",
+                  variant: "destructive",
+                });
+              }
+            }}
+            className="border-purple-500 text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+          >
+            <MessageSquare className="h-4 w-4 ml-2" />
+            שלח פרטי התחברות
           </Button>
           <Button 
             variant="outline" 

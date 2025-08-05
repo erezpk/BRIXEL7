@@ -30,7 +30,7 @@ import HelpCenter from "@/pages/help-center";
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
-  
+
   useEffect(() => {
     if (!isLoading && !user) {
       setLocation("/login");
@@ -44,11 +44,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  
+
   if (!user) {
     return null; // הייעוד יקרה דרך useEffect
   }
-  
+
   return <>{children}</>;
 }
 
@@ -171,11 +171,8 @@ export default function App() {
             </ProtectedRoute>
           </Route>
 
-          <Route path="/client-portal">
-            <ProtectedRoute>
-              <ClientDashboard />
-            </ProtectedRoute>
-          </Route>
+          {/* CLIENT PORTAL - Standalone authentication */}
+          <Route path="/client-portal" component={ClientDashboard} />
 
           {/* ADDED HELP CENTER ROUTE */}
           <Route path="/help" component={HelpCenter} />
