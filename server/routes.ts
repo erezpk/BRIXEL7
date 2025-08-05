@@ -231,18 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Check if email service is configured
-      if (!emailService.isConfigured()) {
-        // For development/demo purposes, return the reset URL directly
-        console.log('Email service not configured. Reset URL:', resetUrl);
-        return res.json({ 
-          message: 'שירות האימייל לא מוגדר. עבור סביבת פיתוח, ניתן להשתמש בקישור הבא:',
-          resetUrl: resetUrl,
-          development: true
-        });
-      }
-
-      // Send email
+      // Try to send email, handle if service is not configured
       const emailSent = await emailService.sendPasswordReset({
         to: email,
         userName: user.fullName,
@@ -250,11 +239,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agencyName
       });
 
-      if (emailSent) {
-        res.json({ message: 'קישור איפוס סיסמה נשלח לאימייל שלך' });
-      } else {
-        res.status(500).json({ message: 'שגיאה בשליחת האימייל. אנא נסה שוב מאוחר יותר' });
+      // If email wasn't sent (service not configured), provide alternative for development
+      if (!emailSent) {
+        console.log('Email service not available. Reset URL:', resetUrl);
+        return res.json({ 
+          message: 'שירות האימייל לא זמין כרגע. עבור סביבת פיתוח, ניתן לגשת לקישור הבא:',
+          resetUrl: resetUrl,
+          development: true
+        });
       }
+
+      // If we get here, email was sent successfully
+      res.json({ message: 'קישור איפוס סיסמה נשלח לאימייל שלך' });
     } catch (error) {
       console.error('Password reset error:', error);
       res.status(500).json({ message: 'שגיאת שרת' });

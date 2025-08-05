@@ -34,6 +34,10 @@ class EmailService {
     this.initializeTransporter();
   }
 
+  isConfigured(): boolean {
+    return this.transporter !== null;
+  }
+
   private initializeTransporter() {
     // יש להגדיר את פרטי ה-SMTP במשתני הסביבה
     const emailConfig: EmailConfig = {
