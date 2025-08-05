@@ -12,18 +12,10 @@ export default function Homepage() {
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      if (user.role === "admin") {
-        setLocation("/dashboard/admin");
-      } else if (user.role === "agency") {
-        setLocation("/dashboard/agency");
-      } else if (user.role === "client") {
-        setLocation("/dashboard/client");
-      } else if (user.role === "team_member") {
-        setLocation("/dashboard/team-member");
-      }
+    if (isAuthenticated && user) {
+      setLocation("/dashboard");
     }
-  }, [isAuthenticated, user, location, setLocation]);
+  }, [isAuthenticated, user, setLocation]);
 
   return (
     <div
