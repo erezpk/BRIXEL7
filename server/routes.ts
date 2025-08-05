@@ -1084,6 +1084,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Team member stats
+  router.get('/api/team/stats', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      
+      // Get projects where user is assigned
+      const projects = await storage.getProjectsByAssignedUser(user.id);
+      
+      res.json({
+        projectsCount: projects.length,
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת סטטיסטיקות חבר צוות' });
+    }
+  });
+
+  router.get('/api/team/activity', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      // Get activity related to user's tasks and projects
+      const activity = await storage.getActivityLogByUser(user.id, limit);
+      res.json(activity);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת פעילות חבר צוות' });
+    }
+  });
+
   // Team routes
   router.get('/api/team', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
@@ -1119,6 +1148,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const newUser = await storage.createUser(userData);
 
+      // Get agency details for email
+      const agency = await storage.getAgencyById(user.agencyId!);
+      if (!agency) {
+        return res.status(404).json({ message: 'סוכנות לא נמצאה' });
+      }
+
+      // Send invitation email
+      if (emailService.isConfigured()) {
+        const loginUrl = `${req.protocol}://${req.get('host')}/login`;
+        
+        const emailSent = await emailService.sendEmail({
+          to: newUser.email,
+          subject: `הזמנה להצטרף ל-${agency.name}`,
+          html: `
+            <div dir="rtl" style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
+              <h2>הזמנה להצטרף כחבר צוות</h2>
+              <p>שלום ${newUser.fullName},</p>
+              <p>הוזמנת להצטרף כחבר צוות ב-${agency.name}.</p>
+              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p><strong>פרטי ההתחברות:</strong></p>
+                <p><strong>אימייל:</strong> ${newUser.email}</p>
+                <p><strong>סיסמה זמנית:</strong> ${userData.password}</p>
+                <p><strong>קישור למערכת:</strong> <a href="${loginUrl}">${loginUrl}</a></p>
+              </div>
+              <p>מומלץ לשנות את הסיסמה בכניסה הראשונה.</p>
+              <p>בברכה,<br>צוות ${agency.name}</p>
+            </div>
+          `,
+          text: `שלום ${newUser.fullName}, הוזמנת להצטרף כחבר צוות ב-${agency.name}. פרטי התחברות: ${newUser.email} / ${userData.password}. קישור: ${loginUrl}`
+        });
+
+        console.log(`Team invitation email sent to ${newUser.email}: ${emailSent ? 'Success' : 'Failed'}`);
+      }
+
       // Log activity
       await storage.logActivity({
         agencyId: user.agencyId!,
@@ -1126,7 +1189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: 'invited',
         entityType: 'user',
         entityId: newUser.id,
-        details: { userName: newUser.fullName, userEmail: newUser.email },
+        details: { userName: newUser.fullName, userEmail: newUser.email, invitedBy: user.fullName },
       });
 
       // Remove password from response
@@ -1255,11 +1318,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'חבר צוות לא נמצא' });
       }
 
-      // Here you would typically send an actual email
-      // For now, we'll just simulate the process and log it
-      console.log(`Sending invitation email to: ${member.email}`);
-      console.log(`Member details: ${member.fullName} (${member.role})`);
-      console.log(`Agency: ${user.agencyId}`);
+      // Get agency details
+      const agency = await storage.getAgencyById(user.agencyId!);
+      if (!agency) {
+        return res.status(404).json({ message: 'סוכנות לא נמצאה' });
+      }
+
+      // Send reminder/invitation email
+      if (emailService.isConfigured()) {
+        const loginUrl = `${req.protocol}://${req.get('host')}/login`;
+        
+        const emailSent = await emailService.sendEmail({
+          to: member.email,
+          subject: `תזכורת - גישה למערכת ${agency.name}`,
+          html: `
+            <div dir="rtl" style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
+              <h2>תזכורת - גישה למערכת</h2>
+              <p>שלום ${member.fullName},</p>
+              <p>זוהי תזכורת לגישה שלך למערכת ${agency.name}.</p>
+              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p><strong>פרטי ההתחברות:</strong></p>
+                <p><strong>אימייל:</strong> ${member.email}</p>
+                <p><strong>קישור למערכת:</strong> <a href="${loginUrl}">${loginUrl}</a></p>
+              </div>
+              <p>אם אין לך סיסמה או שכחת אותה, ניתן לאפס אותה דרך הקישור "שכחתי סיסמה" בעמוד ההתחברות.</p>
+              <p>בברכה,<br>צוות ${agency.name}</p>
+            </div>
+          `,
+          text: `שלום ${member.fullName}, תזכורת לגישה למערכת ${agency.name}. קישור התחברות: ${loginUrl}`
+        });
+
+        console.log(`Team reminder email sent to ${member.email}: ${emailSent ? 'Success' : 'Failed'}`);
+      }
 
       // Log activity
       await storage.logActivity({

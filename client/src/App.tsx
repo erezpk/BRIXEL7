@@ -15,6 +15,7 @@ import ResetPassword from "@/pages/auth/reset-password";
 
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import Dashboard from "@/pages/dashboard/dashboard";
+import TeamDashboard from "@/pages/dashboard/team-dashboard"; // Imported TeamDashboard
 import Clients from "@/pages/dashboard/clients";
 import ClientDetails from "@/pages/dashboard/client-details";
 import Leads from "@/pages/dashboard/leads";
@@ -61,6 +62,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const { user } = useAuth(); // Get user here to use in Route
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -73,13 +76,17 @@ export default function App() {
           <Route path="/reset-password" component={ResetPassword} />
 
           {/* DASHBOARD */}
+          {/* Updated dashboard route to render different dashboards based on user role */}
           <Route path="/dashboard">
             <ProtectedRoute>
               <DashboardLayout>
-                <Dashboard />
+                {user?.role === 'client' ? <ClientDashboard /> :
+                 user?.role === 'team_member' ? <TeamDashboard /> :
+                 <Dashboard />}
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
+
           <Route path="/dashboard/leads">
             <ProtectedRoute>
               <DashboardLayout>
@@ -203,7 +210,7 @@ export default function App() {
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
-          
+
           <Route path="/dashboard/email-setup">
             <ProtectedRoute>
               <DashboardLayout>
