@@ -499,8 +499,8 @@ export default function ClientDashboard() {
                           variant="outline" 
                           className="flex-1"
                           onClick={() => {
-                            // Navigate to project details page
-                            window.location.href = `/dashboard/projects/${project.id}`;
+                            // Navigate to client project details page
+                            window.location.href = `/client-portal/project/${project.id}`;
                           }}
                         >
                           <Eye className="h-4 w-4 ml-1" />

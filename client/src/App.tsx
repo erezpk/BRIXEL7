@@ -24,6 +24,7 @@ import Tasks from "@/pages/dashboard/tasks";
 import Assets from "@/pages/dashboard/assets";
 import Team from "@/pages/dashboard/team";
 import ClientDashboard from "@/pages/client-portal/client-dashboard";
+import ClientProjectDetails from "@/pages/client-portal/project-details";
 import Profile from "@/pages/dashboard/profile";
 import Settings from "@/pages/dashboard/settings";
 import TeamDashboardPage from "@/pages/team-dashboard";
@@ -160,13 +161,13 @@ export default function App() {
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
-          
+
           <Route path="/dashboard/team-dashboard">
             <ProtectedRoute>
               <TeamDashboardPage />
             </ProtectedRoute>
           </Route>
-          
+
           <Route path="/dashboard/leads">
             <ProtectedRoute>
               <LeadsManagementPage />
@@ -191,6 +192,11 @@ export default function App() {
 
           {/* CLIENT PORTAL - Standalone authentication */}
           <Route path="/client-portal" component={ClientDashboard} />
+          <Route path="/client-portal/new" component={ClientDashboardNew} />
+          <Route path="/client-portal/project/:projectId" component={ClientProjectDetails} />
+          <Route path="/team" component={TeamDashboardPage} />
+          <Route path="/leads" component={LeadsManagementPage} />
+
 
           {/* ADDED HELP CENTER ROUTE */}
           <Route path="/help" component={HelpCenter} />
