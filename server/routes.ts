@@ -900,10 +900,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Leads routes
+  // Client Portal Leads routes
   router.get('/api/client/leads/:clientId', requireAuth, async (req, res) => {
     try {
-      // Mock data for now - replace with actual database query
+      const clientId = req.params.clientId;
+      
+      // For now return mock data, but in real implementation this would fetch leads 
+      // that belong to the specific client or are managed by them
       const mockLeads = [
         {
           id: '1',
@@ -914,6 +917,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: 'new',
           value: 15000,
           notes: 'מעוניין באתר אינטרנט',
+          clientId: clientId,
           createdAt: new Date().toISOString()
         },
         {
@@ -925,6 +929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: 'contacted',
           value: 25000,
           notes: 'פגישה קבועה לשבוע הבא',
+          clientId: clientId,
           createdAt: new Date().toISOString()
         }
       ];
@@ -934,38 +939,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  router.post('/api/client/leads', requireAuth, async (req, res) => {
+    try {
+      const leadData = req.body;
+      
+      // In real implementation, save to database
+      const newLead = {
+        id: Date.now().toString(),
+        ...leadData,
+        createdAt: new Date().toISOString()
+      };
+
+      // Log activity (if user has agency)
+      if (req.user!.agencyId) {
+        await storage.logActivity({
+          agencyId: req.user!.agencyId,
+          userId: req.user!.id,
+          action: 'created',
+          entityType: 'lead',
+          entityId: newLead.id,
+          details: { leadName: newLead.name, leadEmail: newLead.email },
+        });
+      }
+
+      res.json(newLead);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה ביצירת ליד' });
+    }
+  });
+
+  router.put('/api/client/leads/:id', requireAuth, async (req, res) => {
+    try {
+      const leadId = req.params.id;
+      const updateData = req.body;
+      
+      // In real implementation, update in database
+      const updatedLead = {
+        id: leadId,
+        ...updateData,
+        updatedAt: new Date().toISOString()
+      };
+
+      // Log activity (if user has agency)
+      if (req.user!.agencyId) {
+        await storage.logActivity({
+          agencyId: req.user!.agencyId,
+          userId: req.user!.id,
+          action: 'updated',
+          entityType: 'lead',
+          entityId: leadId,
+          details: { leadName: updateData.name, leadEmail: updateData.email },
+        });
+      }
+
+      res.json(updatedLead);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בעדכון ליד' });
+    }
+  });
+
   router.get('/api/client/clients/:clientId', requireAuth, async (req, res) => {
     try {
-      // Mock data for now - replace with actual database query
+      const clientId = req.params.clientId;
+      
+      // For now return mock data that includes the requesting client
       const mockClients = [
         {
-          id: '1',
-          name: 'חברת הטכנולוגיה בע"מ',
-          contactName: 'יוסי כהן',
-          email: 'yossi@techcompany.com',
+          id: clientId,
+          name: 'החברה שלי',
+          contactName: req.user!.fullName,
+          email: req.user!.email,
           phone: '03-1234567',
           industry: 'טכנולוגיה',
           status: 'active',
           totalValue: 150000,
           projectsCount: 3,
           lastContact: new Date().toISOString()
-        },
-        {
-          id: '2',
-          name: 'סטודיו עיצוב',
-          contactName: 'מיכל לוי',
-          email: 'michal@design.com',
-          phone: '054-9876543',
-          industry: 'עיצוב',
-          status: 'active',
-          totalValue: 85000,
-          projectsCount: 2,
-          lastContact: new Date().toISOString()
         }
       ];
       res.json(mockClients);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בטעינת לקוחות' });
+    }
+  });
+
+  router.post('/api/client/clients', requireAuth, async (req, res) => {
+    try {
+      const clientData = req.body;
+      
+      // In real implementation, save to database
+      const newClient = {
+        id: Date.now().toString(),
+        ...clientData,
+        createdAt: new Date().toISOString()
+      };
+
+      // Log activity (if user has agency)
+      if (req.user!.agencyId) {
+        await storage.logActivity({
+          agencyId: req.user!.agencyId,
+          userId: req.user!.id,
+          action: 'created',
+          entityType: 'client',
+          entityId: newClient.id,
+          details: { clientName: newClient.name, clientEmail: newClient.email },
+        });
+      }
+
+      res.json(newClient);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה ביצירת לקוח' });
+    }
+  });
+
+  router.put('/api/client/clients/:id', requireAuth, async (req, res) => {
+    try {
+      const clientId = req.params.id;
+      const updateData = req.body;
+      
+      // In real implementation, update in database
+      const updatedClient = {
+        id: clientId,
+        ...updateData,
+        updatedAt: new Date().toISOString()
+      };
+
+      // Log activity (if user has agency)
+      if (req.user!.agencyId) {
+        await storage.logActivity({
+          agencyId: req.user!.agencyId,
+          userId: req.user!.id,
+          action: 'updated',
+          entityType: 'client',
+          entityId: clientId,
+          details: { clientName: updateData.name, clientEmail: updateData.email },
+        });
+      }
+
+      res.json(updatedClient);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בעדכון לקוח' });
     }
   });
 

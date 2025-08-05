@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -185,15 +185,17 @@ export default function ClientDashboard() {
     { id: '2', content: 'היי! הפרויקט מתקדם מצוין, נשלח לך עדכון מפורט בקרוב', timestamp: '2024-02-01T11:00:00Z', isFromClient: false, projectId: '1' }
   ];
 
-  const leads: Lead[] = [
-    { id: '1', name: 'משה כהן', email: 'moshe@example.com', phone: '050-1234567', source: 'google', status: 'new', value: 15000, notes: 'מעוניין באתר למסעדה' },
-    { id: '2', name: 'שרה לוי', email: 'sara@example.com', phone: '052-7654321', source: 'referral', status: 'contacted', value: 8000, notes: 'צריכה חנות מקוונת' }
-  ];
+  // Fetch leads data
+  const { data: leads = [] } = useQuery({
+    queryKey: ['/api/client/leads', effectiveClientId],
+    enabled: !!effectiveClientId,
+  });
 
-  const clients: Client[] = [
-    { id: '1', name: 'מסעדת הבשר', contactName: 'דוד כהן', email: 'david@restaurant.com', phone: '03-1234567', industry: 'מסעדות', status: 'active', projectsCount: 2 },
-    { id: '2', name: 'חנות האופנה', contactName: 'רחל לוי', email: 'rachel@fashion.com', phone: '09-7654321', industry: 'אופנה', status: 'active', projectsCount: 1 }
-  ];
+  // Fetch clients data  
+  const { data: clients = [] } = useQuery({
+    queryKey: ['/api/client/clients', effectiveClientId],
+    enabled: !!effectiveClientId,
+  });
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -226,41 +228,104 @@ export default function ClientDashboard() {
     return sourceIcons[source] || '❓';
   };
 
+  // Mutations for leads
+  const saveLeadMutation = useMutation({
+    mutationFn: async (leadData: any) => {
+      const url = editingLead ? `/api/client/leads/${editingLead.id}` : '/api/client/leads';
+      const method = editingLead ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ ...leadData, clientId: effectiveClientId })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'שגיאה בשמירת הליד');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: editingLead ? "ליד עודכן" : "ליד נוסף",
+        description: editingLead ? "הליד עודכן בהצלחה" : "ליד חדש נוסף בהצלחה"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/client/leads'] });
+      setShowLeadModal(false);
+      setEditingLead(null);
+      setLeadForm({
+        name: '',
+        email: '',
+        phone: '',
+        source: 'website',
+        status: 'new',
+        value: 0,
+        notes: ''
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "שגיאה",
+        description: error.message
+      });
+    }
+  });
+
+  const saveClientMutation = useMutation({
+    mutationFn: async (clientData: any) => {
+      const url = editingClient ? `/api/client/clients/${editingClient.id}` : '/api/client/clients';
+      const method = editingClient ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(clientData)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'שגיאה בשמירת הלקוח');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: editingClient ? "לקוח עודכן" : "לקוח נוסף",
+        description: editingClient ? "הלקוח עודכן בהצלחה" : "לקוח חדש נוסף בהצלחה"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/client/clients'] });
+      setShowClientModal(false);
+      setEditingClient(null);
+      setClientForm({
+        name: '',
+        contactName: '',
+        email: '',
+        phone: '',
+        industry: '',
+        status: 'active'
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "שגיאה",
+        description: error.message
+      });
+    }
+  });
+
   const handleSaveLead = () => {
-    // In real app, this would make an API call
-    toast({
-      title: editingLead ? "ליד עודכן" : "ליד נוסף",
-      description: editingLead ? "הליד עודכן בהצלחה" : "ליד חדש נוסף בהצלחה"
-    });
-    setShowLeadModal(false);
-    setEditingLead(null);
-    setLeadForm({
-      name: '',
-      email: '',
-      phone: '',
-      source: 'website',
-      status: 'new',
-      value: 0,
-      notes: ''
-    });
+    saveLeadMutation.mutate(leadForm);
   };
 
   const handleSaveClient = () => {
-    // In real app, this would make an API call
-    toast({
-      title: editingClient ? "לקוח עודכן" : "לקוח נוסף",
-      description: editingClient ? "הלקוח עודכן בהצלחה" : "לקוח חדש נוסף בהצלחה"
-    });
-    setShowClientModal(false);
-    setEditingClient(null);
-    setClientForm({
-      name: '',
-      contactName: '',
-      email: '',
-      phone: '',
-      industry: '',
-      status: 'active'
-    });
+    saveClientMutation.mutate(clientForm);
   };
 
   const handleSendMessage = () => {
@@ -749,11 +814,14 @@ export default function ClientDashboard() {
 
       {/* Lead Modal */}
       <Dialog open={showLeadModal} onOpenChange={setShowLeadModal}>
-        <DialogContent className="max-w-md" dir="rtl">
+        <DialogContent className="max-w-md" dir="rtl" aria-describedby="lead-modal-description">
           <DialogHeader>
             <DialogTitle className="text-right">
-              {editingLead ? 'עריכת ליד' : 'הוספת ליד חדש'}
+              {editingLead ? 'עריכת ליד' : 'הוספת ليד חדש'}
             </DialogTitle>
+            <DialogDescription id="lead-modal-description" className="text-right">
+              {editingLead ? 'ערוך את פרטי הליد' : 'הוסף ליד חדש למערכת'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -857,11 +925,14 @@ export default function ClientDashboard() {
 
       {/* Client Modal */}
       <Dialog open={showClientModal} onOpenChange={setShowClientModal}>
-        <DialogContent className="max-w-md" dir="rtl">
+        <DialogContent className="max-w-md" dir="rtl" aria-describedby="client-modal-description">
           <DialogHeader>
             <DialogTitle className="text-right">
               {editingClient ? 'עריכת לקוח' : 'הוספת לקוח חדש'}
             </DialogTitle>
+            <DialogDescription id="client-modal-description" className="text-right">
+              {editingClient ? 'ערוך את פרטי הלקוח' : 'הוסף לקוח חדש למערכת'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -931,9 +1002,12 @@ export default function ClientDashboard() {
 
       {/* Message Modal */}
       <Dialog open={showMessageModal} onOpenChange={setShowMessageModal}>
-        <DialogContent className="max-w-md" dir="rtl">
+        <DialogContent className="max-w-md" dir="rtl" aria-describedby="message-modal-description">
           <DialogHeader>
             <DialogTitle className="text-right">הודעה חדשה לסוכנות</DialogTitle>
+            <DialogDescription id="message-modal-description" className="text-right">
+              שלח הודעה לסוכנות בנוגע לפרויקט
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -975,9 +1049,12 @@ export default function ClientDashboard() {
 
       {/* Profile Edit Modal */}
       <Dialog open={showProfileModal} onOpenChange={setShowProfileModal}>
-        <DialogContent className="max-w-lg" dir="rtl">
+        <DialogContent className="max-w-lg" dir="rtl" aria-describedby="profile-modal-description">
           <DialogHeader>
             <DialogTitle className="text-right">עריכת פרופיל</DialogTitle>
+            <DialogDescription id="profile-modal-description" className="text-right">
+              ערוך את פרטי הפרופיל שלך
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex justify-center mb-4">
