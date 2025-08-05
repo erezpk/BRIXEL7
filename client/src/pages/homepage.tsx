@@ -43,29 +43,29 @@ export default function Homepage() {
             </div>
 
             {/* Desktop Menu on right */}
-            <div className="hidden md:flex items-center space-x-reverse space-x-8">
+            <div className="hidden md:flex items-center space-x-reverse space-x-6">
               <a
                 href="#features"
-                className="text-gray-600 hover:text-primary transition-colors"
+                className="text-gray-600 hover:text-primary transition-colors px-3 py-2"
                 data-testid="nav-features"
               >
                 תכונות
               </a>
               <a
                 href="#pricing"
-                className="text-gray-600 hover:text-primary transition-colors"
+                className="text-gray-600 hover:text-primary transition-colors px-3 py-2"
                 data-testid="nav-pricing"
               >
                 מחירים
               </a>
               <a
                 href="#contact"
-                className="text-gray-600 hover:text-primary transition-colors"
+                className="text-gray-600 hover:text-primary transition-colors px-3 py-2"
                 data-testid="nav-contact"
               >
                 צור קשר
               </a>
-              <div className="flex items-center space-x-reverse space-x-4">
+              <div className="flex items-center space-x-reverse space-x-3 mr-6">
                 <Link href="/login">
                   <Button variant="ghost" data-testid="nav-login">
                     כניסה
