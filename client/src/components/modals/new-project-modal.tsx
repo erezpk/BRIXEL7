@@ -255,99 +255,100 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
           </div>
         </form>
 
-        {/* New Client Modal */}
-        <Dialog open={showNewClientModal} onOpenChange={setShowNewClientModal}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-right font-rubik">לקוח חדש</DialogTitle>
-            </DialogHeader>
+        </DialogContent>
+    </Dialog>
 
-            <form onSubmit={handleNewClientSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="clientName" className="text-right">שם הלקוח *</Label>
-                <Input
-                  id="clientName"
-                  value={newClientData.name}
-                  onChange={(e) => handleNewClientInputChange('name', e.target.value)}
-                  placeholder="הכנס שם הלקוח"
-                  className="text-right"
-                  required
-                />
-              </div>
+    {/* New Client Modal - Outside main dialog to prevent nesting issues */}
+    <Dialog open={showNewClientModal} onOpenChange={setShowNewClientModal}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-right font-rubik">לקוח חדש</DialogTitle>
+        </DialogHeader>
 
-              <div className="space-y-2">
-                <Label htmlFor="contactName" className="text-right">איש קשר</Label>
-                <Input
-                  id="contactName"
-                  value={newClientData.contactName}
-                  onChange={(e) => handleNewClientInputChange('contactName', e.target.value)}
-                  placeholder="שם איש הקשר"
-                  className="text-right"
-                />
-              </div>
+        <form onSubmit={handleNewClientSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="clientName" className="text-right">שם הלקוח *</Label>
+            <Input
+              id="clientName"
+              value={newClientData.name}
+              onChange={(e) => handleNewClientInputChange('name', e.target.value)}
+              placeholder="הכנס שם הלקוח"
+              className="text-right"
+              required
+            />
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-right">אימייל</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newClientData.email}
-                  onChange={(e) => handleNewClientInputChange('email', e.target.value)}
-                  placeholder="כתובת אימייל"
-                  className="text-right"
-                />
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="contactName" className="text-right">איש קשר</Label>
+            <Input
+              id="contactName"
+              value={newClientData.contactName}
+              onChange={(e) => handleNewClientInputChange('contactName', e.target.value)}
+              placeholder="שם איש הקשר"
+              className="text-right"
+            />
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-right">טלפון</Label>
-                <Input
-                  id="phone"
-                  value={newClientData.phone}
-                  onChange={(e) => handleNewClientInputChange('phone', e.target.value)}
-                  placeholder="מספר טלפון"
-                  className="text-right"
-                />
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-right">אימייל</Label>
+            <Input
+              id="email"
+              type="email"
+              value={newClientData.email}
+              onChange={(e) => handleNewClientInputChange('email', e.target.value)}
+              placeholder="כתובת אימייל"
+              className="text-right"
+            />
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="industry" className="text-right">תחום עיסוק</Label>
-                <Select value={newClientData.industry} onValueChange={(value) => handleNewClientInputChange('industry', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="בחר תחום עיסוק" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="technology">טכנולוגיה</SelectItem>
-                    <SelectItem value="healthcare">בריאות</SelectItem>
-                    <SelectItem value="education">חינוך</SelectItem>
-                    <SelectItem value="finance">פיננסים</SelectItem>
-                    <SelectItem value="retail">קמעונאות</SelectItem>
-                    <SelectItem value="food">מזון ומשקאות</SelectItem>
-                    <SelectItem value="real-estate">נדל"ן</SelectItem>
-                    <SelectItem value="legal">משפטים</SelectItem>
-                    <SelectItem value="consulting">ייעוץ</SelectItem>
-                    <SelectItem value="other">אחר</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone" className="text-right">טלפון</Label>
+            <Input
+              id="phone"
+              value={newClientData.phone}
+              onChange={(e) => handleNewClientInputChange('phone', e.target.value)}
+              placeholder="מספר טלפון"
+              className="text-right"
+            />
+          </div>
 
-              <div className="flex space-x-reverse space-x-2 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowNewClientModal(false)}
-                >
-                  ביטול
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={createClientMutation.isPending}
-                >
-                  {createClientMutation.isPending ? "יוצר..." : "צור לקוח"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+          <div className="space-y-2">
+            <Label htmlFor="industry" className="text-right">תחום עיסוק</Label>
+            <Select value={newClientData.industry} onValueChange={(value) => handleNewClientInputChange('industry', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="בחר תחום עיסוק" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="technology">טכנולוגיה</SelectItem>
+                <SelectItem value="healthcare">בריאות</SelectItem>
+                <SelectItem value="education">חינוך</SelectItem>
+                <SelectItem value="finance">פיננסים</SelectItem>
+                <SelectItem value="retail">קמעונאות</SelectItem>
+                <SelectItem value="food">מזון ומשקאות</SelectItem>
+                <SelectItem value="real-estate">נדל"ן</SelectItem>
+                <SelectItem value="legal">משפטים</SelectItem>
+                <SelectItem value="consulting">ייעוץ</SelectItem>
+                <SelectItem value="other">אחר</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex space-x-reverse space-x-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowNewClientModal(false)}
+            >
+              ביטול
+            </Button>
+            <Button
+              type="submit"
+              disabled={createClientMutation.isPending}
+            >
+              {createClientMutation.isPending ? "יוצר..." : "צור לקוח"}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
