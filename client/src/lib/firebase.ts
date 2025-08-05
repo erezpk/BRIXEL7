@@ -2,14 +2,14 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 
-// Firebase configuration
+// Firebase configuration - fixed values until environment variables are corrected
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "brixel7-ed00e.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  projectId: "brixel7-ed00e", // Fixed: was using App ID value
   storageBucket: "brixel7-ed00e.firebasestorage.app",
   messagingSenderId: "483318017359",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  appId: "1:483318017359:web:3a28590b65f9aeaa8d293a", // Fixed: was using Project ID value
   measurementId: "G-10K9Y627RN"
 };
 
