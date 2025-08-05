@@ -30,7 +30,9 @@ export default function ClientDetails() {
   const [, params] = useRoute("/dashboard/clients/:id");
   const clientId = params?.id;
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddNoteModal, setShowAddNoteModal] = useState(false);
   const [editFormData, setEditFormData] = useState<Partial<Client>>({});
+  const [newNote, setNewNote] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -72,6 +74,47 @@ export default function ClientDetails() {
     onError: () => {
       toast({
         title: "שגיאה בעדכון הלקוח",
+        description: "אנא נסה שוב מאוחר יותר",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addNoteMutation = useMutation({
+    mutationFn: async (note: string) => {
+      const currentNotes = client?.notes || '';
+      const timestamp = new Date().toLocaleString('he-IL');
+      const newNotesContent = currentNotes 
+        ? `${currentNotes}\n\n[${timestamp}]\n${note}`
+        : `[${timestamp}]\n${note}`;
+      
+      const response = await fetch(`/api/clients/${clientId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notes: newNotesContent }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('שגיאה בהוספת הערה');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/clients', clientId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
+      setShowAddNoteModal(false);
+      setNewNote('');
+      toast({
+        title: "הערה נוספה בהצלחה",
+        description: "ההערה נשמרה במערכת",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "שגיאה בהוספת הערה",
         description: "אנא נסה שוב מאוחר יותר",
         variant: "destructive",
       });
@@ -122,6 +165,13 @@ export default function ClientDetails() {
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateClientMutation.mutate(editFormData);
+  };
+
+  const handleAddNoteSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newNote.trim()) {
+      addNoteMutation.mutate(newNote.trim());
+    }
   };
 
   const handleInputChange = (field: keyof Client, value: string) => {
@@ -319,7 +369,7 @@ export default function ClientDetails() {
                   <FileText className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">אין הערות</h3>
                   <p className="text-gray-600 mb-4">טרם נוספו הערות עבור לקוח זה</p>
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={() => setShowAddNoteModal(true)}>
                     הוסף הערה
                   </Button>
                 </div>
@@ -461,6 +511,49 @@ export default function ClientDetails() {
                 disabled={updateClientMutation.isPending}
               >
                 {updateClientMutation.isPending ? "שומר..." : "שמור"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Note Modal */}
+      <Dialog open={showAddNoteModal} onOpenChange={setShowAddNoteModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-right font-rubik">הוסף הערה</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleAddNoteSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newNote" className="text-right">הערה חדשה</Label>
+              <Textarea
+                id="newNote"
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+                placeholder="הכנס הערה חדשה..."
+                className="text-right"
+                rows={4}
+                required
+              />
+            </div>
+            
+            <div className="flex space-x-reverse space-x-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowAddNoteModal(false);
+                  setNewNote('');
+                }}
+              >
+                ביטול
+              </Button>
+              <Button
+                type="submit"
+                disabled={addNoteMutation.isPending || !newNote.trim()}
+              >
+                {addNoteMutation.isPending ? "מוסיף..." : "הוסף הערה"}
               </Button>
             </div>
           </form>
