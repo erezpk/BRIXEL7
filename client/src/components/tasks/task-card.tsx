@@ -104,7 +104,7 @@ export function TaskCard({ task, users, projects, onEdit, onDelete, isTableView 
     const completedTime = timeEntries
       .filter(entry => entry.duration)
       .reduce((total, entry) => total + (entry.duration || 0), 0);
-    
+
     const activeTime = isActive ? Date.now() - isActive : 0;
     return completedTime + activeTime;
   };
@@ -188,7 +188,7 @@ export function TaskCard({ task, users, projects, onEdit, onDelete, isTableView 
                 )}
               </div>
             )}
-            
+
             {/* Title */}
             <h4 className="font-medium text-sm text-right leading-tight">
               {task.title}
@@ -253,7 +253,7 @@ export function TaskCard({ task, users, projects, onEdit, onDelete, isTableView 
                   <span>{task.estimatedHours} שעות משוערות</span>
                 </div>
               )}
-              
+
               {/* Timer display and controls */}
               <div className="flex items-center gap-2">
                 {getTotalTime() > 0 && (
@@ -262,7 +262,7 @@ export function TaskCard({ task, users, projects, onEdit, onDelete, isTableView 
                     <span>{formatDuration(getTotalTime())}</span>
                   </div>
                 )}
-                
+
                 {!isCompleted && (
                   <div className="flex items-center gap-1">
                     {isActive ? (
@@ -320,7 +320,7 @@ export function TaskCard({ task, users, projects, onEdit, onDelete, isTableView 
           <DialogHeader>
             <DialogTitle className="text-right font-rubik">מעקב זמן - {task.title}</DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-6">
             {/* Current Status */}
             <div className="bg-gray-50 p-4 rounded-lg">
@@ -330,7 +330,7 @@ export function TaskCard({ task, users, projects, onEdit, onDelete, isTableView 
                   {PRIORITY_LABELS[task.priority as keyof typeof PRIORITY_LABELS]}
                 </Badge>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">
@@ -338,7 +338,7 @@ export function TaskCard({ task, users, projects, onEdit, onDelete, isTableView 
                   </div>
                   <div className="text-sm text-muted-foreground">זמן כולל</div>
                 </div>
-                
+
                 {task.estimatedHours && (
                   <div className="text-center">
                     <div className="text-2xl font-bold text-orange-600">
@@ -348,7 +348,7 @@ export function TaskCard({ task, users, projects, onEdit, onDelete, isTableView 
                   </div>
                 )}
               </div>
-              
+
               {/* Timer Controls */}
               {!isCompleted && (
                 <div className="flex justify-center gap-3">
@@ -386,7 +386,7 @@ export function TaskCard({ task, users, projects, onEdit, onDelete, isTableView 
                   )}
                 </div>
               )}
-              
+
               {isCompleted && (
                 <div className="text-center py-4">
                   <Badge className="bg-green-100 text-green-800">
