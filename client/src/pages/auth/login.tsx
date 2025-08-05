@@ -25,24 +25,28 @@ export default function Login() {
     e.preventDefault();
     
     try {
-      login({
-        email: formData.email,
-        password: formData.password,
-      }, {
-        onSuccess: () => {
-          toast({
-            title: "התחברות הצליחה",
-            description: "ברוכים הבאים למערכת",
-          });
-          setLocation("/dashboard");
-        },
-        onError: (error: any) => {
-          toast({
-            title: "שגיאה בהתחברות",
-            description: error?.message || "אימייל או סיסמה שגויים",
-            variant: "destructive",
-          });
-        },
+      await new Promise((resolve, reject) => {
+        login({
+          email: formData.email,
+          password: formData.password,
+        }, {
+          onSuccess: () => {
+            toast({
+              title: "התחברות הצליחה",
+              description: "ברוכים הבאים למערכת",
+            });
+            setLocation("/dashboard");
+            resolve(true);
+          },
+          onError: (error: any) => {
+            toast({
+              title: "שגיאה בהתחברות",
+              description: error?.message || "אימייל או סיסמה שגויים",
+              variant: "destructive",
+            });
+            reject(error);
+          },
+        });
       });
     } catch (error) {
       console.error('Login error:', error);
