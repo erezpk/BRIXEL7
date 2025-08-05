@@ -197,9 +197,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Simple Google OAuth route (without Firebase)
   router.post('/api/auth/google-simple', async (req, res) => {
     try {
+      console.log('Google OAuth request received:', req.body);
       const { userInfo } = req.body;
 
       if (!userInfo || !userInfo.email) {
+        console.error('Missing user info in Google OAuth request');
         return res.status(400).json({ message: 'חסרים נתוני משתמש' });
       }
 
@@ -207,35 +209,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let user = await storage.getUserByEmail(userInfo.email);
 
       if (user) {
+        console.log('Existing user found:', user.email);
         // User exists, log them in
         req.login(user, (err) => {
           if (err) {
+            console.error('Login error for existing user:', err);
             return res.status(500).json({ message: 'שגיאה בהתחברות' });
           }
+          console.log('User logged in successfully:', req.user);
           res.json({ user: req.user, message: 'התחברות עם Google הצליחה' });
         });
       } else {
-        // New user - create account
-        const newUser = await storage.createUser({
-          email: userInfo.email,
-          password: 'google-oauth-user', // Placeholder password for OAuth users
-          fullName: userInfo.name || userInfo.email,
-          role: 'client', // Default role, can be changed later
-          agencyId: null, // Will need to be assigned later
-          isActive: true,
-          avatar: userInfo.picture,
-        });
-
-        req.login(newUser, (err) => {
-          if (err) {
-            return res.status(500).json({ message: 'שגיאה בהתחברות' });
-          }
-          res.json({ 
-            user: req.user, 
-            message: 'הרשמה והתחברות עם Google הצליחו',
-            isNewUser: true 
+        console.log('Creating new user for:', userInfo.email);
+        try {
+          // New user - create account
+          const newUser = await storage.createUser({
+            email: userInfo.email,
+            password: 'google-oauth-user', // Placeholder password for OAuth users
+            fullName: userInfo.name || userInfo.email,
+            role: 'client', // Default role, can be changed later
+            agencyId: null, // Will need to be assigned later
+            isActive: true,
+            avatar: userInfo.picture,
           });
-        });
+
+          console.log('New user created:', newUser.email);
+
+          req.login(newUser, (err) => {
+            if (err) {
+              console.error('Login error for new user:', err);
+              return res.status(500).json({ message: 'שגיאה בהתחברות' });
+            }
+            console.log('New user logged in successfully:', req.user);
+            res.json({ 
+              user: req.user, 
+              message: 'הרשמה והתחברות עם Google הצליחו',
+              isNewUser: true 
+            });
+          });
+        } catch (createError) {
+          console.error('Error creating new user:', createError);
+          return res.status(500).json({ message: 'שגיאה ביצירת משתמש חדש' });
+        }
       }
     } catch (error) {
       console.error('Google OAuth error:', error);
