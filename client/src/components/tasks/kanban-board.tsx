@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ export function KanbanBoard({ tasks, users, projects, onTaskUpdate, onTaskTimer,
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [activeTimers, setActiveTimers] = useState<Record<string, number>>({});
 
-  const groupedTasks = React.useMemo(() => {
+  const groupedTasks = useMemo(() => {
     const grouped: Record<string, Task[]> = {};
     TASK_STATUSES.forEach(status => {
       grouped[status.value] = tasks.filter(task => task.status === status.value);

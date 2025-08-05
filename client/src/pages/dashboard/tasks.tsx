@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { type Task, type User, type Project } from '@shared/schema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -170,7 +170,7 @@ export default function Tasks() {
     }
   };
 
-  const filteredTasks = React.useMemo(() => {
+  const filteredTasks = useMemo(() => {
     if (!tasks) return [];
 
     return tasks.filter((task: Task) => {
