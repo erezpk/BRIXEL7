@@ -1,0 +1,58 @@
+Build a full SaaS CRM system in Hebrew with full right-to-left (RTL) support and a modern 2025-style UI. The system should be designed for digital marketing agencies, website builders, and video editors. Key components:
+
+1. **User Roles and Hierarchy**:
+   - Super Admin (platform owner)
+   - Agency Admin (agency owner)
+   - Team Member (within an agency)
+   - Client (limited portal access)
+
+2. **Agency Dashboard**:
+   - Overview widgets: open projects, tasks due today, client status
+   - Internal team and client management
+   - Create and manage agency templates
+
+3. **Drag & Drop Client Card Builder**:
+   - Visual builder to create custom client profiles
+   - Add fields: text, dropdowns, dates, statuses
+   - Connect fields to workflows (e.g., field changes trigger logic)
+
+4. **Client, Project & Task Management**:
+   - Create and assign tasks to team members
+   - Add comments, tags, deadlines, and status
+   - Optional AI Breakdown Button: one-click to break a task into subtasks using AI (only when requested, not automatic)
+
+5. **Digital Asset Manager (per client)**:
+   - Track domains and hosting with renewal dates
+   - Add secure login/password fields
+   - Auto-reminder 30 days before domain/hosting expires
+
+6. **Client Portal**:
+   - Clients see only their tasks, files, status, and forms
+   - Upload documents and fill progress forms
+   - Messaging limited to assigned team
+
+7. **Built-in Templates**:
+   - Agency-specific starting templates for different industries (marketing, design, video editing, therapy, etc.)
+
+8. **Internal Communication**:
+   - Comment threads inside tasks
+   - @mentions
+   - Activity logs and notifications
+
+9. **BI & Smart Reports** (Phase 2):
+   - Project durations
+   - Bottleneck detection (stuck tasks)
+   - Budget vs actual time spent
+
+10. **UI/UX Requirements**:
+   - RTL layout
+   - Clean, modern layout with rounded corners, shadows, and responsive UI
+   - Use Hebrew fonts (e.g., Assistant, Rubik)
+   - White background, pastel color accents
+   - All labels, placeholders, and texts in Hebrew
+
+Add a homepage for marketing the SaaS, but focus the logic on the internal app. No WhatsApp integration needed. Add placeholder support for future Gmail and Google Ads integrations.
+
+Start by generating the database structure and reusable components (e.g., user roles, card builder elements, dashboard widgets). Prioritize modular and scalable logic.
+
+Use custom states, data types, and conditionals to support all roles and screen types.

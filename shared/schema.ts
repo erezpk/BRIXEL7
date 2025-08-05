@@ -114,6 +114,9 @@ export const digitalAssets = pgTable("digital_assets", {
   username: text("username"),
   password: text("password"), // encrypted
   notes: text("notes"),
+  reminderSent: boolean("reminder_sent").default(false).notNull(),
+  autoRenew: boolean("auto_renew").default(false).notNull(),
+  status: text("status").default("active").notNull(), // active, expired, cancelled
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -132,6 +135,20 @@ export const agencyTemplates = pgTable("agency_templates", {
     taskFields?: any[];
     workflows?: any[];
   }>().notNull(),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Client Card Templates - for drag & drop builder
+export const clientCardTemplates = pgTable("client_card_templates", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  industry: text("industry"), // 'marketing', 'design', 'video', 'therapy', etc.
+  fields: json("fields").$type<ClientCardField[]>().default([]),
+  isDefault: boolean("is_default").default(false).notNull(),
   createdBy: uuid("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -185,6 +202,22 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Custom field interface for client card builder
+export interface ClientCardField {
+  id: string;
+  type: 'text' | 'textarea' | 'select' | 'date' | 'status' | 'number' | 'email' | 'phone';
+  label: string;
+  placeholder?: string;
+  required: boolean;
+  options?: string[]; // for select fields
+  defaultValue?: string;
+  validation?: {
+    min?: number;
+    max?: number;
+    pattern?: string;
+  };
+}
+
 
 // Relations
 export const agenciesRelations = relations(agencies, ({ many }) => ({
@@ -195,6 +228,7 @@ export const agenciesRelations = relations(agencies, ({ many }) => ({
   leads: many(leads),
   digitalAssets: many(digitalAssets),
   templates: many(agencyTemplates),
+  clientCardTemplates: many(clientCardTemplates),
   activityLog: many(activityLog),
 }));
 
@@ -299,6 +333,17 @@ export const agencyTemplatesRelations = relations(agencyTemplates, ({ one }) => 
   }),
 }));
 
+export const clientCardTemplatesRelations = relations(clientCardTemplates, ({ one }) => ({
+  agency: one(agencies, {
+    fields: [clientCardTemplates.agencyId],
+    references: [agencies.id],
+  }),
+  createdBy: one(users, {
+    fields: [clientCardTemplates.createdBy],
+    references: [users.id],
+  }),
+}));
+
 export const leadsRelations = relations(leads, ({ one }) => ({
   agency: one(agencies, {
     fields: [leads.agencyId],
@@ -392,6 +437,12 @@ export const insertAgencyTemplateSchema = createInsertSchema(agencyTemplates).om
   updatedAt: true,
 });
 
+export const insertClientCardTemplateSchema = createInsertSchema(clientCardTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertActivityLogSchema = createInsertSchema(activityLog);
 export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens);
 
@@ -422,6 +473,9 @@ export type InsertDigitalAsset = z.infer<typeof insertDigitalAssetSchema>;
 
 export type AgencyTemplate = typeof agencyTemplates.$inferSelect;
 export type InsertAgencyTemplate = z.infer<typeof insertAgencyTemplateSchema>;
+
+export type ClientCardTemplate = typeof clientCardTemplates.$inferSelect;
+export type InsertClientCardTemplate = z.infer<typeof insertClientCardTemplateSchema>;
 
 export type ActivityLog = typeof activityLog.$inferSelect;
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;

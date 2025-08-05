@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema } from "@shared/schema";
+import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema, insertClientCardTemplateSchema } from "@shared/schema";
 import { z } from "zod";
 import express from "express"; // Import express to use its Router
 import { emailService } from "./email-service.js"; // Import from email-service.ts
@@ -1513,6 +1513,196 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Send test email error:', error);
       res.status(500).json({ success: false, message: 'Failed to send test email' });
+    }
+  });
+
+  // Client Card Templates routes
+  router.get('/api/client-card-templates', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const templates = await storage.getClientCardTemplatesByAgency(req.user!.agencyId!);
+      res.json(templates);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת תבניות כרטיסי לקוח' });
+    }
+  });
+
+  router.post('/api/client-card-templates', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const templateData = insertClientCardTemplateSchema.parse({
+        ...req.body,
+        agencyId: req.user!.agencyId!,
+        createdBy: req.user!.id,
+      });
+
+      const template = await storage.createClientCardTemplate(templateData);
+
+      await storage.logActivity({
+        agencyId: req.user!.agencyId!,
+        userId: req.user!.id,
+        action: 'created',
+        entityType: 'client_template',
+        entityId: template.id,
+        details: { templateName: template.name },
+      });
+
+      res.json(template);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
+      }
+      res.status(500).json({ message: 'שגיאה ביצירת תבנית כרטיס לקוח' });
+    }
+  });
+
+  router.put('/api/client-card-templates/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const template = await storage.getClientCardTemplate(req.params.id);
+      if (!template || template.agencyId !== req.user!.agencyId) {
+        return res.status(404).json({ message: 'תבנית לא נמצאה' });
+      }
+
+      const updateData = insertClientCardTemplateSchema.partial().parse(req.body);
+      const updatedTemplate = await storage.updateClientCardTemplate(req.params.id, updateData);
+
+      await storage.logActivity({
+        agencyId: req.user!.agencyId!,
+        userId: req.user!.id,
+        action: 'updated',
+        entityType: 'client_template',
+        entityId: updatedTemplate.id,
+        details: { templateName: updatedTemplate.name },
+      });
+
+      res.json(updatedTemplate);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
+      }
+      res.status(500).json({ message: 'שגיאה בעדכון תבנית כרטיס לקוח' });
+    }
+  });
+
+  router.delete('/api/client-card-templates/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const template = await storage.getClientCardTemplate(req.params.id);
+      if (!template || template.agencyId !== req.user!.agencyId) {
+        return res.status(404).json({ message: 'תבנית לא נמצאה' });
+      }
+
+      await storage.deleteClientCardTemplate(req.params.id);
+
+      await storage.logActivity({
+        agencyId: req.user!.agencyId!,
+        userId: req.user!.id,
+        action: 'deleted',
+        entityType: 'client_template',
+        entityId: req.params.id,
+        details: { templateName: template.name },
+      });
+
+      res.json({ message: 'תבנית נמחקה בהצלחה' });
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה במחיקת תבנית כרטיס לקוח' });
+    }
+  });
+
+  // Enhanced Digital Assets routes with client-specific endpoints
+  router.get('/api/clients/:clientId/digital-assets', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const client = await storage.getClient(req.params.clientId);
+      if (!client || client.agencyId !== req.user!.agencyId) {
+        return res.status(404).json({ message: 'לקוח לא נמצא' });
+      }
+
+      const assets = await storage.getDigitalAssetsByClient(req.params.clientId);
+      res.json(assets);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת נכסים דיגיטליים' });
+    }
+  });
+
+  router.post('/api/clients/:clientId/digital-assets', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const client = await storage.getClient(req.params.clientId);
+      if (!client || client.agencyId !== req.user!.agencyId) {
+        return res.status(404).json({ message: 'לקוח לא נמצא' });
+      }
+
+      const assetData = insertDigitalAssetSchema.parse({
+        ...req.body,
+        clientId: req.params.clientId,
+        agencyId: req.user!.agencyId!,
+      });
+
+      const asset = await storage.createDigitalAsset(assetData);
+
+      await storage.logActivity({
+        agencyId: req.user!.agencyId!,
+        userId: req.user!.id,
+        action: 'created',
+        entityType: 'digital_asset',
+        entityId: asset.id,
+        details: { assetName: asset.name, assetType: asset.type, clientName: client.name },
+      });
+
+      res.json(asset);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
+      }
+      res.status(500).json({ message: 'שגיאה ביצירת נכס דיגיטלי' });
+    }
+  });
+
+  router.put('/api/clients/:clientId/digital-assets/:assetId', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const asset = await storage.getDigitalAsset(req.params.assetId);
+      if (!asset || asset.agencyId !== req.user!.agencyId || asset.clientId !== req.params.clientId) {
+        return res.status(404).json({ message: 'נכס לא נמצא' });
+      }
+
+      const updateData = insertDigitalAssetSchema.partial().parse(req.body);
+      const updatedAsset = await storage.updateDigitalAsset(req.params.assetId, updateData);
+
+      await storage.logActivity({
+        agencyId: req.user!.agencyId!,
+        userId: req.user!.id,
+        action: 'updated',
+        entityType: 'digital_asset',
+        entityId: updatedAsset.id,
+        details: { assetName: updatedAsset.name, assetType: updatedAsset.type },
+      });
+
+      res.json(updatedAsset);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
+      }
+      res.status(500).json({ message: 'שגיאה בעדכון נכס דיגיטלי' });
+    }
+  });
+
+  router.delete('/api/clients/:clientId/digital-assets/:assetId', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const asset = await storage.getDigitalAsset(req.params.assetId);
+      if (!asset || asset.agencyId !== req.user!.agencyId || asset.clientId !== req.params.clientId) {
+        return res.status(404).json({ message: 'נכס לא נמצא' });
+      }
+
+      await storage.deleteDigitalAsset(req.params.assetId);
+
+      await storage.logActivity({
+        agencyId: req.user!.agencyId!,
+        userId: req.user!.id,
+        action: 'deleted',
+        entityType: 'digital_asset',
+        entityId: req.params.assetId,
+        details: { assetName: asset.name, assetType: asset.type },
+      });
+
+      res.json({ message: 'נכס נמחק בהצלחה' });
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה במחיקת נכס דיגיטלי' });
     }
   });
 

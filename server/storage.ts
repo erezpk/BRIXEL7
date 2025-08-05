@@ -1,5 +1,5 @@
 import { 
-  agencies, users, clients, projects, tasks, leads, taskComments, digitalAssets, agencyTemplates, activityLog, passwordResetTokens,
+  agencies, users, clients, projects, tasks, leads, taskComments, digitalAssets, agencyTemplates, clientCardTemplates, activityLog, passwordResetTokens,
   type Agency, type InsertAgency,
   type User, type InsertUser,
   type Client, type InsertClient,
@@ -9,6 +9,7 @@ import {
   type TaskComment, type InsertTaskComment,
   type DigitalAsset, type InsertDigitalAsset,
   type AgencyTemplate, type InsertAgencyTemplate,
+  type ClientCardTemplate, type InsertClientCardTemplate,
   type ActivityLog
 } from "@shared/schema";
 import { db } from "./db";
@@ -96,6 +97,13 @@ export interface IStorage {
   getAgencyTemplates(agencyId: string): Promise<AgencyTemplate[]>;
   getPublicTemplates(): Promise<AgencyTemplate[]>;
   createAgencyTemplate(template: InsertAgencyTemplate): Promise<AgencyTemplate>;
+
+  // Client Card Templates
+  getClientCardTemplate(id: string): Promise<ClientCardTemplate | undefined>;
+  getClientCardTemplatesByAgency(agencyId: string): Promise<ClientCardTemplate[]>;
+  createClientCardTemplate(template: InsertClientCardTemplate): Promise<ClientCardTemplate>;
+  updateClientCardTemplate(id: string, template: Partial<InsertClientCardTemplate>): Promise<ClientCardTemplate>;
+  deleteClientCardTemplate(id: string): Promise<void>;
 
   // Activity Log
   logActivity(log: Omit<ActivityLog, 'id' | 'createdAt'>): Promise<void>;
@@ -393,6 +401,41 @@ export class DatabaseStorage implements IStorage {
       .values(insertTemplate as any)
       .returning();
     return template;
+  }
+
+  // Client Card Templates
+  async getClientCardTemplate(id: string): Promise<ClientCardTemplate | undefined> {
+    return db.query.clientCardTemplates.findFirst({
+      where: eq(clientCardTemplates.id, id),
+    });
+  }
+
+  async getClientCardTemplatesByAgency(agencyId: string): Promise<ClientCardTemplate[]> {
+    return db.query.clientCardTemplates.findMany({
+      where: eq(clientCardTemplates.agencyId, agencyId),
+      orderBy: [desc(clientCardTemplates.createdAt)],
+    });
+  }
+
+  async createClientCardTemplate(insertTemplate: InsertClientCardTemplate): Promise<ClientCardTemplate> {
+    const [template] = await db
+      .insert(clientCardTemplates)
+      .values(insertTemplate as any)
+      .returning();
+    return template;
+  }
+
+  async updateClientCardTemplate(id: string, updateTemplate: Partial<InsertClientCardTemplate>): Promise<ClientCardTemplate> {
+    const [template] = await db
+      .update(clientCardTemplates)
+      .set({ ...updateTemplate, updatedAt: new Date() } as any)
+      .where(eq(clientCardTemplates.id, id))
+      .returning();
+    return template;
+  }
+
+  async deleteClientCardTemplate(id: string): Promise<void> {
+    await db.delete(clientCardTemplates).where(eq(clientCardTemplates.id, id));
   }
 
   async logActivity(activityData: any): Promise<void> {

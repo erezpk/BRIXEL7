@@ -30,6 +30,7 @@ import ClientDashboard from "@/pages/client-portal/client-dashboard";
 import Profile from "@/pages/dashboard/profile";
 import Settings from "@/pages/dashboard/settings";
 import EmailSetup from "@/pages/dashboard/email-setup";
+import ClientTemplates from "@/pages/dashboard/client-templates";
 import Assets from "@/pages/dashboard/assets";
 import NotFound from "@/pages/not-found";
 import HelpCenter from "@/pages/help-center";
@@ -164,6 +165,13 @@ export default function App() {
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
+          <Route path="/dashboard/client-templates">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ClientTemplates />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
 
           <Route path="/dashboard/email-settings">
             <ProtectedRoute>
@@ -200,6 +208,14 @@ export default function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <EmailSetup />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          <Route path="/dashboard/client-templates">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ClientTemplates />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
