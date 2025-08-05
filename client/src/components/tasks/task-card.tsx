@@ -294,7 +294,17 @@ export function TaskCard({ task, users, projects, onEdit, onDelete, isTableView 
                         </Button>
                       </>
                     ) : (
-                      
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTimerAction('start');
+                        }}
+                        className="h-6 w-6 p-0"
+                      >
+                        <Play className="h-3 w-3" />
+                      </Button>
                     )}
                   </div>
                 )}

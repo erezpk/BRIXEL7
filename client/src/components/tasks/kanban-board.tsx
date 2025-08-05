@@ -27,6 +27,13 @@ export function KanbanBoard({ tasks, users, projects, onTaskUpdate, onTaskTimer,
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [activeTimers, setActiveTimers] = useState<Record<string, number>>({});
 
+  const formatActiveTimer = (startTime: number) => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   const groupedTasks = useMemo(() => {
     const grouped: Record<string, Task[]> = {};
     TASK_STATUSES.forEach(status => {
@@ -138,7 +145,7 @@ export function KanbanBoard({ tasks, users, projects, onTaskUpdate, onTaskTimer,
                           {activeTimers[task.id] ? (
                             <>
                               <div className="text-xs bg-blue-500 text-white px-2 py-1 rounded">
-                                {formatTimer(activeTimers[task.id])}
+                                {formatActiveTimer(activeTimers[task.id])}
                               </div>
                               <Button
                                 size="sm"
