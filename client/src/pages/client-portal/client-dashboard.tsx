@@ -36,7 +36,8 @@ import {
   DollarSign,
   Users,
   TrendingUp,
-  ArrowRight
+  ArrowRight,
+  Shield
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
@@ -481,9 +482,7 @@ export default function ClientDashboard() {
               <Button variant="ghost" size="sm">
                 <Bell className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => {
-                window.open('/client-settings', '_blank');
-              }}>
+              <Button variant="ghost" size="sm" onClick={() => setActiveTab('settings')}>
                 <Settings className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="sm" onClick={() => setActiveTab('profile')}>
@@ -577,6 +576,17 @@ export default function ClientDashboard() {
               >
                 <User className="h-5 w-5" />
                 הפרופיל שלי
+              </button>
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-right rounded-lg transition-colors ${
+                  activeTab === 'settings' 
+                    ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-700' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <Settings className="h-5 w-5" />
+                הגדרות
               </button>
               
             </div>
@@ -829,6 +839,189 @@ export default function ClientDashboard() {
           )}
 
           
+
+          {/* Settings Tab */}
+          {activeTab === 'settings' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h1 className="text-3xl font-bold text-gray-900">הגדרות</h1>
+              </div>
+
+              <div className="grid gap-6">
+                {/* Lead Sync Settings */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="h-5 w-5" />
+                      הגדרות לידים
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                      <div>
+                        <h3 className="font-medium text-blue-800">חיבור לפלטפורמות פרסום</h3>
+                        <p className="text-sm text-blue-600">חבר את חשבונות הפרסום שלך לסנכרון אוטומטי של לידים</p>
+                      </div>
+                      <Button onClick={() => {
+                        window.open('/client-settings', '_blank');
+                      }}>
+                        <Settings className="h-4 w-4 ml-2" />
+                        נהל חיבורים
+                      </Button>
+                    </div>
+                    
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
+                              <span className="text-white text-sm">📘</span>
+                            </div>
+                            <div>
+                              <h4 className="font-medium">פייסבוק אדס</h4>
+                              <p className="text-sm text-gray-600">לא מחובר</p>
+                            </div>
+                          </div>
+                          <Button variant="outline" size="sm" className="w-full" onClick={() => {
+                            window.open('/client-settings', '_blank');
+                          }}>
+                            חבר חשבון
+                          </Button>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center">
+                              <span className="text-white text-sm">🔍</span>
+                            </div>
+                            <div>
+                              <h4 className="font-medium">גוגל אדס</h4>
+                              <p className="text-sm text-gray-600">לא מחובר</p>
+                            </div>
+                          </div>
+                          <Button variant="outline" size="sm" className="w-full" onClick={() => {
+                            window.open('/client-settings', '_blank');
+                          }}>
+                            חבר חשבון
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Notification Settings */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Bell className="h-5 w-5" />
+                      הגדרות התראות
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium">התראות אימייל על לידים חדשים</h4>
+                        <p className="text-sm text-gray-600">קבל התראה באימייל כשמגיע ליד חדש</p>
+                      </div>
+                      <input type="checkbox" className="toggle" defaultChecked />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium">התראות על עדכוני פרויקט</h4>
+                        <p className="text-sm text-gray-600">קבל התראות על התקדמות ועדכונים בפרויקטים</p>
+                      </div>
+                      <input type="checkbox" className="toggle" defaultChecked />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium">התראות על הודעות חדשות</h4>
+                        <p className="text-sm text-gray-600">קבל התראות כשמגיעות הודעות מהסוכנות</p>
+                      </div>
+                      <input type="checkbox" className="toggle" defaultChecked />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Account Settings */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      הגדרות חשבון
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <Label>שפת הממשק</Label>
+                        <select className="w-full p-2 border rounded-lg">
+                          <option value="he">עברית</option>
+                          <option value="en">English</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <Label>אזור זמן</Label>
+                        <select className="w-full p-2 border rounded-lg">
+                          <option value="Asia/Jerusalem">ירושלים (GMT+2)</option>
+                          <option value="UTC">UTC</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-4 border-t">
+                      <Button variant="destructive" size="sm">
+                        מחק חשבון
+                      </Button>
+                      <p className="text-sm text-gray-500 mt-2">
+                        פעולה זו תמחק את החשבון שלך לצמיתות ולא ניתן לבטל אותה
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Privacy Settings */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-5 w-5" />
+                      פרטיות ואבטחה
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium">שיתוף נתונים לשיפור השירות</h4>
+                        <p className="text-sm text-gray-600">אפשר לנו להשתמש בנתונים שלך לשיפור השירות</p>
+                      </div>
+                      <input type="checkbox" className="toggle" />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium">התחברות דו-שלבית</h4>
+                        <p className="text-sm text-gray-600">הגבר את האבטחה של החשבון שלך</p>
+                      </div>
+                      <Button variant="outline" size="sm">
+                        הפעל
+                      </Button>
+                    </div>
+                    
+                    <div>
+                      <Button variant="outline" size="sm">
+                        שנה סיסמה
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
 
           {/* Profile Tab */}
           {activeTab === 'profile' && (
