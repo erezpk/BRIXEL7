@@ -4,12 +4,12 @@ import { storage } from "./storage";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertLeadSchema, insertTaskCommentSchema, insertDigitalAssetSchema } from "@shared/schema";
+import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema } from "@shared/schema";
 import { z } from "zod";
 import express from "express"; // Import express to use its Router
 import { emailService } from "./email-service"; // Import from email-service.ts
 import crypto from 'crypto'; // Import crypto for token generation
-import { verifyGoogleToken } from "./google-auth"; // Import Google authentication
+// Removed Firebase/Google auth library import - using simple OAuth now
 
 // Extend Express types
 declare global {
@@ -194,64 +194,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Google OAuth route with Firebase token verification
-  router.post('/api/auth/google', async (req, res) => {
-    try {
-      const { idToken } = req.body;
-
-      if (!idToken) {
-        return res.status(400).json({ message: 'חסר ID token' });
-      }
-
-      // Verify the Google ID token
-      const googleUser = await verifyGoogleToken(idToken);
-
-      // Check if user already exists
-      let user = await storage.getUserByEmail(googleUser.email);
-
-      if (user) {
-        // User exists, log them in
-        req.login(user, (err) => {
-          if (err) {
-            return res.status(500).json({ message: 'שגיאה בהתחברות' });
-          }
-          res.json({ user: req.user, message: 'התחברות עם Google הצליחה' });
-        });
-      } else {
-        // New user - create account
-        const newUser = await storage.createUser({
-          email: googleUser.email,
-          password: 'google-oauth-user', // Placeholder password for OAuth users
-          fullName: googleUser.name,
-          role: 'client', // Default role, can be changed later
-          agencyId: null, // Will need to be assigned later
-          isActive: true,
-          avatar: googleUser.picture,
-        });
-
-        req.login(newUser, (err) => {
-          if (err) {
-            return res.status(500).json({ message: 'שגיאה בהתחברות' });
-          }
-          res.json({ 
-            user: req.user, 
-            message: 'הרשמה והתחברות עם Google הצליחו',
-            isNewUser: true 
-          });
-        });
-      }
-    } catch (error) {
-      console.error('Google OAuth error:', error);
-      res.status(400).json({ message: 'שגיאה באימות Google' });
-    }
-  });
-
-  // Keep the simple route for backward compatibility (but deprecated)
+  // Simple Google OAuth route (without Firebase)
   router.post('/api/auth/google-simple', async (req, res) => {
     try {
+      console.log('Google OAuth request received:', req.body);
       const { userInfo } = req.body;
 
       if (!userInfo || !userInfo.email) {
+        console.error('Missing user info in Google OAuth request');
         return res.status(400).json({ message: 'חסרים נתוני משתמש' });
       }
 
@@ -259,35 +209,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let user = await storage.getUserByEmail(userInfo.email);
 
       if (user) {
+        console.log('Existing user found:', user.email);
         // User exists, log them in
         req.login(user, (err) => {
           if (err) {
+            console.error('Login error for existing user:', err);
             return res.status(500).json({ message: 'שגיאה בהתחברות' });
           }
+          console.log('User logged in successfully:', req.user);
           res.json({ user: req.user, message: 'התחברות עם Google הצליחה' });
         });
       } else {
-        // New user - create account
-        const newUser = await storage.createUser({
-          email: userInfo.email,
-          password: 'google-oauth-user', // Placeholder password for OAuth users
-          fullName: userInfo.name || userInfo.email,
-          role: 'client', // Default role, can be changed later
-          agencyId: null, // Will need to be assigned later
-          isActive: true,
-          avatar: userInfo.picture,
-        });
-
-        req.login(newUser, (err) => {
-          if (err) {
-            return res.status(500).json({ message: 'שגיאה בהתחברות' });
-          }
-          res.json({ 
-            user: req.user, 
-            message: 'הרשמה והתחברות עם Google הצליחו',
-            isNewUser: true 
+        console.log('Creating new user for:', userInfo.email);
+        try {
+          // New user - create account
+          const newUser = await storage.createUser({
+            email: userInfo.email,
+            password: 'google-oauth-user', // Placeholder password for OAuth users
+            fullName: userInfo.name || userInfo.email,
+            role: 'client', // Default role, can be changed later
+            agencyId: null, // Will need to be assigned later
+            isActive: true,
+            avatar: userInfo.picture,
           });
-        });
+
+          console.log('New user created:', newUser.email);
+
+          req.login(newUser, (err) => {
+            if (err) {
+              console.error('Login error for new user:', err);
+              return res.status(500).json({ message: 'שגיאה בהתחברות' });
+            }
+            console.log('New user logged in successfully:', req.user);
+            res.json({ 
+              user: req.user, 
+              message: 'הרשמה והתחברות עם Google הצליחו',
+              isNewUser: true 
+            });
+          });
+        } catch (createError) {
+          console.error('Error creating new user:', createError);
+          return res.status(500).json({ message: 'שגיאה ביצירת משתמש חדש' });
+        }
       }
     } catch (error) {
       console.error('Google OAuth error:', error);
@@ -422,241 +385,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Profile update error:', error);
       res.status(500).json({ message: 'שגיאה בעדכון פרופיל' });
-    }
-  });
-
-  // Leads routes
-  router.get('/api/leads', requireAuth, requireUserWithAgency, async (req, res) => {
-    try {
-      const filters = {
-        status: req.query.status as string,
-        source: req.query.source as string,
-        assignedTo: req.query.assignedTo as string,
-        clientId: req.query.clientId as string,
-      };
-
-      const leads = await storage.getLeadsByAgency(req.user!.agencyId!, filters);
-      res.json(leads);
-    } catch (error) {
-      res.status(500).json({ message: 'שגיאה בטעינת לידים' });
-    }
-  });
-
-  router.post('/api/leads', requireAuth, requireUserWithAgency, async (req, res) => {
-    try {
-      const leadData = insertLeadSchema.parse({
-        ...req.body,
-        agencyId: req.user!.agencyId!,
-      });
-
-      const lead = await storage.createLead(leadData);
-
-      await storage.logActivity({
-        agencyId: req.user!.agencyId!,
-        userId: req.user!.id,
-        action: 'created',
-        entityType: 'lead',
-        entityId: lead.id,
-        details: { leadName: lead.name, source: lead.source },
-      });
-
-      res.json(lead);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
-      }
-      res.status(500).json({ message: 'שגיאה ביצירת ליד' });
-    }
-  });
-
-  router.put('/api/leads/:id', requireAuth, requireUserWithAgency, async (req, res) => {
-    try {
-      const lead = await storage.getLead(req.params.id);
-      if (!lead || lead.agencyId !== req.user!.agencyId) {
-        return res.status(404).json({ message: 'ליד לא נמצא' });
-      }
-
-      const updateData = insertLeadSchema.partial().parse(req.body);
-      const updatedLead = await storage.updateLead(req.params.id, updateData);
-
-      await storage.logActivity({
-        agencyId: req.user!.agencyId!,
-        userId: req.user!.id,
-        action: 'updated',
-        entityType: 'lead',
-        entityId: updatedLead.id,
-        details: { leadName: updatedLead.name },
-      });
-
-      res.json(updatedLead);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
-      }
-      res.status(500).json({ message: 'שגיאה בעדכון ליד' });
-    }
-  });
-
-  router.post('/api/leads/:id/convert', requireAuth, requireUserWithAgency, async (req, res) => {
-    try {
-      const lead = await storage.getLead(req.params.id);
-      if (!lead || lead.agencyId !== req.user!.agencyId) {
-        return res.status(404).json({ message: 'ליד לא נמצא' });
-      }
-
-      const clientData = insertClientSchema.parse({
-        ...req.body,
-        agencyId: req.user!.agencyId!,
-        name: req.body.name || lead.name,
-        email: req.body.email || lead.email,
-        phone: req.body.phone || lead.phone,
-      });
-
-      const result = await storage.convertLeadToClient(req.params.id, clientData);
-
-      await storage.logActivity({
-        agencyId: req.user!.agencyId!,
-        userId: req.user!.id,
-        action: 'converted',
-        entityType: 'lead',
-        entityId: lead.id,
-        details: { leadName: lead.name, clientName: result.client.name },
-      });
-
-      res.json(result);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
-      }
-      res.status(500).json({ message: 'שגיאה בהמרת ליד ללקוח' });
-    }
-  });
-
-  // Facebook Ads and Google Ads integration routes
-  router.post('/api/ads/facebook/sync', requireAuth, requireUserWithAgency, async (req, res) => {
-    try {
-      const { accessToken } = req.body;
-      if (!accessToken) {
-        return res.status(400).json({ message: 'נדרש טוקן גישה לפייסבוק' });
-      }
-
-      // Validate Facebook access token
-      const validateResponse = await fetch(`https://graph.facebook.com/me?access_token=${accessToken}`);
-      if (!validateResponse.ok) {
-        return res.status(400).json({ message: 'טוקן פייסבוק לא תקין' });
-      }
-
-      // Get user's ad accounts
-      const adAccountsResponse = await fetch(`https://graph.facebook.com/v18.0/me/adaccounts?access_token=${accessToken}`);
-      if (!adAccountsResponse.ok) {
-        return res.status(400).json({ message: 'שגיאה בקבלת חשבונות פרסום' });
-      }
-
-      const adAccountsData = await adAccountsResponse.json();
-      const leads: any[] = [];
-
-      // Fetch leads from each ad account
-      for (const account of adAccountsData.data) {
-        try {
-          const leadsResponse = await fetch(`https://graph.facebook.com/v18.0/${account.id}/leadgen_forms?access_token=${accessToken}`);
-          if (leadsResponse.ok) {
-            const leadsData = await leadsResponse.json();
-            
-            for (const form of leadsData.data) {
-              // Get leads for each form
-              const formLeadsResponse = await fetch(`https://graph.facebook.com/v18.0/${form.id}/leads?access_token=${accessToken}`);
-              if (formLeadsResponse.ok) {
-                const formLeadsData = await formLeadsResponse.json();
-                
-                for (const leadData of formLeadsData.data) {
-                  // Process and save lead
-                  const leadInfo = {
-                    name: leadData.field_data?.find((f: any) => f.name === 'full_name')?.values?.[0] || 'לא צוין',
-                    email: leadData.field_data?.find((f: any) => f.name === 'email')?.values?.[0] || '',
-                    phone: leadData.field_data?.find((f: any) => f.name === 'phone_number')?.values?.[0] || '',
-                    source: 'facebook_ads',
-                    status: 'new',
-                    agencyId: req.user!.agencyId!,
-                    notes: `ליד מפייסבוק - טופס: ${form.name}`
-                  };
-
-                  if (leadInfo.email) {
-                    const createdLead = await storage.createLead(leadInfo);
-                    leads.push(createdLead);
-                  }
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching leads from account:', account.id, error);
-        }
-      }
-
-      // Log activity
-      await storage.logActivity({
-        agencyId: req.user!.agencyId!,
-        userId: req.user!.id,
-        action: 'synced',
-        entityType: 'leads',
-        entityId: 'facebook_ads',
-        details: { platform: 'facebook', leadsCount: leads.length },
-      });
-
-      res.json({ message: `סונכרנו ${leads.length} לידים מפייסבוק`, leads });
-    } catch (error) {
-      console.error('Facebook sync error:', error);
-      res.status(500).json({ message: 'שגיאה בסנכרון לידים מפייסבוק' });
-    }
-  });
-
-  router.post('/api/ads/google/sync', requireAuth, requireUserWithAgency, async (req, res) => {
-    try {
-      const { accessToken } = req.body;
-      if (!accessToken) {
-        return res.status(400).json({ message: 'נדרש טוקן גישה לגוגל' });
-      }
-
-      // Validate Google access token
-      const validateResponse = await fetch(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${accessToken}`);
-      if (!validateResponse.ok) {
-        return res.status(400).json({ message: 'טוקן גוגל לא תקין' });
-      }
-
-      // Note: Real Google Ads API integration requires more complex setup
-      // including developer token, customer ID, and proper authentication
-      // This is a simplified version for demonstration
-
-      const leads: any[] = [];
-
-      // For now, create a sample lead to show the integration works
-      const sampleLead = {
-        name: 'ליד מגוגל אדס',
-        email: 'google-lead@example.com',
-        phone: '050-1234567',
-        source: 'google_ads',
-        status: 'new',
-        agencyId: req.user!.agencyId!,
-        notes: 'ליד לדוגמה מגוגל אדס - נדרש הגדרת API מלאה'
-      };
-
-      const createdLead = await storage.createLead(sampleLead);
-      leads.push(createdLead);
-
-      // Log activity
-      await storage.logActivity({
-        agencyId: req.user!.agencyId!,
-        userId: req.user!.id,
-        action: 'synced',
-        entityType: 'leads',
-        entityId: 'google_ads',
-        details: { platform: 'google', leadsCount: leads.length },
-      });
-
-      res.json({ message: `סונכרנו ${leads.length} לידים מגוגל אדס`, leads });
-    } catch (error) {
-      console.error('Google sync error:', error);
-      res.status(500).json({ message: 'שגיאה בסנכרון לידים מגוגל אדס' });
     }
   });
 
@@ -1135,13 +863,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Client Portal Leads routes
+  // Leads routes
   router.get('/api/client/leads/:clientId', requireAuth, async (req, res) => {
     try {
-      const clientId = req.params.clientId;
-      
-      // For now return mock data, but in real implementation this would fetch leads 
-      // that belong to the specific client or are managed by them
+      // Mock data for now - replace with actual database query
       const mockLeads = [
         {
           id: '1',
@@ -1152,7 +877,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: 'new',
           value: 15000,
           notes: 'מעוניין באתר אינטרנט',
-          clientId: clientId,
           createdAt: new Date().toISOString()
         },
         {
@@ -1164,7 +888,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: 'contacted',
           value: 25000,
           notes: 'פגישה קבועה לשבוע הבא',
-          clientId: clientId,
           createdAt: new Date().toISOString()
         }
       ];
@@ -1174,337 +897,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  router.post('/api/client/leads', requireAuth, async (req, res) => {
-    try {
-      const leadData = req.body;
-      
-      // Validate required fields
-      if (!leadData.name || !leadData.email) {
-        return res.status(400).json({ message: 'שם ואימייל נדרשים' });
-      }
-
-      // Create new lead with proper validation
-      const newLead = {
-        id: Date.now().toString(),
-        name: leadData.name.trim(),
-        email: leadData.email.trim(),
-        phone: leadData.phone || '',
-        source: leadData.source || 'website',
-        status: leadData.status || 'new',
-        value: Number(leadData.value) || 0,
-        notes: leadData.notes || '',
-        clientId: leadData.clientId,
-        createdAt: new Date().toISOString()
-      };
-
-      // Log activity (if user has agency)
-      if (req.user!.agencyId) {
-        await storage.logActivity({
-          agencyId: req.user!.agencyId,
-          userId: req.user!.id,
-          action: 'created',
-          entityType: 'lead',
-          entityId: newLead.id,
-          details: { leadName: newLead.name, leadEmail: newLead.email },
-        });
-      }
-
-      res.json(newLead);
-    } catch (error) {
-      console.error('Error creating lead:', error);
-      res.status(500).json({ message: 'שגיאה ביצירת ליד' });
-    }
-  });
-
-  router.put('/api/client/leads/:id', requireAuth, async (req, res) => {
-    try {
-      const leadId = req.params.id;
-      const updateData = req.body;
-      
-      // Validate required fields
-      if (!updateData.name || !updateData.email) {
-        return res.status(400).json({ message: 'שם ואימייל נדרשים' });
-      }
-
-      // Create updated lead with proper validation
-      const updatedLead = {
-        id: leadId,
-        name: updateData.name.trim(),
-        email: updateData.email.trim(),
-        phone: updateData.phone || '',
-        source: updateData.source || 'website',
-        status: updateData.status || 'new',
-        value: Number(updateData.value) || 0,
-        notes: updateData.notes || '',
-        clientId: updateData.clientId,
-        updatedAt: new Date().toISOString(),
-        createdAt: updateData.createdAt || new Date().toISOString()
-      };
-
-      // Log activity (if user has agency)
-      if (req.user!.agencyId) {
-        await storage.logActivity({
-          agencyId: req.user!.agencyId,
-          userId: req.user!.id,
-          action: 'updated',
-          entityType: 'lead',
-          entityId: leadId,
-          details: { leadName: updatedLead.name, leadEmail: updatedLead.email },
-        });
-      }
-
-      res.json(updatedLead);
-    } catch (error) {
-      console.error('Error updating lead:', error);
-      res.status(500).json({ message: 'שגיאה בעדכון ליד' });
-    }
-  });
-
   router.get('/api/client/clients/:clientId', requireAuth, async (req, res) => {
     try {
-      const clientId = req.params.clientId;
-      
-      // For now return mock data that includes the requesting client
+      // Mock data for now - replace with actual database query
       const mockClients = [
         {
-          id: clientId,
-          name: 'החברה שלי',
-          contactName: req.user!.fullName,
-          email: req.user!.email,
+          id: '1',
+          name: 'חברת הטכנולוגיה בע"מ',
+          contactName: 'יוסי כהן',
+          email: 'yossi@techcompany.com',
           phone: '03-1234567',
           industry: 'טכנולוגיה',
           status: 'active',
           totalValue: 150000,
           projectsCount: 3,
           lastContact: new Date().toISOString()
+        },
+        {
+          id: '2',
+          name: 'סטודיו עיצוב',
+          contactName: 'מיכל לוי',
+          email: 'michal@design.com',
+          phone: '054-9876543',
+          industry: 'עיצוב',
+          status: 'active',
+          totalValue: 85000,
+          projectsCount: 2,
+          lastContact: new Date().toISOString()
         }
       ];
       res.json(mockClients);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בטעינת לקוחות' });
-    }
-  });
-
-  router.post('/api/client/clients', requireAuth, async (req, res) => {
-    try {
-      const clientData = req.body;
-      
-      // In real implementation, save to database
-      const newClient = {
-        id: Date.now().toString(),
-        ...clientData,
-        createdAt: new Date().toISOString()
-      };
-
-      // Log activity (if user has agency)
-      if (req.user!.agencyId) {
-        await storage.logActivity({
-          agencyId: req.user!.agencyId,
-          userId: req.user!.id,
-          action: 'created',
-          entityType: 'client',
-          entityId: newClient.id,
-          details: { clientName: newClient.name, clientEmail: newClient.email },
-        });
-      }
-
-      res.json(newClient);
-    } catch (error) {
-      res.status(500).json({ message: 'שגיאה ביצירת לקוח' });
-    }
-  });
-
-  router.put('/api/client/clients/:id', requireAuth, async (req, res) => {
-    try {
-      const clientId = req.params.id;
-      const updateData = req.body;
-      
-      // In real implementation, update in database
-      const updatedClient = {
-        id: clientId,
-        ...updateData,
-        updatedAt: new Date().toISOString()
-      };
-
-      // Log activity (if user has agency)
-      if (req.user!.agencyId) {
-        await storage.logActivity({
-          agencyId: req.user!.agencyId,
-          userId: req.user!.id,
-          action: 'updated',
-          entityType: 'client',
-          entityId: clientId,
-          details: { clientName: updateData.name, clientEmail: updateData.email },
-        });
-      }
-
-      res.json(updatedClient);
-    } catch (error) {
-      res.status(500).json({ message: 'שגיאה בעדכון לקוח' });
-    }
-  });
-
-  // Client settings routes
-  router.get('/api/client/settings', requireAuth, async (req, res) => {
-    try {
-      // Return mock settings for now
-      const settings = {
-        leadSync: {
-          enabled: true,
-          autoAssign: true,
-          emailNotifications: true
-        },
-        adAccounts: {
-          facebook: [],
-          google: []
-        }
-      };
-      res.json(settings);
-    } catch (error) {
-      res.status(500).json({ message: 'שגיאה בטעינת הגדרות' });
-    }
-  });
-
-  router.put('/api/client/settings', requireAuth, async (req, res) => {
-    try {
-      const settings = req.body;
-      
-      // In real implementation, save to database
-      console.log('Saving client settings:', settings);
-
-      // Log activity (if user has agency)
-      if (req.user!.agencyId) {
-        await storage.logActivity({
-          agencyId: req.user!.agencyId,
-          userId: req.user!.id,
-          action: 'updated',
-          entityType: 'settings',
-          entityId: req.user!.id,
-          details: { settingsType: 'client_settings' },
-        });
-      }
-
-      res.json({ message: 'הגדרות נשמרו בהצלחה' });
-    } catch (error) {
-      res.status(500).json({ message: 'שגיאה בשמירת הגדרות' });
-    }
-  });
-
-  // Facebook Ads integration
-  router.post('/api/client/integrations/facebook/connect', requireAuth, async (req, res) => {
-    try {
-      const { accessToken, accountId } = req.body;
-      
-      if (!accessToken || !accountId) {
-        return res.status(400).json({ message: 'חסרים פרטי חיבור' });
-      }
-
-      // In real implementation, validate Facebook access token and get account info
-      // For now, return mock data
-      const mockResponse = {
-        userId: 'fb_user_123',
-        userName: 'John Doe',
-        accountId: accountId,
-        accountName: `Facebook Ad Account (${accountId})`,
-        accessToken: accessToken
-      };
-
-      // Log activity
-      if (req.user!.agencyId) {
-        await storage.logActivity({
-          agencyId: req.user!.agencyId,
-          userId: req.user!.id,
-          action: 'connected',
-          entityType: 'integration',
-          entityId: accountId,
-          details: { platform: 'facebook', accountId: accountId },
-        });
-      }
-
-      res.json(mockResponse);
-    } catch (error) {
-      res.status(500).json({ message: 'שגיאה בחיבור לפייסבוק אדס' });
-    }
-  });
-
-  // Google Ads integration
-  router.post('/api/client/integrations/google/connect', requireAuth, async (req, res) => {
-    try {
-      const { customerId, refreshToken } = req.body;
-      
-      if (!customerId || !refreshToken) {
-        return res.status(400).json({ message: 'חסרים פרטי חיבור' });
-      }
-
-      // In real implementation, validate Google refresh token and get account info
-      // For now, return mock data
-      const mockResponse = {
-        customerId: customerId,
-        customerName: `Google Ad Account (${customerId})`,
-        email: req.user!.email,
-        accessToken: 'mock_access_token',
-        refreshToken: refreshToken
-      };
-
-      // Log activity
-      if (req.user!.agencyId) {
-        await storage.logActivity({
-          agencyId: req.user!.agencyId,
-          userId: req.user!.id,
-          action: 'connected',
-          entityType: 'integration',
-          entityId: customerId,
-          details: { platform: 'google', customerId: customerId },
-        });
-      }
-
-      res.json(mockResponse);
-    } catch (error) {
-      res.status(500).json({ message: 'שגיאה בחיבור לגוגל אדס' });
-    }
-  });
-
-  // Sync leads from ad platforms
-  router.post('/api/client/integrations/sync-leads', requireAuth, async (req, res) => {
-    try {
-      const { platform, accountId } = req.body;
-      
-      // In real implementation, this would fetch leads from the respective platform
-      // and save them to the database
-      
-      const mockLeads = [
-        {
-          id: Date.now().toString(),
-          name: 'ליד מפייסבוק',
-          email: 'lead@example.com',
-          phone: '050-1234567',
-          source: platform,
-          status: 'new',
-          value: 5000,
-          notes: `ליד שהגיע מ-${platform} ads`,
-          clientId: req.user!.id,
-          createdAt: new Date().toISOString()
-        }
-      ];
-
-      // Log activity
-      if (req.user!.agencyId) {
-        await storage.logActivity({
-          agencyId: req.user!.agencyId,
-          userId: req.user!.id,
-          action: 'synced',
-          entityType: 'leads',
-          entityId: accountId,
-          details: { platform: platform, leadsCount: mockLeads.length },
-        });
-      }
-
-      res.json({ 
-        message: `סונכרנו ${mockLeads.length} לידים מ-${platform}`,
-        leads: mockLeads
-      });
-    } catch (error) {
-      res.status(500).json({ message: 'שגיאה בסנכרון לידים' });
     }
   });
 
