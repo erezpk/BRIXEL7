@@ -254,61 +254,7 @@ export function TaskCard({ task, users, projects, onEdit, onDelete, isTableView 
                 </div>
               )}
 
-              {/* Timer display and controls */}
-              <div className="flex items-center gap-2">
-                {getTotalTime() > 0 && (
-                  <div className="flex items-center gap-1 text-xs text-blue-600">
-                    <Timer className="h-3 w-3" />
-                    <span>{formatDuration(getTotalTime())}</span>
-                  </div>
-                )}
-
-                {!isCompleted && (
-                  <div className="flex items-center gap-1">
-                    {isActive ? (
-                      <>
-                        <div className="text-xs bg-green-500 text-white px-2 py-1 rounded">
-                          {formatActiveTimer(isActive)}
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleTimerAction('pause');
-                          }}
-                          className="h-6 w-6 p-0"
-                        >
-                          <Pause className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleTimerAction('stop');
-                          }}
-                          className="h-6 w-6 p-0"
-                        >
-                          <RotateCcw className="h-3 w-3" />
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleTimerAction('start');
-                        }}
-                        className="h-6 w-6 p-0"
-                      >
-                        <Play className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
+              
             </div>
           </div>
         </CardContent>
