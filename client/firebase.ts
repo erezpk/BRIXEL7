@@ -63,16 +63,14 @@ export function handleGoogleRedirect() {
               }),
             });
 
-            console.log("Backend response status:", response.status);
-
             if (response.ok) {
               const data = await response.json();
-              console.log("Backend authentication successful");
-              return data;
+              console.log("Backend authentication successful:", data);
+              return { success: true, user: data.user };
             } else {
-              const errorData = await response.text();
+              const errorData = await response.json();
               console.error('Backend authentication failed:', errorData);
-              throw new Error(`Backend authentication failed: ${errorData}`);
+              throw new Error(errorData.message || 'Authentication failed');
             }
           } catch (fetchError) {
             console.error('Error communicating with backend:', fetchError);

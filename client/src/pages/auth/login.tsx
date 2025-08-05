@@ -32,27 +32,32 @@ export default function Login() {
 
   // Handle Google redirect on page load
   useEffect(() => {
-    handleGoogleRedirect()
-      .then((result) => {
-        if (result) {
+    const checkRedirect = async () => {
+      try {
+        const result = await handleGoogleRedirect();
+        if (result && result.success) {
           toast({
             title: "התחברות הצליחה",
             description: "ברוכים הבאים למערכת",
           });
           
-          // Redirect based on user role
-          const redirectPath = result.user?.role === 'client' ? '/client-portal' : '/dashboard';
-          setLocation(redirectPath);
+          // Refresh to load user data
+          window.location.reload();
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Google auth error:', error);
-        toast({
-          title: "שגיאה באימות Google",
-          description: "אנא נסה שוב",
-          variant: "destructive",
-        });
-      });
+        // Only show error if it's not the domain authorization error
+        if (!error.message?.includes('unauthorized-domain')) {
+          toast({
+            title: "שגיאה באימות Google", 
+            description: "אנא נסה שוב",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+    
+    checkRedirect();
   }, [toast, setLocation]);
 
   const googleLoginMutation = useMutation({
