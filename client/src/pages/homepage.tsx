@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation, navigate } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,19 +9,19 @@ import { useAuth } from "@/hooks/use-auth";
 export default function Homepage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   useEffect(() => {
     if (isAuthenticated) {
       if (user.role === "admin") {
-        navigate("/dashboard/admin");
+        setLocation("/dashboard/admin");
       } else if (user.role === "agency") {
-        navigate("/dashboard/agency");
+        setLocation("/dashboard/agency");
       } else if (user.role === "client") {
-        navigate("/dashboard/client");
+        setLocation("/dashboard/client");
       }
     }
-  }, [isAuthenticated, user, location]);
+  }, [isAuthenticated, user, location, setLocation]);
 
   return (
     <div
