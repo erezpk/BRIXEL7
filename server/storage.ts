@@ -56,6 +56,7 @@ export interface IStorage {
     clientId?: string;
     projectId?: string;
   }): Promise<Task[]>;
+  getTasksByProject(projectId: string): Promise<Task[]>;
   getTasksByUser(userId: string): Promise<Task[]>;
   createTask(task: InsertTask): Promise<Task>;
   updateTask(id: string, task: Partial<InsertTask>): Promise<Task>;
@@ -264,6 +265,10 @@ export class DatabaseStorage implements IStorage {
     }
 
     return db.select().from(tasks).where(and(...conditions)).orderBy(desc(tasks.createdAt));
+  }
+
+  async getTasksByProject(projectId: string): Promise<Task[]> {
+    return db.select().from(tasks).where(eq(tasks.projectId, projectId)).orderBy(desc(tasks.createdAt));
   }
 
   async getTasksByUser(userId: string): Promise<Task[]> {

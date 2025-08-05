@@ -418,6 +418,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get specific project
+  app.get('/api/projects/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const project = await storage.getProject(req.params.id);
+      if (!project || project.agencyId !== req.user!.agencyId) {
+        return res.status(404).json({ message: 'פרויקט לא נמצא' });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת פרויקט' });
+    }
+  });
+
+  // Update project
+  app.put('/api/projects/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const project = await storage.getProject(req.params.id);
+      if (!project || project.agencyId !== req.user!.agencyId) {
+        return res.status(404).json({ message: 'פרויקט לא נמצא' });
+      }
+
+      const updatedProject = await storage.updateProject(req.params.id, req.body);
+
+      await storage.logActivity({
+        agencyId: req.user!.agencyId!,
+        userId: req.user!.id,
+        action: 'updated',
+        entityType: 'project',
+        entityId: req.params.id,
+        details: { projectName: updatedProject.name },
+      });
+
+      res.json(updatedProject);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בעדכון פרויקט' });
+    }
+  });
+
+  // Get project tasks
+  app.get('/api/projects/:id/tasks', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const project = await storage.getProject(req.params.id);
+      if (!project || project.agencyId !== req.user!.agencyId) {
+        return res.status(404).json({ message: 'פרויקט לא נמצא' });
+      }
+
+      const tasks = await storage.getTasksByProject(req.params.id);
+      res.json(tasks);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת משימות פרויקט' });
+    }
+  });
+
+  // Get project assets
+  app.get('/api/projects/:id/assets', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const project = await storage.getProject(req.params.id);
+      if (!project || project.agencyId !== req.user!.agencyId) {
+        return res.status(404).json({ message: 'פרויקט לא נמצא' });
+      }
+
+      // Since digital assets are linked to clients, not projects directly,
+      // we need to get assets by client if the project has a client
+      if (project.clientId) {
+        const assets = await storage.getDigitalAssetsByClient(project.clientId);
+        res.json(assets);
+      } else {
+        res.json([]);
+      }
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת נכסי פרויקט' });
+    }
+  });
+
   // Tasks routes
   app.get('/api/tasks', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
