@@ -21,7 +21,7 @@ import {
   Eye,
   ExternalLink
 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -474,9 +474,12 @@ export default function ClientDetails() {
 
       {/* Edit Client Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto" aria-describedby="edit-client-description">
           <DialogHeader>
             <DialogTitle className="text-right font-rubik">ערוך לקוח</DialogTitle>
+            <DialogDescription id="edit-client-description" className="text-right">
+              ערוך את פרטי הלקוח במערכת
+            </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleEditSubmit} className="space-y-4">
@@ -594,9 +597,12 @@ export default function ClientDetails() {
 
       {/* Add Note Modal */}
       <Dialog open={showAddNoteModal} onOpenChange={setShowAddNoteModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto" aria-describedby="add-note-description">
           <DialogHeader>
             <DialogTitle className="text-right font-rubik">הוסף הערה</DialogTitle>
+            <DialogDescription id="add-note-description" className="text-right">
+              הוסף הערה חדשה עבור הלקוח
+            </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleAddNoteSubmit} className="space-y-4">
