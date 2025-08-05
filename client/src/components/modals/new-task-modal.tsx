@@ -206,7 +206,7 @@ export default function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
               <SelectContent>
                 <SelectItem value="none">ללא לקוח</SelectItem>
                 {clients?.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
+                  <SelectItem key={client.id} value={client.id || "none"}>
                     {client.name}
                   </SelectItem>
                 ))}
@@ -224,7 +224,7 @@ export default function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                 <SelectContent>
                   <SelectItem value="none">ללא פרויקט</SelectItem>
                   {projects?.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
+                    <SelectItem key={project.id} value={project.id || "none"}>
                       {project.name}
                     </SelectItem>
                   ))}
@@ -242,7 +242,7 @@ export default function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
               <SelectContent>
                 <SelectItem value="none">ללא הקצאה</SelectItem>
                 {teamMembers?.map((member) => (
-                  <SelectItem key={member.id} value={member.id}>
+                  <SelectItem key={member.id} value={member.id || "none"}>
                     {member.fullName}
                   </SelectItem>
                 ))}

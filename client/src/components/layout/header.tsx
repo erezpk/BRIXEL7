@@ -40,6 +40,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [clickedNotifications, setClickedNotifications] = useState<Set<string>>(new Set());
 
   // Fetch recent activity for notifications
   const { data: notifications } = useQuery({
@@ -67,6 +68,17 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
       .join("")
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const handleNotificationClick = (notificationId: string) => {
+    setClickedNotifications(prev => new Set(Array.from(prev).concat(notificationId)));
+  };
+  
+  const isNotificationNew = (notification: any) => {
+    const createdAt = new Date(notification.createdAt);
+    const now = new Date();
+    const hoursDiff = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+    return hoursDiff < 24; // Consider notifications new if less than 24 hours old
   };
 
   return (
@@ -114,7 +126,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                   data-testid="notifications-button"
                 >
                   <Bell className="h-5 w-5" />
-                  {notifications && notifications.length > 0 && (
+                  {notifications && Array.isArray(notifications) && notifications.length > 0 && (
                     <span className="absolute -top-1 -left-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                       {notifications.length > 9 ? '9+' : notifications.length}
                     </span>
@@ -126,31 +138,48 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                   <h3 className="font-medium text-right">התראות</h3>
                 </div>
                 <div className="max-h-80 overflow-y-auto">
-                  {!notifications || notifications.length === 0 ? (
+                  {!notifications || !Array.isArray(notifications) || notifications.length === 0 ? (
                     <div className="p-6 text-center text-gray-500">
                       <Bell className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                       <p>אין התראות חדשות</p>
                     </div>
                   ) : (
                     <div className="space-y-1">
-                      {notifications.slice(0, 10).map((notification: any, index: number) => (
+                      {Array.isArray(notifications) && notifications.slice(0, 10).map((notification: any, index: number) => {
+                        const isNew = isNotificationNew(notification);
+                        const isClicked = clickedNotifications.has(notification.id || index.toString());
+                        
+                        return (
                         <div
                           key={notification.id || index}
-                          className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                          className={`p-3 cursor-pointer border-b last:border-b-0 transition-all duration-200 ${
+                            isClicked 
+                              ? 'bg-blue-50 hover:bg-blue-100' 
+                              : isNew 
+                                ? 'bg-gradient-to-r from-green-50 to-blue-50 hover:bg-gradient-to-r hover:from-green-100 hover:to-blue-100 border-l-4 border-green-500' 
+                                : 'hover:bg-gray-50'
+                          }`}
+                          onClick={() => handleNotificationClick(notification.id || index.toString())}
                           data-testid={`notification-${index}`}
                         >
                           <div className="flex items-start space-x-reverse space-x-3">
                             <div className="flex-shrink-0 mt-1">
+                              {isNew && !isClicked && (
+                                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg"></div>
+                              )}
                               {notification.action === 'created' ? (
-                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <div className={`w-2 h-2 bg-green-500 rounded-full ${isNew && !isClicked ? 'ml-1' : ''}`}></div>
                               ) : notification.action === 'updated' ? (
-                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                <div className={`w-2 h-2 bg-blue-500 rounded-full ${isNew && !isClicked ? 'ml-1' : ''}`}></div>
                               ) : (
-                                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                                <div className={`w-2 h-2 bg-gray-400 rounded-full ${isNew && !isClicked ? 'ml-1' : ''}`}></div>
                               )}
                             </div>
                             <div className="flex-1 text-right">
-                              <p className="text-sm text-gray-900">
+                              <p className={`text-sm ${isNew && !isClicked ? 'text-gray-900 font-semibold' : 'text-gray-800'}`}>
+                                {isNew && !isClicked && (
+                                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full ml-2 animate-pulse"></span>
+                                )}
                                 {notification.action === 'created' && 'נוצר '}
                                 {notification.action === 'updated' && 'עודכן '}
                                 {notification.action === 'deleted' && 'נמחק '}
@@ -161,22 +190,26 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                                 {notification.details?.projectName && `: ${notification.details.projectName}`}
                                 {notification.details?.taskTitle && `: ${notification.details.taskTitle}`}
                               </p>
-                              <p className="text-xs text-gray-500 mt-1">
+                              <p className={`text-xs mt-1 ${isNew && !isClicked ? 'text-gray-600 font-medium' : 'text-gray-500'}`}>
                                 {new Date(notification.createdAt).toLocaleDateString('he-IL', {
                                   hour: '2-digit',
                                   minute: '2-digit',
                                   day: 'numeric',
                                   month: 'short'
                                 })}
+                                {isNew && !isClicked && (
+                                  <span className="text-green-600 font-semibold mr-2">חדש!</span>
+                                )}
                               </p>
                             </div>
                           </div>
                         </div>
-                      ))}
+                      );
+                      })}
                     </div>
                   )}
                 </div>
-                {notifications && notifications.length > 10 && (
+                {notifications && Array.isArray(notifications) && notifications.length > 10 && (
                   <div className="p-3 border-t text-center">
                     <Button variant="ghost" size="sm" className="text-xs">
                       הצג עוד התראות
