@@ -50,8 +50,24 @@ export function useAuth() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginData) => {
-      const response = await apiRequest('POST', '/api/auth/login', data);
-      return response.json();
+      const response = await apiRequest({
+        method: 'POST',
+        url: '/api/auth/login',
+        body: data
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'שגיאה בהתחברות');
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(text || 'תגובה לא תקינה מהשרת');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
@@ -60,8 +76,24 @@ export function useAuth() {
 
   const signupMutation = useMutation({
     mutationFn: async (data: SignupData) => {
-      const response = await apiRequest('POST', '/api/auth/signup', data);
-      return response.json();
+      const response = await apiRequest({
+        method: 'POST',
+        url: '/api/auth/signup',
+        body: data
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'שגיאה ביצירת החשבון');
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(text || 'תגובה לא תקינה מהשרת');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
@@ -70,7 +102,10 @@ export function useAuth() {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest('POST', '/api/auth/logout');
+      await apiRequest({
+        method: 'POST',
+        url: '/api/auth/logout'
+      });
     },
     onSuccess: () => {
       queryClient.setQueryData(['/api/auth/me'], null);
