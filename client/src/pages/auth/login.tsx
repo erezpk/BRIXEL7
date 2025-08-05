@@ -30,11 +30,16 @@ export default function Login() {
         password: formData.password,
       });
       
-      toast({
-        title: "התחברות הצליחה",
-        description: "ברוכים הבאים למערכת",
-      });
-      setLocation("/dashboard");
+      if (result?.user) {
+        toast({
+          title: "התחברות הצליחה",
+          description: "ברוכים הבאים למערכת",
+        });
+        // רגע קצר לפני הפניה כדי שהמערכת תעדכן את הסטטוס
+        setTimeout(() => {
+          setLocation("/dashboard");
+        }, 100);
+      }
     } catch (error: any) {
       toast({
         title: "שגיאה בהתחברות",

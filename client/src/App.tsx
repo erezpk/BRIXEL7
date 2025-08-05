@@ -22,7 +22,7 @@ import Assets from "@/pages/dashboard/assets";
 import Team from "@/pages/dashboard/team";
 import ClientDashboard from "@/pages/client-portal/client-dashboard";
 import NotFound from "@/pages/not-found";
-import HelpCenter from "@/pages/help-center"; // Assuming HelpCenter component is in this path
+import HelpCenter from "@/pages/help-center";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -83,13 +83,10 @@ export default function App() {
               </ProtectedRoute>
             )}
           />
-          {/* PROJECT DETAILS */}
-          <Route path="/dashboard/project-details/:projectId" component={ProjectDetails} />
-          <Route path="/dashboard/assets" component={Assets} />
-
+          
           {/* NEW PROJECT */}
           <Route
-            path="/dashboard/projects/ "
+            path="/dashboard/projects/new"
             component={() => (
               <ProtectedRoute>
                 <DashboardLayout>
@@ -101,7 +98,7 @@ export default function App() {
 
           {/* PROJECT DETAILS */}
           <Route
-            path="/dashboard/projects/:projectId"
+            path="/dashboard/project-details/:projectId"
             component={() => (
               <ProtectedRoute>
                 <DashboardLayout>
