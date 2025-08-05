@@ -56,7 +56,10 @@ export default function Team() {
 
   const deactivateMemberMutation = useMutation({
     mutationFn: async (memberId: string) => {
-      const response = await apiRequest('PUT', `/api/team/${memberId}/toggle-active`);
+      const response = await apiRequest({
+        url: `/api/team/${memberId}/toggle-active`,
+        method: 'PUT',
+      });
       return response.json();
     },
     onSuccess: () => {
@@ -77,10 +80,14 @@ export default function Team() {
 
   const updateMemberMutation = useMutation({
     mutationFn: async (data: { id: string; fullName: string; email: string; role: string }) => {
-      const response = await apiRequest('PUT', `/api/team/${data.id}`, {
-        fullName: data.fullName,
-        email: data.email,
-        role: data.role,
+      const response = await apiRequest({
+        url: `/api/team/${data.id}`,
+        method: 'PUT',
+        body: {
+          fullName: data.fullName,
+          email: data.email,
+          role: data.role,
+        },
       });
       return response.json();
     },
@@ -103,7 +110,10 @@ export default function Team() {
 
   const resendInviteMutation = useMutation({
     mutationFn: async (memberId: string) => {
-      const response = await apiRequest('POST', `/api/team/${memberId}/resend-invite`);
+      const response = await apiRequest({
+        url: `/api/team/${memberId}/resend-invite`,
+        method: 'POST',
+      });
       return response.json();
     },
     onSuccess: () => {

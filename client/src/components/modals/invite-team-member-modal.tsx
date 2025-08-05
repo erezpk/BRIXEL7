@@ -27,9 +27,13 @@ export default function InviteTeamMemberModal({ open, onOpenChange }: InviteTeam
 
   const inviteMemberMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const response = await apiRequest('POST', '/api/team/invite', {
-        ...data,
-        password: Math.random().toString(36).slice(-8), // Generate temporary password
+      const response = await apiRequest({
+        url: '/api/team/invite',
+        method: 'POST',
+        body: {
+          ...data,
+          password: Math.random().toString(36).slice(-8), // Generate temporary password
+        },
       });
       return response.json();
     },
