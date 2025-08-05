@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { type Task, type User, type Project } from '@shared/schema';
@@ -19,7 +18,8 @@ import {
   CheckSquare,
   Clock,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Trash2
 } from 'lucide-react';
 import {
   Select,
@@ -146,7 +146,7 @@ export default function Tasks() {
     }
   };
 
-  const handleSelectTask = (taskId: string, selected: boolean) => {
+  const handleTaskSelection = (taskId: string, selected: boolean) => {
     if (selected) {
       setSelectedTasks(prev => [...prev, taskId]);
     } else {
@@ -156,7 +156,7 @@ export default function Tasks() {
 
   const handleDeleteSelected = () => {
     if (selectedTasks.length === 0) return;
-    
+
     if (confirm(`האם אתה בטוח שברצונך למחוק ${selectedTasks.length} משימות?`)) {
       deleteMultipleTasksMutation.mutate(selectedTasks);
     }
@@ -172,15 +172,15 @@ export default function Tasks() {
 
   const filteredTasks = React.useMemo(() => {
     if (!tasks) return [];
-    
+
     return tasks.filter((task: Task) => {
-      const matchesSearch = searchQuery === "" || 
+      const matchesSearch = searchQuery === "" ||
         task.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         task.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      
+
       const matchesStatus = statusFilter === "all" || task.status === statusFilter;
       const matchesAssignee = assigneeFilter === "all" || task.assignedTo === assigneeFilter;
-      
+
       return matchesSearch && matchesStatus && matchesAssignee;
     });
   }, [tasks, searchQuery, statusFilter, assigneeFilter]);
@@ -247,7 +247,7 @@ export default function Tasks() {
               className="pr-10"
             />
           </div>
-          
+
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="סנן לפי סטטוס" />
@@ -326,13 +326,15 @@ export default function Tasks() {
                 <TaskCard
                   key={task.id}
                   task={task}
-                  users={users}
-                  projects={projects}
+                  users={users || []}
+                  projects={projects || []}
                   isTableView={true}
                   isSelected={selectedTasks.includes(task.id)}
-                  onSelect={handleSelectTask}
+                  onSelect={handleTaskSelection}
                   onEdit={handleEditTask}
                   onDelete={handleDeleteTask}
+                  onTaskTimer={handleTaskTimer}
+                  activeTimers={{}}
                 />
               ))}
             </div>
@@ -340,8 +342,8 @@ export default function Tasks() {
         </Card>
       )}
 
-      <NewTaskModal 
-        isOpen={showNewTaskModal} 
+      <NewTaskModal
+        isOpen={showNewTaskModal}
         onClose={() => {
           setShowNewTaskModal(false);
           setEditingTask(null);

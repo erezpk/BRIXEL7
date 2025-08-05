@@ -130,11 +130,14 @@ export function KanbanBoard({ tasks, users, projects, onTaskUpdate, onTaskTimer,
                     >
                       <div className="relative">
                         <TaskCard
+                          key={task.id}
                           task={task}
-                          projects={projects}
                           users={users}
+                          projects={projects}
                           onEdit={onEditTask}
                           onDelete={onDeleteTask}
+                          onTaskTimer={onTaskTimer}
+                          activeTimers={activeTimers}
                         />
 
                         {/* Timer Controls */}
