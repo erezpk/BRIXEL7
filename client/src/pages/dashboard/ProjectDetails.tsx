@@ -217,8 +217,8 @@ export default function ProjectDetails() {
             variant="outline" 
             size="sm"
             onClick={() => {
-              // פתח חלון חדש עם תצוגת הלקוח
-              window.open(`/client-portal?projectId=${projectId}&clientId=${project.clientId}`, '_blank');
+              // עבור לעמוד פרטי הלקוח
+              window.location.href = `/dashboard/clients/${project.clientId}`;
             }}
             className="border-green-500 text-green-600 hover:bg-green-50 px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
           >
