@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,11 +11,12 @@ import { ArrowRight, Plus } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { type Client, type InsertClient, type InsertProject } from "@shared/schema";
+import { useLocation } from 'wouter'; // Fixed import for navigation
 
 export default function NewProject() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [projectType, setProjectType] = useState('');
@@ -146,6 +146,19 @@ export default function NewProject() {
     setNewClientData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Placeholder for Drag & Drop related state and functions
+  const [tasks, setTasks] = useState([]); // Example state for tasks
+  const [columns, setColumns] = useState([
+    { id: 'todo', name: 'ממתין' },
+    { id: 'in-progress', name: 'בביצוע' },
+    { id: 'done', name: 'הושלם' },
+  ]);
+
+  const handleDragEnd = (result) => {
+    // Implement Drag & Drop logic here
+    console.log(result);
+  };
+
   return (
     <div className="container mx-auto p-6">
       <Card className="max-w-2xl mx-auto">
@@ -231,8 +244,8 @@ export default function NewProject() {
               </div>
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full"
               disabled={createProjectMutation.isPending}
             >
@@ -243,13 +256,37 @@ export default function NewProject() {
         </CardContent>
       </Card>
 
+      {/* Tasks Section - Placeholder for Drag & Drop */}
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold text-right mb-4">משימות</h2>
+        {/* This is where the Drag & Drop task board will be implemented */}
+        <div className="flex gap-4 overflow-x-auto">
+          {columns.map((column) => (
+            <div key={column.id} className="w-64 flex-shrink-0">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg text-right">{column.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {/* Placeholder for Task Cards */}
+                  {/* In a real implementation, tasks would be mapped here and filtered by column.id */}
+                  <div className="min-h-[100px] bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
+                    <p>גרור ושחרר משימות לכאן</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* New Client Modal */}
       <Dialog open={showNewClientModal} onOpenChange={setShowNewClientModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-right font-rubik">לקוח חדש</DialogTitle>
           </DialogHeader>
-          
+
           <form onSubmit={handleNewClientSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="clientName" className="text-right">שם הלקוח *</Label>
@@ -262,7 +299,7 @@ export default function NewProject() {
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="contactName" className="text-right">איש קשר</Label>
               <Input
@@ -273,7 +310,7 @@ export default function NewProject() {
                 className="text-right"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="email" className="text-right">אימייל</Label>
               <Input
@@ -285,7 +322,7 @@ export default function NewProject() {
                 className="text-right"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="phone" className="text-right">טלפון</Label>
               <Input
@@ -296,7 +333,7 @@ export default function NewProject() {
                 className="text-right"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="industry" className="text-right">תחום עיסוק</Label>
               <Select value={newClientData.industry} onValueChange={(value) => handleNewClientInputChange('industry', value)}>
@@ -317,7 +354,7 @@ export default function NewProject() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="flex space-x-reverse space-x-2 pt-4">
               <Button
                 type="button"

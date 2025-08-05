@@ -18,7 +18,7 @@ import {
   FileText,
   MessageSquare
 } from 'lucide-react';
-import { apiRequest } from '@/lib/api'; // Assuming apiRequest is in this path
+import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/components/ui/use-toast'; // Assuming useToast is in this path
 
 // Define interfaces for better type safety (replace with actual types if available)

@@ -1,218 +1,172 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Eye, Edit, MoreHorizontal, MessageCircle, Calendar, User, Building } from "lucide-react";
+
+import React from 'react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { type Task } from "@shared/schema";
-import { format } from "date-fns";
-import { he } from "date-fns/locale";
+  Calendar,
+  Clock,
+  User,
+  AlertTriangle,
+  CheckCircle,
+  Edit,
+  Trash2,
+  GripVertical
+} from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { he } from 'date-fns/locale';
+
+const PRIORITY_COLORS = {
+  low: 'bg-green-100 text-green-800',
+  medium: 'bg-yellow-100 text-yellow-800',
+  high: 'bg-red-100 text-red-800'
+};
+
+const PRIORITY_LABELS = {
+  low: 'נמוכה',
+  medium: 'בינונית',
+  high: 'גבוהה'
+};
+
+const STATUS_COLORS = {
+  todo: 'bg-gray-100 text-gray-800',
+  in_progress: 'bg-blue-100 text-blue-800',
+  review: 'bg-yellow-100 text-yellow-800',
+  completed: 'bg-green-100 text-green-800'
+};
+
+const STATUS_LABELS = {
+  todo: 'לביצוע',
+  in_progress: 'בתהליך',
+  review: 'בבדיקה',
+  completed: 'הושלם'
+};
 
 interface TaskCardProps {
-  task: Task & {
-    assignedUser?: { fullName: string };
-    client?: { name: string };
-    project?: { name: string };
+  task: {
+    id: string;
+    title: string;
+    description?: string;
+    priority: 'low' | 'medium' | 'high';
+    status: string;
+    dueDate: string;
+    createdAt: string;
+    assigneeId?: string;
+    projectId?: string;
   };
-  onView: (task: Task) => void;
-  onEdit: (task: Task) => void;
-  onDelete: (task: Task) => void;
+  projects?: Array<{ id: string; name: string }>;
+  users?: Array<{ id: string; name: string; email?: string }>;
+  onEdit?: (task: any) => void;
+  onDelete?: (taskId: string) => void;
 }
 
-export default function TaskCard({ task, onView, onEdit, onDelete }: TaskCardProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'new':
-        return 'bg-gray-100 text-gray-800';
-      case 'in_progress':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'new':
-        return 'חדש';
-      case 'in_progress':
-        return 'בביצוע';
-      case 'completed':
-        return 'הושלם';
-      case 'cancelled':
-        return 'בוטל';
-      default:
-        return status;
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'low':
-        return 'bg-blue-100 text-blue-800';
-      case 'medium':
-        return 'bg-gray-100 text-gray-800';
-      case 'high':
-        return 'bg-orange-100 text-orange-800';
-      case 'urgent':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getPriorityText = (priority: string) => {
-    switch (priority) {
-      case 'low':
-        return 'נמוך';
-      case 'medium':
-        return 'בינוני';
-      case 'high':
-        return 'גבוה';
-      case 'urgent':
-        return 'דחוף';
-      default:
-        return priority;
-    }
-  };
-
-  const getTaskBorderClass = (status: string) => {
-    switch (status) {
-      case 'new':
-        return 'task-status-new';
-      case 'in_progress':
-        return 'task-status-progress';
-      case 'completed':
-        return 'task-status-completed';
-      default:
-        return '';
-    }
-  };
-
-  // Calculate progress based on status
-  const getProgress = () => {
-    switch (task.status) {
-      case 'new':
-        return 0;
-      case 'in_progress':
-        return 50;
-      case 'completed':
-        return 100;
-      default:
-        return 0;
-    }
-  };
+export function TaskCard({ task, projects = [], users = [], onEdit, onDelete }: TaskCardProps) {
+  const project = projects.find(p => p.id === task.projectId);
+  const assignee = users.find(u => u.id === task.assigneeId);
+  
+  const isOverdue = new Date(task.dueDate) < new Date() && task.status !== 'completed';
+  const dueInDays = Math.ceil((new Date(task.dueDate) - new Date()) / (1000 * 60 * 60 * 24));
 
   return (
-    <Card className={`card-hover ${getTaskBorderClass(task.status)}`} data-testid={`task-card-${task.id}`}>
-      <CardContent className="p-6">
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex-1">
-            <div className="flex items-center space-x-reverse space-x-3 mb-2">
-              <h3 className="text-lg font-semibold text-gray-900" data-testid="task-title">
-                {task.title}
-              </h3>
-              <Badge className={getStatusColor(task.status)} data-testid="task-status">
-                {getStatusText(task.status)}
-              </Badge>
-              {task.priority !== 'medium' && (
-                <Badge className={getPriorityColor(task.priority)} data-testid="task-priority">
-                  {getPriorityText(task.priority)}
-                </Badge>
-              )}
-            </div>
-            {task.description && (
-              <p className="text-sm text-gray-600 mb-3" data-testid="task-description">
-                {task.description}
-              </p>
-            )}
-            <div className="flex items-center space-x-reverse space-x-4 text-sm text-gray-600">
-              {task.assignedUser && (
-                <div className="flex items-center space-x-reverse space-x-1">
-                  <User className="h-4 w-4" />
-                  <span data-testid="task-assigned-user">{task.assignedUser.fullName}</span>
-                </div>
-              )}
-              {task.client && (
-                <div className="flex items-center space-x-reverse space-x-1">
-                  <Building className="h-4 w-4" />
-                  <span data-testid="task-client">{task.client.name}</span>
-                </div>
-              )}
-              {task.dueDate && (
-                <div className="flex items-center space-x-reverse space-x-1">
-                  <Calendar className="h-4 w-4" />
-                  <span data-testid="task-due-date">
-                    עד: {format(new Date(task.dueDate), 'dd/MM/yyyy', { locale: he })}
-                  </span>
-                </div>
-              )}
-            </div>
+    <Card className="group hover:shadow-md transition-all duration-200 bg-white border-r-4 border-r-blue-500">
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 flex-1">
+            <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
+            <h3 className="font-semibold text-sm line-clamp-2 flex-1 text-right">
+              {task.title}
+            </h3>
           </div>
-          <div className="flex items-center space-x-reverse space-x-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onView(task)}
-              data-testid="task-view"
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" data-testid="task-menu">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onView(task)} data-testid="task-view-details">
-                  <Eye className="ml-2 h-4 w-4" />
-                  צפה בפרטים
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onEdit(task)} data-testid="task-edit">
-                  <Edit className="ml-2 h-4 w-4" />
-                  ערוך
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => onDelete(task)} 
-                  className="text-red-600"
-                  data-testid="task-delete"
-                >
-                  מחק
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {onEdit && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => onEdit(task)}
+                className="h-6 w-6 p-0"
+              >
+                <Edit className="h-3 w-3" />
+              </Button>
+            )}
+            {onDelete && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => onDelete(task.id)}
+                className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            )}
           </div>
         </div>
         
-        {/* Progress Bar */}
-        <div className="mb-4">
-          <div className="flex justify-between text-sm text-gray-600 mb-1">
-            <span>התקדמות</span>
-            <span data-testid="task-progress-percentage">{getProgress()}%</span>
-          </div>
-          <Progress value={getProgress()} className="h-2" data-testid="task-progress-bar" />
-        </div>
+        {task.description && (
+          <p className="text-xs text-muted-foreground line-clamp-2 text-right mt-1">
+            {task.description}
+          </p>
+        )}
+      </CardHeader>
 
-        {/* Comments Preview */}
-        <div className="border-t border-gray-100 pt-4">
-          <div className="flex items-center space-x-reverse space-x-2 text-sm text-gray-600">
-            <MessageCircle className="h-4 w-4" />
-            <span data-testid="task-comments-count">0 תגובות</span>
-            <span>•</span>
-            <span data-testid="task-updated">
-              עודכן {format(new Date(task.updatedAt), 'dd/MM/yyyy', { locale: he })}
-            </span>
+      <CardContent className="pt-0">
+        <div className="space-y-3">
+          {/* Priority and Status */}
+          <div className="flex gap-2 justify-end">
+            <Badge className={`text-xs px-2 py-1 ${PRIORITY_COLORS[task.priority]}`}>
+              {PRIORITY_LABELS[task.priority]}
+            </Badge>
+            <Badge className={`text-xs px-2 py-1 ${STATUS_COLORS[task.status]}`}>
+              {STATUS_LABELS[task.status]}
+            </Badge>
           </div>
+
+          {/* Due Date */}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground justify-end">
+            <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
+              {formatDistanceToNow(new Date(task.dueDate), { 
+                addSuffix: true, 
+                locale: he 
+              })}
+            </span>
+            <Calendar className="h-3 w-3" />
+          </div>
+
+          {/* Project */}
+          {project && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground justify-end">
+              <span>{project.name}</span>
+              <div className="h-2 w-2 rounded-full bg-blue-500" />
+            </div>
+          )}
+
+          {/* Assignee */}
+          {assignee && (
+            <div className="flex items-center gap-2 text-xs justify-end">
+              <span className="text-muted-foreground">{assignee.name}</span>
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${assignee.name}`} />
+                <AvatarFallback className="text-xs">
+                  {assignee.name?.charAt(0) || 'U'}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+          )}
+
+          {/* Warning indicators */}
+          {isOverdue && (
+            <div className="flex items-center gap-1 text-red-600 text-xs justify-end">
+              <span>באיחור</span>
+              <AlertTriangle className="h-3 w-3" />
+            </div>
+          )}
+          
+          {dueInDays <= 2 && dueInDays > 0 && task.status !== 'completed' && (
+            <div className="flex items-center gap-1 text-orange-600 text-xs justify-end">
+              <span>דחוף</span>
+              <Clock className="h-3 w-3" />
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
