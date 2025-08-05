@@ -77,7 +77,7 @@ export default function App() {
 
           {/* NEW PROJECT */}
           <Route
-            path="/dashboard/projects/new"
+            path="/dashboard/projects/ "
             component={() => (
               <ProtectedRoute>
                 <DashboardLayout>
