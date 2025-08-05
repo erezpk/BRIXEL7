@@ -193,12 +193,20 @@ export default function ClientDetails() {
   };
 
   const handleSendCredentials = () => {
+    if (!client?.email) {
+      toast({
+        title: "שגיאה",
+        description: "ללקוח אין כתובת אימייל",
+        variant: "destructive",
+      });
+      return;
+    }
     sendCredentialsMutation.mutate();
   };
 
   const handleViewClientDashboard = () => {
     if (client?.id) {
-      window.open(`/dashboard/clients/${client.id}`, '_blank');
+      window.open(`/client-portal?clientId=${client.id}`, '_blank');
     }
   };
 

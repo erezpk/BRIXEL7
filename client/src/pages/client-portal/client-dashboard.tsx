@@ -35,7 +35,8 @@ import {
   Building,
   DollarSign,
   Users,
-  TrendingUp
+  TrendingUp,
+  ArrowRight
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
@@ -106,6 +107,9 @@ export default function ClientDashboard() {
   const isAgencyAdmin = user?.role === 'agency_admin' || user?.role === 'team_member';
   const urlParams = new URLSearchParams(window.location.search);
   const viewingClientId = urlParams.get('clientId');
+  
+  // If agency admin is viewing a specific client's dashboard, use that client ID
+  const effectiveClientId = isAgencyAdmin && viewingClientId ? viewingClientId : user?.id;
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [showClientModal, setShowClientModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
@@ -150,11 +154,21 @@ export default function ClientDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Mock data - in real app, this would come from the server
-  const clientProjects: Project[] = [
-    { id: '1', name: 'אתר הזמנות', description: 'פיתוח אתר הזמנות למסעדה', status: 'in_progress', progress: 65 },
-    { id: '2', name: 'מערכת ניהול', description: 'מערכת ניהול לקוחות פנימית', status: 'planning', progress: 20 }
-  ];
+  // Fetch client data based on effective client ID
+  const { data: clientInfo } = useQuery({
+    queryKey: ['/api/clients', effectiveClientId],
+    enabled: !!effectiveClientId && isAgencyAdmin && !!viewingClientId,
+  });
+
+  const { data: clientProjects = [] } = useQuery({
+    queryKey: ['/api/projects', { clientId: effectiveClientId }],
+    enabled: !!effectiveClientId,
+  });
+
+  const { data: clientStats } = useQuery({
+    queryKey: ['/api/client/stats'],
+    enabled: !isAgencyAdmin || !viewingClientId,
+  });
 
   const clientTasks: Task[] = [
     { id: '1', title: 'אישור עיצוב', description: 'אישור עיצוב דף הבית', status: 'pending', priority: 'high', dueDate: '2024-02-15', projectId: '1' },
@@ -296,7 +310,9 @@ export default function ClientDashboard() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <div className="text-xl font-bold text-primary">
-                {isAgencyAdmin && viewingClientId ? 'צפיה בדאשבורד לקוח' : 'לוח הבקרה שלי'}
+                {isAgencyAdmin && viewingClientId 
+                  ? `דאשבורד לקוח: ${clientInfo?.name || 'טוען...'}` 
+                  : 'לוח הבקרה שלי'}
               </div>
               {isAgencyAdmin && viewingClientId && (
                 <Badge variant="outline" className="mr-2">
@@ -317,10 +333,14 @@ export default function ClientDashboard() {
               </Button>
               {isAgencyAdmin && viewingClientId && (
                 <Button variant="outline" size="sm" onClick={() => {
-                  window.close();
+                  if (window.opener) {
+                    window.close();
+                  } else {
+                    window.location.href = `/dashboard/clients/${viewingClientId}`;
+                  }
                 }}>
                   <ArrowRight className="h-4 w-4 ml-2" />
-                  חזור לדאשבורד
+                  חזור לפרטי לקוח
                 </Button>
               )}
               <Button variant="outline" size="sm" onClick={() => {
