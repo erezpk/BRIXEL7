@@ -231,6 +231,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Check if email service is configured
+      if (!emailService.isConfigured()) {
+        // For development/demo purposes, return the reset URL directly
+        console.log('Email service not configured. Reset URL:', resetUrl);
+        return res.json({ 
+          message: 'שירות האימייל לא מוגדר. עבור סביבת פיתוח, ניתן להשתמש בקישור הבא:',
+          resetUrl: resetUrl,
+          development: true
+        });
+      }
+
       // Send email
       const emailSent = await emailService.sendPasswordReset({
         to: email,
