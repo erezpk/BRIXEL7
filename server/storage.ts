@@ -570,19 +570,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUserWithPassword(email: string, fullName: string, password: string, role: string = 'client') {
-    const bcrypt = require('bcryptjs');
-    const hashedPassword = await bcrypt.hash(password, 10);
+    try {
+      console.log('Creating user with password:', { email, fullName, role });
 
-    const [user] = await db.insert(users).values({
-      email,
-      fullName,
-      password: hashedPassword,
-      role,
-      isActive: true,
-      createdAt: new Date(),
-    }).returning();
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-    return user;
+      const [user] = await this.db.insert(users).values({
+        email,
+        fullName,
+        password: hashedPassword,
+        role,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }).returning();
+
+      console.log('User created successfully:', user.email);
+      return user;
+    } catch (error) {
+      console.error('Error in createUserWithPassword:', error);
+      throw error;
+    }
   }
 
   // Ad Accounts

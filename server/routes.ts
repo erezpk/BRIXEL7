@@ -1,13 +1,13 @@
+
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
 import { verifyGoogleToken } from "./google-auth";
+import { db } from "./db";
+import { users } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
-
+  
   // Google OAuth route
   app.post('/api/auth/google', async (req, res) => {
     try {
@@ -19,7 +19,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Google auth attempt for:', email);
 
-      // Verify Google token (for production - currently bypassed for development)
+      // Verify Google token (bypassed in development)
       const verified = await verifyGoogleToken(idToken);
       if (!verified && process.env.NODE_ENV === 'production') {
         return res.status(401).json({ message: 'טוקן Google לא תקין' });
@@ -30,11 +30,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!user) {
         console.log('Creating new user from Google auth:', email);
-        // Create new user in local database
         user = await storage.createOrUpdateUserFromGoogle(email, name, avatar);
       } else {
-        console.log('Updating existing user from Google auth:', email);
-        // Update existing user with latest Google info
+        console.log('User found, updating from Google auth:', email);
         user = await storage.createOrUpdateUserFromGoogle(email, name, avatar);
       }
 
@@ -59,19 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
-
-  // Login route for regular auth
+  // Regular login route (for users with password)
   app.post('/api/auth/login', async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -100,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Verify password with bcrypt
-      const bcrypt = require('bcryptjs');
+      const bcrypt = await import('bcryptjs');
       const isValidPassword = await bcrypt.compare(password, user.password);
       
       if (!isValidPassword) {
@@ -129,17 +115,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Route to create test user (development only)
+  // Create test user endpoint (development only)
   app.post('/api/create-test-user', async (req, res) => {
-    if (process.env.NODE_ENV !== 'development') {
-      return res.status(403).json({ message: 'Not allowed in production' });
-    }
-
     try {
       const { email, fullName, password, role } = req.body;
       
       if (!email || !fullName || !password) {
         return res.status(400).json({ message: 'כל השדות נדרשים' });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: 'משתמש עם האימייל הזה כבר קיים' });
       }
 
       const user = await storage.createUserWithPassword(email, fullName, password, role || 'client');
@@ -156,26 +144,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error('Error creating test user:', error);
-      if (error.code === '23505') { // Unique constraint violation
+      if (error.code === '23505') {
         return res.status(400).json({ message: 'משתמש עם האימייל הזה כבר קיים' });
       }
       res.status(500).json({ message: 'שגיאה ביצירת משתמש' });
     }
   });
 
-  // Quick endpoint to create the specific user from the error
-  app.post('/api/dev/create-user', async (req, res) => {
-    if (process.env.NODE_ENV !== 'development') {
-      return res.status(403).json({ message: 'Not allowed in production' });
-    }
-
+  // Debug endpoints (development only)
+  app.get('/api/dev/users', async (req, res) => {
     try {
+      const allUsers = await db.select().from(users);
+      console.log('All users in database:', allUsers.length);
+      res.json({
+        success: true,
+        count: allUsers.length,
+        users: allUsers.map(user => ({
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          hasPassword: !!user.password,
+          createdAt: user.createdAt
+        }))
+      });
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: 'שגיאה בקבלת משתמשים' });
+    }
+  });
+
+  app.post('/api/dev/create-user', async (req, res) => {
+    try {
+      console.log('Development user creation request received');
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail('errz190@gmail.com');
+      if (existingUser) {
+        console.log('User already exists:', existingUser.email);
+        return res.json({
+          success: true,
+          message: 'משתמש כבר קיים',
+          user: {
+            id: existingUser.id,
+            email: existingUser.email,
+            fullName: existingUser.fullName,
+            role: existingUser.role
+          }
+        });
+      }
+
       const user = await storage.createUserWithPassword(
         'errz190@gmail.com', 
         'Test User', 
         '123456', 
         'team_member'
       );
+      
+      console.log('User created successfully in route');
       
       res.json({
         success: true,
@@ -188,18 +214,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
     } catch (error: any) {
-      console.error('Error creating test user:', error);
-      if (error.code === '23505') {
+      console.error('Detailed error creating test user:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      
+      if (error.code === '23505' || error.message?.includes('unique')) {
         return res.status(400).json({ message: 'משתמש כבר קיים' });
       }
-      res.status(500).json({ message: 'שגיאה ביצירת משתמש' });
+      
+      res.status(500).json({ 
+        message: 'שגיאה ביצירת משתמש',
+        error: error.message 
+      });
     }
-  });
-
-  // Protected routes
-  app.get("/api/protected", isAuthenticated, async (req, res) => {
-    const userId = req.user?.claims?.sub;
-    res.json({ message: "Protected route", userId });
   });
 
   const httpServer = createServer(app);
