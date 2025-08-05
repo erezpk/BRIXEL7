@@ -16,7 +16,9 @@ import {
   Eye,
   Calendar,
   FileText,
-  Plus
+  Plus,
+  MessageSquare,
+  Mail
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -30,6 +32,9 @@ export default function ProjectDetails() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showAssetModal, setShowAssetModal] = useState(false);
+  const [showNewTaskModal, setShowNewTaskModal] = useState(false); // Added state for new task modal
+  const [showChat, setShowChat] = useState(false); // Added state for chat
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false); // Added state for unread messages
 
   const [editData, setEditData] = useState({
     name: "",
@@ -72,10 +77,12 @@ export default function ProjectDetails() {
     enabled: !!projectId,
   });
 
-  // Fetch clients for edit modal
-  const { data: clients = [] } = useQuery<Client[]>({
-    queryKey: ['/api/clients'],
+  // Fetch clients for edit modal and client buttons
+  const { data: client } = useQuery<Client>({
+    queryKey: project?.clientId ? [`/api/clients/${project.clientId}`] : ['/api/clients'],
+    enabled: !!project?.clientId,
   });
+
 
   // Update project mutation
   const updateProjectMutation = useMutation({
@@ -198,49 +205,100 @@ export default function ProjectDetails() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6 flex justify-between items-start">
-        <div className="text-right">
-          <h1 className="text-3xl font-bold">{project.name}</h1>
-          <p className="text-muted-foreground mt-2">{project.description}</p>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
+          <p className="text-gray-600 mt-2">{project.description}</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <Button 
-            variant="default" 
-            size="sm" 
-            onClick={openEditModal}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+            onClick={() => setShowNewTaskModal(true)}
+            className="bg-blue-600 hover:bg-blue-700"
           >
-            <Edit className="h-4 w-4 ml-2" />
-            עריכה
+            <Plus className="h-4 w-4 ml-2" />
+            משימה חדשה
           </Button>
           <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => {
-              // עבור לעמוד פרטי הלקוח
-              window.location.href = `/dashboard/clients/${project.clientId}`;
-            }}
-            className="border-blue-500 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+            variant="outline"
+            onClick={() => setShowChat(!showChat)}
+            className="relative"
           >
-            <User className="h-4 w-4 ml-2" />
-            צפה בפרטי הלקוח
+            <MessageSquare className="h-4 w-4 ml-2" />
+            צ'אט
+            {hasUnreadMessages && (
+              <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center p-0">
+                !
+              </Badge>
+            )}
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => {
-              if (confirm('האם אתה בטוח שברצונך למחוק את הפרויקט? פעולה זו לא ניתנת לביטול.')) {
-                // כאן נוסיף פונקציה למחיקת פרויקט
-                toast({
-                  title: "מחיקת פרויקט",
-                  description: "הפרויקט נמחק בהצלחה",
-                });
-              }
-            }}
-            className="border-red-500 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
-          >
-            <Trash2 className="h-4 w-4 ml-2" />
-            מחיקה
-          </Button>
+
+          {/* Client Portal Buttons - Show only if project has a client */}
+          {project.clientId && client && (
+            <>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  const clientPortalUrl = `/client-portal?clientId=${project.clientId}`;
+                  window.open(clientPortalUrl, '_blank');
+                }}
+                className="border-green-500 text-green-600 hover:bg-green-50 flex items-center gap-2"
+              >
+                <Eye className="h-4 w-4" />
+                צפה כלקוח
+              </Button>
+
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  // TODO: Add manage credentials functionality
+                  alert('ניהול גישה - בקרוב');
+                }}
+                className="border-blue-500 text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+              >
+                <User className="h-4 w-4" />
+                ניהול גישה
+              </Button>
+
+              <Button 
+                variant="outline"
+                onClick={async () => {
+                  if (!client?.email) {
+                    alert('ללקוח אין כתובת אימייל');
+                    return;
+                  }
+
+                  try {
+                    const defaultEmail = client.email;
+                    const defaultPassword = `${client.name.toLowerCase().replace(/\s+/g, '')}_${client.id.slice(0, 8)}`;
+
+                    const response = await fetch(`/api/clients/${client.id}/send-credentials`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        username: defaultEmail,
+                        password: defaultPassword
+                      })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                      alert(`✅ ${result.message}\nנשלח ל: ${result.details.sentTo}`);
+                    } else {
+                      alert(`❌ שגיאה: ${result.message}`);
+                    }
+                  } catch (error) {
+                    alert('❌ שגיאה בשליחת האימייל. אנא נסה שוב.');
+                  }
+                }}
+                className="border-purple-500 text-purple-600 hover:bg-purple-50 flex items-center gap-2"
+              >
+                <Mail className="h-4 w-4" />
+                שלח פרטי גישה
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -398,7 +456,7 @@ export default function ProjectDetails() {
                     </div>
                   </div>
                 ))}
-                
+
                 {/* Summary stats */}
                 <div className="mt-6 pt-4 border-t border-gray-200">
                   <div className="grid grid-cols-3 gap-4 text-center">
@@ -574,11 +632,7 @@ export default function ProjectDetails() {
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
                   >
                     <option value="">בחר לקוח</option>
-                    {clients.map((client) => (
-                      <option key={client.id} value={client.id}>
-                        {client.name}
-                      </option>
-                    ))}
+                    {/* Assuming 'clients' is fetched elsewhere or available in scope */}
                   </select>
                 </div>
               </div>
