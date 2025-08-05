@@ -657,13 +657,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get the member to toggle
       const member = await storage.getUserById(memberId);
-      if (!member) {
-        return res.status(404).json({ message: 'חבר הצוות לא נמצא' });
-      }
-
-      // Make sure the member belongs to the same agency
-      if (member.agencyId !== user.agencyId) {
-        return res.status(403).json({ message: 'אין הרשאה לשנות סטטוס חבר צוות זה' });
+      if (!member || member.agencyId !== user.agencyId) {
+        return res.status(404).json({ message: 'חבר צוות לא נמצא' });
       }
 
       // Can't deactivate yourself
@@ -673,12 +668,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updatedMember = await storage.updateUser(memberId, { isActive: !member.isActive });
 
-      res.json({ 
-        message: `חבר הצוות ${updatedMember.isActive ? 'הופעל' : 'הושבת'} בהצלחה`, 
-        user: { ...updatedMember, password: undefined } 
+      // Log activity
+      await storage.logActivity({
+        agencyId: user.agencyId!,
+        userId: user.id,
+        action: updatedMember.isActive ? 'activated' : 'deactivated',
+        entityType: 'user',
+        entityId: memberId,
+        details: { userName: member.fullName },
       });
+
+      const { password, ...safeUser } = updatedMember;
+      res.json(safeUser);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בשינוי סטטוס חבר הצוות' });
+    }
+  });
+
+  app.put('/api/team/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const memberId = req.params.id;
+
+      // Only agency admins can edit team members
+      if (user.role !== 'agency_admin') {
+        return res.status(403).json({ message: 'רק מנהלי סוכנות יכולים לערוך פרטי חברי צוות' });
+      }
+
+      // Get the member to edit
+      const member = await storage.getUserById(memberId);
+      if (!member || member.agencyId !== user.agencyId) {
+        return res.status(404).json({ message: 'חבר צוות לא נמצא' });
+      }
+
+      const { fullName, email, role } = req.body;
+
+      // Validate input
+      if (!fullName?.trim() || !email?.trim() || !role) {
+        return res.status(400).json({ message: 'יש למלא את כל השדות הנדרשים' });
+      }
+
+      if (!email.includes('@')) {
+        return res.status(400).json({ message: 'כתובת אימייל לא תקינה' });
+      }
+
+      // Check if email is already taken by another user
+      if (email !== member.email) {
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser && existingUser.id !== memberId) {
+          return res.status(400).json({ message: 'משתמש אחר כבר רשום עם אימייל זה' });
+        }
+      }
+
+      // Update the member
+      const updatedMember = await storage.updateUser(memberId, {
+        fullName: fullName.trim(),
+        email: email.trim(),
+        role,
+      });
+
+      // Log activity
+      await storage.logActivity({
+        agencyId: user.agencyId!,
+        userId: user.id,
+        action: 'updated',
+        entityType: 'user',
+        entityId: memberId,
+        details: { userName: updatedMember.fullName },
+      });
+
+      const { password, ...safeUser } = updatedMember;
+      res.json(safeUser);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בעדכון פרטי חבר צוות' });
     }
   });
 

@@ -21,11 +21,20 @@ import { he } from "date-fns/locale";
 import InviteTeamMemberModal from "@/components/modals/invite-team-member-modal";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 export default function Team() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingMember, setEditingMember] = useState<User | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    fullName: "",
+    email: "",
+    role: "" as "agency_admin" | "team_member" | "client",
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -65,9 +74,69 @@ export default function Team() {
     },
   });
 
+  const editMemberMutation = useMutation({
+    mutationFn: async (data: { id: string; fullName: string; email: string; role: string }) => {
+      const response = await apiRequest('PUT', `/api/team/${data.id}`, {
+        fullName: data.fullName,
+        email: data.email,
+        role: data.role,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team'] });
+      setShowEditModal(false);
+      setEditingMember(null);
+      toast({
+        title: "פרטי חבר הצוות עודכנו",
+        description: "הפרטים עודכנו בהצלחה",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "שגיאה בעדכון פרטים",
+        description: error?.message || "אירעה שגיאה לא צפויה",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEditMember = (member: User) => {
-    // TODO: Implement edit member modal
-    console.log('Edit member:', member);
+    setEditingMember(member);
+    setEditFormData({
+      fullName: member.fullName,
+      email: member.email,
+      role: member.role as "agency_admin" | "team_member" | "client",
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMember) return;
+
+    if (!editFormData.fullName.trim() || !editFormData.email.trim()) {
+      toast({
+        title: "שגיאה",
+        description: "יש למלא את כל השדות הנדרשים",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!editFormData.email.includes('@')) {
+      toast({
+        title: "שגיאה",
+        description: "כתובת אימייל לא תקינה",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    editMemberMutation.mutate({
+      id: editingMember.id!,
+      ...editFormData,
+    });
   };
 
   const handleDeactivateMember = (member: User) => {
@@ -274,6 +343,78 @@ export default function Team() {
         open={showInviteModal}
         onOpenChange={setShowInviteModal}
       />
+
+      {/* Edit Member Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="sm:max-w-md" data-testid="edit-member-modal">
+          <DialogHeader>
+            <DialogTitle className="text-right">עריכת פרטי חבר צוות</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleSaveEdit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="editFullName" className="text-right flex items-center space-x-reverse space-x-2">
+                <span>שם מלא</span>
+              </Label>
+              <Input
+                id="editFullName"
+                value={editFormData.fullName}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                placeholder="הכנס שם מלא"
+                className="text-right"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editEmail" className="text-right flex items-center space-x-reverse space-x-2">
+                <span>אימייל</span>
+              </Label>
+              <Input
+                id="editEmail"
+                type="email"
+                value={editFormData.email}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="הכנס כתובת אימייל"
+                className="text-right"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-right">תפקיד</Label>
+              <Select value={editFormData.role} onValueChange={(value) => setEditFormData(prev => ({ ...prev, role: value as "agency_admin" | "team_member" | "client" }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="בחר תפקיד" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="team_member">חבר צוות</SelectItem>
+                  <SelectItem value="agency_admin">מנהל סוכנות</SelectItem>
+                  <SelectItem value="client">לקוח</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex justify-end space-x-reverse space-x-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowEditModal(false)}
+                data-testid="button-cancel-edit"
+              >
+                ביטול
+              </Button>
+              <Button
+                type="submit"
+                disabled={editMemberMutation.isPending}
+                data-testid="button-save-edit"
+              >
+                {editMemberMutation.isPending ? "שומר..." : "שמור שינויים"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
