@@ -29,7 +29,7 @@ export default function Login() {
   useEffect(() => {
     const handleGoogleRedirect = async () => {
       try {
-        const { handleGoogleRedirect } = await import('../../firebase');
+        const { handleGoogleRedirect } = await import('../../../firebase');
         const result = await handleGoogleRedirect();
         
         if (result && result.success) {
@@ -200,7 +200,7 @@ export default function Login() {
               className="w-full mt-4"
               onClick={async () => {
                 try {
-                  const { loginWithGoogle } = await import('../../firebase');
+                  const { loginWithGoogle } = await import('../../../firebase');
                   await loginWithGoogle();
                 } catch (error) {
                   toast({

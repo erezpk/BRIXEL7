@@ -20,7 +20,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if user exists in local database
       const user = await storage.getUserByEmail(email);
-      
+
       if (!user) {
         console.log('User not found:', email);
         return res.status(401).json({ message: 'אימייל או סיסמה שגויים' });
@@ -37,7 +37,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Comparing password for user:', email);
       const isValidPassword = await bcrypt.compare(password, user.password);
       console.log('Password valid:', isValidPassword);
-      
+
       if (!isValidPassword) {
         return res.status(401).json({ message: 'אימייל או סיסמה שגויים' });
       }
@@ -104,7 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const { password: _, ...userWithoutPassword } = user;
-      
+
       res.json({ 
         success: true,
         message: 'משתמש נוצר בהצלחה',
@@ -299,6 +299,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'משתמש עם האימייל הזה כבר קיים' });
       }
       res.status(500).json({ message: 'שגיאה ביצירת משתמש' });
+    }
+  });
+
+  // Google authentication endpoint
+  app.post('/api/auth/google', async (req, res) => {
+    try {
+      const { idToken, email, name, picture } = req.body;
+
+      console.log('Google auth request:', { email, name, hasToken: !!idToken });
+
+      if (!email || !name) {
+        console.error('Missing required fields:', { hasEmail: !!email, hasName: !!name });
+        return res.status(400).json({ message: 'נתונים חסרים' });
+      }
+
+      // Check if user exists, if not create them
+      let user = await storage.getUserByEmail(email);
+
+      if (!user) {
+        console.log('Creating new user from Google auth');
+        // Create new user from Google auth
+        const newUserData = {
+          email,
+          fullName: name,
+          password: '', // No password for Google users
+          role: 'team_member' as const,
+          agencyId: null,
+          avatar: picture,
+          isActive: true
+        };
+
+        user = await storage.createUser(newUserData);
+      } else {
+        console.log('Existing user found, updating last login');
+        // Update existing user's last login and avatar if provided
+        await storage.updateUser(user.id, { 
+          lastLogin: new Date(),
+          ...(picture && { avatar: picture })
+        });
+      }
+
+      console.log('User created/updated:', { userId: user.id, email: user.email });
+
+      res.json({ 
+        success: true, 
+        message: 'התחברת בהצלחה עם Google',
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          avatar: user.avatar || picture
+        }
+      });
+
+    } catch (error) {
+      console.error('Google auth error:', error);
+      res.status(500).json({ message: 'שגיאה בהתחברות עם Google' });
     }
   });
 
