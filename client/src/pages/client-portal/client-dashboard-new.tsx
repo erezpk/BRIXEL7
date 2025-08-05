@@ -490,7 +490,13 @@ export default function ClientDashboard() {
           {/* Leads Tab */}
           {activeTab === 'leads' && (
             <div className="space-y-6">
-              <h1 className="text-3xl font-bold text-gray-900">ניהול לידים</h1>
+              <div className="flex justify-between items-center">
+                <h1 className="text-3xl font-bold text-gray-900">ניהול לידים</h1>
+                <Button onClick={() => setShowLeadModal(true)}>
+                  <Plus className="h-4 w-4 ml-2" />
+                  ליד חדש
+                </Button>
+              </div>
 
               <Card>
                 <CardContent className="p-6">
@@ -546,7 +552,13 @@ export default function ClientDashboard() {
           {/* Clients Tab */}
           {activeTab === 'clients' && (
             <div className="space-y-6">
-              <h1 className="text-3xl font-bold text-gray-900">ניהול לקוחות</h1>
+              <div className="flex justify-between items-center">
+                <h1 className="text-3xl font-bold text-gray-900">ניהול לקוחות</h1>
+                <Button onClick={() => setShowClientModal(true)}>
+                  <Plus className="h-4 w-4 ml-2" />
+                  לקוח חדש
+                </Button>
+              </div>
 
               <Card>
                 <CardContent className="p-6">
@@ -629,7 +641,13 @@ export default function ClientDashboard() {
           {/* Messages Tab */}
           {activeTab === 'messages' && (
             <div className="space-y-6">
-              <h1 className="text-3xl font-bold text-gray-900">תקשורת עם הסוכנות</h1>
+              <div className="flex justify-between items-center">
+                <h1 className="text-3xl font-bold text-gray-900">תקשורת עם הסוכנות</h1>
+                <Button onClick={() => setShowMessageModal(true)}>
+                  <Send className="h-4 w-4 ml-2" />
+                  הודעה חדשה
+                </Button>
+              </div>
 
               <Card>
                 <CardContent className="p-6">

@@ -376,6 +376,42 @@ export default function ProjectDetails() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Leads Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-right">לידים מקושרים לפרויקט</CardTitle>
+              <CardDescription className="text-right">לידים שצורפו לפרויקט זה</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {/* Mock leads data - in real app this would come from API */}
+                {[
+                  { id: '1', name: 'דוד כהן', email: 'david@example.com', phone: '050-1234567', status: 'qualified', value: 15000 },
+                  { id: '2', name: 'רחל לוי', email: 'rachel@example.com', phone: '052-7654321', status: 'proposal', value: 8000 }
+                ].map((lead) => (
+                  <div key={lead.id} className="bg-gray-50 p-4 rounded-lg flex justify-between items-center">
+                    <div className="text-right">
+                      <p className="font-medium">{lead.name}</p>
+                      <p className="text-sm text-gray-500">{lead.email}</p>
+                      <p className="text-sm text-gray-500">{lead.phone}</p>
+                    </div>
+                    <div className="text-left">
+                      <Badge variant={lead.status === 'qualified' ? 'default' : 'outline'}>
+                        {lead.status === 'qualified' ? 'מוכשר' : lead.status === 'proposal' ? 'הצעה' : lead.status}
+                      </Badge>
+                      <p className="text-sm font-medium mt-1">₪{lead.value.toLocaleString()}</p>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* If no leads */}
+                <div className="text-center py-8 text-gray-500">
+                  <p>אין לידים מקושרים לפרויקט זה</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="tasks" className="space-y-4">
