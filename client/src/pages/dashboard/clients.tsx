@@ -12,9 +12,17 @@ import { type Client } from "@shared/schema";
 
 export default function Clients() {
   const [showNewClientModal, setShowNewClientModal] = useState(false);
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [, navigate] = useLocation();
+  
+  const [credentialsForm, setCredentialsForm] = useState({
+    username: '',
+    password: '',
+    email: ''
+  });
 
   const { data: clients, isLoading } = useQuery<Client[]>({
     queryKey: ['/api/clients'],
@@ -44,6 +52,25 @@ export default function Clients() {
   const handleDeleteClient = (client: Client) => {
     // TODO: Implement delete client confirmation
     console.log('Delete client:', client);
+  };
+
+  const handleManageCredentials = (client: Client) => {
+    setSelectedClient(client);
+    setCredentialsForm({
+      username: client.email || `${client.name.toLowerCase().replace(/\s+/g, '')}@client.portal`,
+      password: `${client.name.toLowerCase().replace(/\s+/g, '')}_${client.id.slice(0, 8)}`,
+      email: client.email || ''
+    });
+    setShowCredentialsModal(true);
+  };
+
+  const handleSaveCredentials = () => {
+    if (selectedClient) {
+      // TODO: Implement API call to save credentials
+      console.log('Saving credentials for:', selectedClient.name, credentialsForm);
+      setShowCredentialsModal(false);
+      setSelectedClient(null);
+    }
   };
 
   return (
@@ -148,6 +175,7 @@ export default function Clients() {
               onView={handleViewClient}
               onEdit={handleEditClient}
               onDelete={handleDeleteClient}
+              onManageCredentials={handleManageCredentials}
             />
           ))}
         </div>
@@ -158,6 +186,86 @@ export default function Clients() {
         isOpen={showNewClientModal}
         onClose={() => setShowNewClientModal(false)}
       />
+
+      {/* Credentials Management Modal */}
+      {showCredentialsModal && selectedClient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">ניהול פרטי התחברות - {selectedClient.name}</h2>
+              <Button variant="ghost" onClick={() => setShowCredentialsModal(false)}>X</Button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">שם משתמש/אימייל</label>
+                <Input
+                  type="text"
+                  value={credentialsForm.username}
+                  onChange={(e) => setCredentialsForm({...credentialsForm, username: e.target.value})}
+                  className="w-full text-right"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">סיסמה</label>
+                <Input
+                  type="text"
+                  value={credentialsForm.password}
+                  onChange={(e) => setCredentialsForm({...credentialsForm, password: e.target.value})}
+                  className="w-full text-right"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">אימייל ליצירת קשר</label>
+                <Input
+                  type="email"
+                  value={credentialsForm.email}
+                  onChange={(e) => setCredentialsForm({...credentialsForm, email: e.target.value})}
+                  className="w-full text-right"
+                />
+              </div>
+              
+              <div className="bg-gray-50 p-3 rounded">
+                <h4 className="font-medium mb-2">קישור לדאשבורד הלקוח:</h4>
+                <code className="text-sm bg-white p-2 rounded block text-left">
+                  {window.location.origin}/client-portal?clientId={selectedClient.id}
+                </code>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex justify-end gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowCredentialsModal(false)}
+              >
+                ביטול
+              </Button>
+              <Button 
+                onClick={handleSaveCredentials}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                שמור שינויים
+              </Button>
+              <Button 
+                onClick={() => {
+                  const credentials = {
+                    username: credentialsForm.username,
+                    password: credentialsForm.password,
+                    url: `${window.location.origin}/client-portal?clientId=${selectedClient.id}`
+                  };
+                  
+                  alert(`פרטי התחברות נשלחו ל-${selectedClient.name}:\n\nשם משתמש: ${credentials.username}\nסיסמה: ${credentials.password}\nקישור: ${credentials.url}`);
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                שלח ללקוח
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

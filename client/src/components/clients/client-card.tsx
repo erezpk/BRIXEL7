@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Eye, MoreHorizontal } from "lucide-react";
+import { Edit, Eye, MoreHorizontal, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,9 +15,10 @@ interface ClientCardProps {
   onView: (client: Client) => void;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
+  onManageCredentials?: (client: Client) => void; // Added for managing credentials
 }
 
-export default function ClientCard({ client, onView, onEdit, onDelete }: ClientCardProps) {
+export default function ClientCard({ client, onView, onEdit, onDelete, onManageCredentials }: ClientCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -43,6 +44,12 @@ export default function ClientCard({ client, onView, onEdit, onDelete }: ClientC
         return status;
     }
   };
+
+  // Generate default credentials if not present
+  const defaultEmail = client.email || `${client.name.toLowerCase().replace(/\s+/g, '')}@client.portal`;
+  const defaultPassword = `${client.name.toLowerCase().replace(/\s+/g, '')}_${client.id.slice(0, 8)}`;
+  const clientPortalUrl = `${window.location.origin}/client-portal?clientId=${client.id}`;
+
 
   return (
     <Card className="card-hover" data-testid={`client-card-${client.id}`}>
@@ -77,6 +84,11 @@ export default function ClientCard({ client, onView, onEdit, onDelete }: ClientC
                   <Edit className="ml-2 h-4 w-4" />
                   ערוך
                 </DropdownMenuItem>
+                {onManageCredentials && (
+                  <DropdownMenuItem onClick={() => onManageCredentials(client)} data-testid="client-credentials">
+                    ניהול פרטי התחברות
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem 
                   onClick={() => onDelete(client)} 
                   className="text-red-600"
@@ -88,7 +100,7 @@ export default function ClientCard({ client, onView, onEdit, onDelete }: ClientC
             </DropdownMenu>
           </div>
         </div>
-        
+
         <div className="space-y-2 mb-4">
           {client.contactName && (
             <div className="flex justify-between text-sm">
@@ -115,17 +127,53 @@ export default function ClientCard({ client, onView, onEdit, onDelete }: ClientC
             </div>
           )}
         </div>
-        
-        <div className="flex space-x-reverse space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex-1"
-            onClick={() => onView(client)}
-            data-testid="client-view-details"
-          >
-            צפה בפרטים
-          </Button>
+
+        <div className="flex flex-col space-y-2">
+          <div className="flex space-x-reverse space-x-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => onView(client)}
+              className="flex-1"
+              data-testid="client-view-details"
+            >
+              צפה בפרטים
+            </Button>
+          </div>
+
+          <div className="flex space-x-reverse space-x-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                // עבור לדאשבורד של הלקוח
+                window.location.href = clientPortalUrl;
+              }}
+              className="border-green-500 text-green-600 hover:bg-green-50 flex-1 text-xs"
+            >
+              <Eye className="h-3 w-3 ml-1" />
+              צפה כלקוח
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                // שלח פרטי התחברות ללקוח
+                alert(`פרטי התחברות ללקוח:\nאימייל: ${defaultEmail}\nסיסמה: ${defaultPassword}\nקישור: ${clientPortalUrl}`);
+              }}
+              className="border-purple-500 text-purple-600 hover:bg-purple-50 flex-1 text-xs"
+            >
+              <User className="h-3 w-3 ml-1" />
+              שלח פרטים
+            </Button>
+          </div>
+
+          {/* Client credentials display */}
+          <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border-t">
+            <div className="font-medium mb-1">פרטי התחברות:</div>
+            <div>משתמש: {defaultEmail}</div>
+            <div>סיסמה: {defaultPassword}</div>
+          </div>
         </div>
       </CardContent>
     </Card>
