@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Plus } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -159,6 +159,9 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="text-right font-rubik text-2xl">פרויקט חדש</DialogTitle>
+            <DialogDescription className="text-right">
+              צור פרויקט חדש ובחר לקוח להשתייכות
+            </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleProjectSubmit} className="space-y-6">
@@ -263,6 +266,9 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
       <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-right font-rubik">לקוח חדש</DialogTitle>
+          <DialogDescription className="text-right">
+            הוסף פרטי לקוח חדש למערכת
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleNewClientSubmit} className="space-y-4">
