@@ -1222,6 +1222,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug route to create test user with agency
+  router.post('/api/debug/create-test-user', async (req, res) => {
+    try {
+      const { email, password, fullName } = req.body;
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: 'משתמש כבר קיים עם אימייל זה' });
+      }
+
+      // Create agency
+      const agency = await storage.createAgency({
+        name: 'סוכנות בדיקה',
+        slug: 'test-agency',
+        industry: 'general',
+      });
+
+      // Create user with agency
+      const user = await storage.createUser({
+        email,
+        password,
+        fullName,
+        role: 'agency_admin',
+        agencyId: agency.id,
+        isActive: true,
+      });
+
+      const { password: _, ...safeUser } = user;
+      res.json({ user: safeUser, agency, message: 'משתמש וסוכנות נוצרו בהצלחה' });
+    } catch (error) {
+      console.error('Error creating test user:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת משתמש בדיקה' });
+    }
+  });
+
   // Mount the router to the app
   app.use('/', router);
 
