@@ -327,7 +327,11 @@ export default function ClientDetails() {
               ) : (
                 <div className="space-y-3">
                   {projects.map((project) => (
-                    <div key={project.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                    <div 
+                      key={project.id} 
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => window.location.href = `/dashboard/projects/${project.id}`}
+                    >
                       <div className="flex items-center space-x-reverse space-x-4">
                         <div className="p-2 bg-blue-100 rounded-lg">
                           <Folder className="h-5 w-5 text-blue-600" />
@@ -339,7 +343,14 @@ export default function ClientDetails() {
                       </div>
                       <div className="flex items-center space-x-reverse space-x-2">
                         <Badge variant="outline">{project.status}</Badge>
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.location.href = `/dashboard/projects/${project.id}`;
+                          }}
+                        >
                           צפה בפרויקט
                         </Button>
                       </div>
