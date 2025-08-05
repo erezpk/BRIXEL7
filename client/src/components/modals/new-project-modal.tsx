@@ -254,13 +254,12 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
             </Button>
           </div>
         </form>
-
-        </DialogContent>
+      </DialogContent>
     </Dialog>
 
     {/* New Client Modal - Outside main dialog to prevent nesting issues */}
     <Dialog open={showNewClientModal} onOpenChange={setShowNewClientModal}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-right font-rubik">לקוח חדש</DialogTitle>
         </DialogHeader>
