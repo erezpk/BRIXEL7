@@ -53,10 +53,11 @@ export const clients = pgTable("clients", {
 export const projects = pgTable("projects", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   agencyId: uuid("agency_id").notNull().references(() => agencies.id),
-  clientId: uuid("client_id").notNull().references(() => clients.id),
+  clientId: uuid("client_id").references(() => clients.id),
   name: text("name").notNull(),
   description: text("description"),
-  status: text("status").default("planning").notNull(), // planning, active, completed, cancelled
+  type: text("type"), // website, mobile-app, web-app, ecommerce, social-media, video-editing, graphic-design, other
+  status: text("status").default("planning").notNull(), // planning, in_progress, completed, on_hold, cancelled
   priority: text("priority").default("medium").notNull(), // low, medium, high, urgent
   startDate: date("start_date"),
   endDate: date("end_date"),

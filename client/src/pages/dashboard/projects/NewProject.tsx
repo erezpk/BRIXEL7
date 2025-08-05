@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowRight, Plus } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import { type Client, type InsertClient, type InsertProject } from "@shared/schema";
 import { useLocation } from 'wouter'; // Fixed import for navigation
@@ -16,6 +17,7 @@ import { useLocation } from 'wouter'; // Fixed import for navigation
 export default function NewProject() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
@@ -122,8 +124,9 @@ export default function NewProject() {
       name: projectName,
       description: projectDescription,
       type: projectType,
-      clientId: selectedClientId || null,
+      clientId: selectedClientId === "none" ? null : selectedClientId || null,
       status: 'planning' as const,
+      createdBy: user?.id || '',
     };
 
     createProjectMutation.mutate(projectData);
@@ -147,17 +150,12 @@ export default function NewProject() {
   };
 
   // Placeholder for Drag & Drop related state and functions
-  const [tasks, setTasks] = useState([]); // Example state for tasks
-  const [columns, setColumns] = useState([
+  const [tasks] = useState([]); // Example state for tasks
+  const [columns] = useState([
     { id: 'todo', name: 'ממתין' },
     { id: 'in-progress', name: 'בביצוע' },
     { id: 'done', name: 'הושלם' },
   ]);
-
-  const handleDragEnd = (result) => {
-    // Implement Drag & Drop logic here
-    console.log(result);
-  };
 
   return (
     <div className="container mx-auto p-6">
@@ -225,7 +223,7 @@ export default function NewProject() {
                     <SelectValue placeholder="בחר לקוח" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">ללא לקוח</SelectItem>
+                    <SelectItem value="none">ללא לקוח</SelectItem>
                     {clients?.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name}

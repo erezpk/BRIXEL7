@@ -1,0 +1,21 @@
+1. The Add Project button doesn't work. It doesn't open a popup to add a task. And I don't have the option to choose the type of project. And it would work fine because now that I click Add New Project, I get the following error:
+[plugin:runtime-error-plugin] A <Select.Item /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder.
+
+2. I can't open the project tab and see all the things I asked you for, all the information about the project, tasks with the option to add tasks, who the client is that the project is related to, the project assets like website, website storage, Instagram, Facebook, and I have a username and password there and it is saved in the client's assets and also in the project so that it will be synchronized and know how to pull the asset information if I put it with the client
+
+3. I don't have reports, I can't see the information. It needs to show me analytical information like who the client is that took me the longest to work on, who the team member is that works better in terms of things. I want as much data as possible and that I can choose which data I want to see and I will have the option to see everything from there and get insights about my business.
+
+4. I don't have the option to manage team members and send them an invitation and that it will arrive by email and then when he opens the email and confirms registration, it adds him as a team member and it also gives him his own dashboard where he sees the tasks we assigned him and the clients that are associated with him (you need to add In the customer card there is an option to add team members)
+And he can do tasks, activate a time timer and change task status
+
+5. I want there to be a chat system within the system and that team members can talk to the customers and the admin sees all the conversations of the team members and he can also talk to customers and that every conversation will be in the customer tab, that is, in the customer card and that both the admin and the team members can see
+
+6. The templates page should not be there. It should be at the beginning where they choose a style of the system, that is, it is a template that they choose how their system will look, what color and what style they want, and then according to that you build the dashboard, it will be at least 3 templates
+
+7. I want each customer to have their own dashboard where they see the conversations that the team members and the admin have talked to them for everyone. The chat will be like a floating button
+
+8. In the customer dashboard, he sees the progress rate but does not see the tasks on the project, only progress in percentages. He can upload assets from there and then it will be uploaded to the card A customer for everyone, both admin and team members
+
+9. There should be a profile in all dashboards. When I click on a profile, I can update the name using a password, profile picture, email, and this will be possible for team members in their dashboard, both customers and admins.
+
+10. When I click on a task, I want it to open, meaning that there will be clicks on it and it will be possible to change them.
