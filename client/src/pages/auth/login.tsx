@@ -40,28 +40,66 @@ export default function Login() {
     setIsSubmitting(true);
     
     try {
-      await login(email, password);
-      toast({
-        title: "הצלחה",
-        description: "התחברת בהצלחה למערכת",
+      // First, try to authenticate with the backend (local database)
+      const backendResponse = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
       });
-      setLocation("/dashboard");
-    } catch (error: any) {
-      let errorMessage = "שגיאה בהתחברות";
-      
-      if (error.message.includes("invalid-credential")) {
-        errorMessage = "אימייל או סיסמה שגויים";
-      } else if (error.message.includes("user-not-found")) {
-        errorMessage = "המשתמש לא נמצא במערכת";
-      } else if (error.message.includes("wrong-password")) {
-        errorMessage = "סיסמה שגויה";
-      } else if (error.message.includes("too-many-requests")) {
-        errorMessage = "יותר מדי ניסיונות. נסה שוב מאוחר יותר";
+
+      if (backendResponse.ok) {
+        const data = await backendResponse.json();
+        localStorage.setItem('authToken', 'logged-in');
+        login(data.user);
+
+        toast({
+          title: "הצלחה",
+          description: "התחברת בהצלחה למערכת",
+        });
+
+        // Redirect based on user role
+        if (data.user.role === 'client') {
+          setLocation("/client-portal");
+        } else {
+          setLocation("/dashboard");
+        }
+        return;
       }
-      
+
+      // If backend auth fails, try Firebase
+      try {
+        await login(email, password);
+        toast({
+          title: "הצלחה",
+          description: "התחברת בהצלחה למערכת",
+        });
+        setLocation("/dashboard");
+      } catch (firebaseError: any) {
+        let errorMessage = "אימייל או סיסמה שגויים";
+        
+        if (firebaseError.message.includes("invalid-credential")) {
+          errorMessage = "אימייל או סיסמה שגויים";
+        } else if (firebaseError.message.includes("user-not-found")) {
+          errorMessage = "המשתמש לא נמצא במערכת";
+        } else if (firebaseError.message.includes("wrong-password")) {
+          errorMessage = "סיסמה שגויה";
+        } else if (firebaseError.message.includes("too-many-requests")) {
+          errorMessage = "יותר מדי ניסיונות. נסה שוב מאוחר יותר";
+        }
+        
+        toast({
+          title: "שגיאה בהתחברות",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
       toast({
         title: "שגיאה בהתחברות",
-        description: errorMessage,
+        description: "שגיאה בחיבור לשרת",
         variant: "destructive",
       });
     } finally {
