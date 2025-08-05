@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,9 +83,12 @@ export default function NewClientModal({ isOpen, onClose }: NewClientModalProps)
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md" data-testid="new-client-modal">
+      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto" data-testid="new-client-modal">
         <DialogHeader>
           <DialogTitle className="text-right font-rubik">לקוח חדש</DialogTitle>
+          <DialogDescription className="text-right">
+            הוסף פרטי לקוח חדש למערכת
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
