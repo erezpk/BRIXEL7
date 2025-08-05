@@ -573,7 +573,8 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log('Creating user with password:', { email, fullName, role });
 
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const bcrypt = await import('bcryptjs');
+      const hashedPassword = await bcrypt.default.hash(password, 10);
 
       const [user] = await this.db.insert(users).values({
         email,
