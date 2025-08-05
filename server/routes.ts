@@ -74,21 +74,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'אימייל וסיסמה נדרשים' });
       }
 
+      console.log('Login attempt for email:', email);
+
       const user = await storage.getUserByEmail(email);
       if (!user) {
+        console.log('User not found for email:', email);
         return res.status(401).json({ message: 'פרטי התחברות שגויים' });
       }
 
-      // Verify password (you'll need to implement password hashing)
-      const bcrypt = require('bcryptjs');
-      const isValidPassword = await bcrypt.compare(password, user.password || '');
-      
-      if (!isValidPassword) {
-        return res.status(401).json({ message: 'פרטי התחברות שגויים' });
+      console.log('User found:', user.email, 'has password:', !!user.password);
+
+      // For development - if no password is set, allow any password
+      if (!user.password && process.env.NODE_ENV === 'development') {
+        console.log('Development mode: allowing login without password verification');
+      } else {
+        // Verify password with bcrypt
+        const bcrypt = require('bcryptjs');
+        const isValidPassword = await bcrypt.compare(password, user.password || '');
+        
+        if (!isValidPassword) {
+          console.log('Invalid password for user:', email);
+          return res.status(401).json({ message: 'פרטי התחברות שגויים' });
+        }
       }
 
       // Update last login
       await storage.updateUser(user.id, { lastLogin: new Date() });
+
+      console.log('Login successful for user:', email);
 
       res.json({
         success: true,
@@ -103,6 +116,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Login error:', error);
       res.status(500).json({ message: 'שגיאה בהתחברות' });
+    }
+  });
+
+  // Route to create test user (development only)
+  app.post('/api/create-test-user', async (req, res) => {
+    if (process.env.NODE_ENV !== 'development') {
+      return res.status(403).json({ message: 'Not allowed in production' });
+    }
+
+    try {
+      const { email, fullName, password, role } = req.body;
+      
+      if (!email || !fullName || !password) {
+        return res.status(400).json({ message: 'כל השדות נדרשים' });
+      }
+
+      const user = await storage.createUserWithPassword(email, fullName, password, role || 'client');
+      
+      res.json({
+        success: true,
+        message: 'משתמש נוצר בהצלחה',
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role
+        }
+      });
+    } catch (error: any) {
+      console.error('Error creating test user:', error);
+      if (error.code === '23505') { // Unique constraint violation
+        return res.status(400).json({ message: 'משתמש עם האימייל הזה כבר קיים' });
+      }
+      res.status(500).json({ message: 'שגיאה ביצירת משתמש' });
     }
   });
 

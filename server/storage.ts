@@ -569,6 +569,22 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async createUserWithPassword(email: string, fullName: string, password: string, role: string = 'client') {
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const [user] = await db.insert(users).values({
+      email,
+      fullName,
+      password: hashedPassword,
+      role,
+      isActive: true,
+      createdAt: new Date(),
+    }).returning();
+
+    return user;
+  }
+
   // Ad Accounts
   async getAdAccountsByClient(clientId: string): Promise<AdAccount[]> {
     return this.db.query.adAccounts.findMany({

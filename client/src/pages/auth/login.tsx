@@ -13,7 +13,7 @@ import { useMutation } from "@tanstack/react-query";
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const { user, isLoading, login, isLoginLoading, loginError, loginMutation: authLoginMutation } = useAuth();
+  const { user, isLoading, login, isLoginLoading, loginError } = useAuth();
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -63,25 +63,26 @@ export default function Login() {
     checkRedirect();
   }, [toast, setLocation]);
 
-  // Mutation for regular login (using the existing loginMutation from useAuth hook)
-  const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.email || !formData.password) {
-      toast({
-        title: "שגיאה",
-        description: "אנא מלא את כל השדות",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const result = await authLoginMutation.mutateAsync({
-        email: formData.email,
-        password: formData.password,
+  // Mutation for regular login
+  const authLoginMutation = useMutation({
+    mutationFn: async (credentials: { email: string; password: string }) => {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(credentials),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'שגיאה בהתחברות');
+      }
+
+      return response.json();
+    },
+    onSuccess: (result) => {
       if (result?.user) {
         toast({
           title: "התחברות הצליחה",
@@ -96,14 +97,33 @@ export default function Login() {
           setLocation(redirectPath);
         }, 100);
       }
-    } catch (error: any) {
+    },
+    onError: (error: Error) => {
       toast({
         title: "שגיאה בהתחברות",
-        description: error?.message || "אימייל או סיסמה שגויים",
+        description: error.message || "אימייל או סיסמה שגויים",
         variant: "destructive",
       });
       console.error('Login error:', error);
+    },
+  });
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.email || !formData.password) {
+      toast({
+        title: "שגיאה",
+        description: "אנא מלא את כל השדות",
+        variant: "destructive",
+      });
+      return;
     }
+
+    authLoginMutation.mutate({
+      email: formData.email,
+      password: formData.password,
+    });
   };
 
   // Mutation for Google sign-in using the firebase loginWithGoogle function
@@ -240,11 +260,7 @@ export default function Login() {
               {authLoginMutation.isPending ? "מתחבר..." : "כניסה"}
             </Button>
 
-            {authLoginMutation.error && (
-              <div className="text-sm text-red-600 text-center" data-testid="login-error">
-                שגיאה בהתחברות. אנא נסה שוב.
-              </div>
-            )}
+            
           </form>
 
           <div className="mt-4">
