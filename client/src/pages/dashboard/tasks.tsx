@@ -189,8 +189,8 @@ export default function Tasks() {
             <SelectContent>
               <SelectItem value="all">כל המבצעים</SelectItem>
               {users.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.name}
+                <SelectItem key={user.id} value={user.id || "none"}>
+                  {user.fullName}
                 </SelectItem>
               ))}
             </SelectContent>

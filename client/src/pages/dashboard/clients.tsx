@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,6 +14,7 @@ export default function Clients() {
   const [showNewClientModal, setShowNewClientModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [, navigate] = useLocation();
 
   const { data: clients, isLoading } = useQuery<Client[]>({
     queryKey: ['/api/clients'],
@@ -31,8 +33,7 @@ export default function Clients() {
   });
 
   const handleViewClient = (client: Client) => {
-    // TODO: Implement client details view
-    console.log('View client:', client);
+    navigate(`/dashboard/clients/${client.id}`);
   };
 
   const handleEditClient = (client: Client) => {

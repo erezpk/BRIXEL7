@@ -12,6 +12,7 @@ import Signup from "@/pages/auth/signup";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import Dashboard from "@/pages/dashboard/dashboard";
 import Clients from "@/pages/dashboard/clients";
+import ClientDetails from "@/pages/dashboard/client-details";
 
 import Projects from "@/pages/dashboard/projects"; // index.tsx
 import NewProject from "@/pages/dashboard/projects/NewProject";
@@ -59,6 +60,13 @@ export default function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <Clients />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/dashboard/clients/:id">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ClientDetails />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
