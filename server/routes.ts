@@ -8,6 +8,7 @@ import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProject
 import { z } from "zod";
 import express from "express"; // Import express to use its Router
 import { emailService } from "./emailService"; // Assuming emailService is in './emailService'
+import crypto from 'crypto'; // Import crypto for token generation
 
 // Extend Express types
 declare global {
@@ -189,6 +190,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ user: req.user });
     } else {
       res.status(401).json({ message: 'לא מחובר' });
+    }
+  });
+
+  // Password reset routes
+  router.post('/api/auth/reset-password', async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email || !email.includes('@')) {
+        return res.status(400).json({ message: 'כתובת אימייל לא תקינה' });
+      }
+
+      // Check if user exists
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        // Don't reveal that user doesn't exist for security
+        return res.json({ message: 'אם המשתמש קיים, אימייל איפוס סיסמה נשלח' });
+      }
+
+      // Generate reset token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+
+      // Save token to database
+      await storage.createPasswordResetToken(user.id, resetToken);
+
+      // Create reset URL
+      const resetUrl = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`;
+
+      // Get agency info if user belongs to one
+      let agencyName = 'מערכת CRM';
+      if (user.agencyId) {
+        try {
+          const agency = await storage.getAgencyById(user.agencyId);
+          if (agency) {
+            agencyName = agency.name;
+          }
+        } catch (error) {
+          console.error('Error fetching agency:', error);
+        }
+      }
+
+      // Send email
+      const emailSent = await emailService.sendPasswordReset({
+        to: email,
+        userName: user.fullName,
+        resetUrl,
+        agencyName
+      });
+
+      if (emailSent) {
+        res.json({ message: 'קישור איפוס סיסמה נשלח לאימייל שלך' });
+      } else {
+        res.status(500).json({ message: 'שגיאה בשליחת האימייל. אנא נסה שוב מאוחר יותר' });
+      }
+    } catch (error) {
+      console.error('Password reset error:', error);
+      res.status(500).json({ message: 'שגיאת שרת' });
+    }
+  });
+
+  router.post('/api/auth/reset-password/confirm', async (req, res) => {
+    try {
+      const { token, password } = req.body;
+
+      if (!token || !password) {
+        return res.status(400).json({ message: 'טוקן וסיסמה נדרשים' });
+      }
+
+      if (password.length < 6) {
+        return res.status(400).json({ message: 'הסיסמה חייבת להכיל לפחות 6 תווים' });
+      }
+
+      // Validate token
+      const userId = await storage.validatePasswordResetToken(token);
+      if (!userId) {
+        return res.status(400).json({ message: 'טוקן איפוס סיסמה לא תקין או פג תוקפו' });
+      }
+
+      // Hash new password
+      const hashedPassword = await storage.hashPassword(password);
+
+      // Update user password
+      await storage.updateUserPassword(userId, hashedPassword);
+
+      // Mark token as used
+      await storage.markPasswordResetTokenAsUsed(token);
+
+      res.json({ message: 'הסיסמה שונתה בהצלחה' });
+    } catch (error) {
+      console.error('Password reset confirm error:', error);
+      res.status(500).json({ message: 'שגיאת שרת' });
     }
   });
 

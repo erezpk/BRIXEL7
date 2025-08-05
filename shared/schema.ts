@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, uuid, timestamp, integer, boolean, json, date } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, uuid, timestamp, integer, boolean, json, date, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -148,6 +148,17 @@ export const activityLog = pgTable("activity_log", {
   details: json("details").$type<Record<string, any>>().default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// Password Reset Tokens
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 
 // Relations
 export const agenciesRelations = relations(agencies, ({ many }) => ({
@@ -324,6 +335,9 @@ export const insertAgencyTemplateSchema = createInsertSchema(agencyTemplates).om
   updatedAt: true,
 });
 
+export const insertActivityLogSchema = createInsertSchema(activityLog);
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens);
+
 // Types
 export type Agency = typeof agencies.$inferSelect;
 export type InsertAgency = z.infer<typeof insertAgencySchema>;
@@ -350,3 +364,5 @@ export type AgencyTemplate = typeof agencyTemplates.$inferSelect;
 export type InsertAgencyTemplate = z.infer<typeof insertAgencyTemplateSchema>;
 
 export type ActivityLog = typeof activityLog.$inferSelect;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;

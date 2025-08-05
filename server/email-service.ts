@@ -20,6 +20,13 @@ export interface ClientCredentialsEmail {
   agencyName: string;
 }
 
+export interface PasswordResetEmail {
+  to: string;
+  userName: string;
+  resetUrl: string;
+  agencyName?: string;
+}
+
 class EmailService {
   private transporter: nodemailer.Transporter | null = null;
 
@@ -218,6 +225,141 @@ ${emailData.agencyName}
       return true;
     } catch (error) {
       console.error('Failed to send email:', error);
+      return false;
+    }
+  }
+
+  async sendPasswordReset(emailData: PasswordResetEmail): Promise<boolean> {
+    if (!this.transporter) {
+      console.error('Email service not configured');
+      return false;
+    }
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>איפוס סיסמה</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            direction: rtl;
+          }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+          }
+          .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+          }
+          .content {
+            padding: 30px;
+          }
+          .reset-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+          }
+          .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+          }
+          .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>איפוס סיסמה</h1>
+            <p>שלום ${emailData.userName}, קיבלנו בקשה לאיפוס הסיסמה שלך</p>
+          </div>
+          
+          <div class="content">
+            <h2>איפוס סיסמה לחשבון שלך</h2>
+            <p>קיבלנו בקשה לאיפוס הסיסמה עבור החשבון שלך במערכת${emailData.agencyName ? ` של ${emailData.agencyName}` : ''}.</p>
+            
+            <div style="text-align: center;">
+              <a href="${emailData.resetUrl}" class="reset-button">
+                איפוס סיסמה
+              </a>
+            </div>
+            
+            <div class="warning">
+              <strong>חשוב:</strong> 
+              <ul>
+                <li>הקישור תקף למשך 24 שעות בלבד</li>
+                <li>אם לא ביקשת איפוס סיסמה, אנא התעלם מהודעה זו</li>
+                <li>הקישור יכול לשמש פעם אחת בלבד</li>
+              </ul>
+            </div>
+            
+            <p>אם הכפתור לא עובד, העתק והדבק את הקישור הבא לדפדפן:</p>
+            <p style="word-break: break-all; color: #667eea;">${emailData.resetUrl}</p>
+          </div>
+          
+          <div class="footer">
+            <p>אם יש לך שאלות או בעיות, אנא פנה אלינו.</p>
+            <p><strong>${emailData.agencyName || 'מערכת CRM'}</strong></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const mailOptions = {
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: emailData.to,
+      subject: `איפוס סיסמה - ${emailData.agencyName || 'מערכת CRM'}`,
+      html: htmlContent,
+      text: `
+שלום ${emailData.userName},
+
+קיבלנו בקשה לאיפוס הסיסמה עבור החשבון שלך${emailData.agencyName ? ` במערכת של ${emailData.agencyName}` : ''}.
+
+קישור לאיפוס סיסמה: ${emailData.resetUrl}
+
+הקישור תקף למשך 24 שעות בלבד.
+אם לא ביקשת איפוס סיסמה, אנא התעלם מהודעה זו.
+
+בברכה,
+${emailData.agencyName || 'מערכת CRM'}
+      `
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log(`Password reset email sent successfully to ${emailData.to}`);
+      return true;
+    } catch (error) {
+      console.error('Failed to send password reset email:', error);
       return false;
     }
   }

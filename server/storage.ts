@@ -11,7 +11,7 @@ import {
   type ActivityLog
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, asc, like, gte, lte, isNull, or, sql } from "drizzle-orm";
+import { eq, and, desc, asc, like, gte, lte, isNull, or, sql, gt } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 export interface IStorage {
@@ -90,6 +90,12 @@ export interface IStorage {
     activeClients: number;
     completedTasksThisMonth: number;
   }>;
+
+  // Password Reset Tokens
+  createPasswordResetToken(userId: string, token: string): Promise<void>;
+  validatePasswordResetToken(token: string): Promise<string | null>;
+  markPasswordResetTokenAsUsed(token: string): Promise<void>;
+  updateUserPassword(userId: string, hashedPassword: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -119,7 +125,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async hashPassword(password: string): Promise<string> {
-    return bcrypt.hash(password, 10);
+    const saltRounds = 10;
+    return await bcrypt.hash(password, saltRounds);
   }
 
   async getAgency(id: string): Promise<Agency | undefined> {
@@ -213,7 +220,7 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(projects).where(eq(projects.agencyId, agencyId)).orderBy(desc(projects.createdAt));
   }
 
-  async getProjectsByClient(clientId: string): Promise<Project[]> {
+  async getProjectsByClient(clientId: string): Promise<Project[]>{
     return db.select().from(projects).where(eq(projects.clientId, clientId)).orderBy(desc(projects.createdAt));
   }
 
@@ -365,8 +372,8 @@ export class DatabaseStorage implements IStorage {
     return template;
   }
 
-  async logActivity(log: Omit<ActivityLog, 'id' | 'createdAt'>): Promise<void> {
-    await db.insert(activityLog).values(log);
+  async logActivity(activityData: any): Promise<void> {
+    await db.insert(activityLog).values(activityData);
   }
 
   async getActivityLog(agencyId: string, limit: number = 50): Promise<ActivityLog[]> {
@@ -418,6 +425,49 @@ export class DatabaseStorage implements IStorage {
       activeClients: activeClientsResult?.count || 0,
       completedTasksThisMonth: completedTasksResult?.count || 0,
     };
+  }
+
+  // Password reset tokens
+  async createPasswordResetToken(userId: string, token: string): Promise<void> {
+    // Delete any existing tokens for this user
+    await db.delete(passwordResetTokensTable)
+      .where(eq(passwordResetTokensTable.userId, userId));
+
+    // Create new token (expires in 24 hours)
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+
+    await db.insert(passwordResetTokensTable)
+      .values({
+        userId,
+        token,
+        expiresAt,
+        used: false
+      });
+  }
+
+  async validatePasswordResetToken(token: string): Promise<string | null> {
+    const [tokenRecord] = await db.select()
+      .from(passwordResetTokensTable)
+      .where(and(
+        eq(passwordResetTokensTable.token, token),
+        eq(passwordResetTokensTable.used, false),
+        gt(passwordResetTokensTable.expiresAt, new Date())
+      ));
+
+    return tokenRecord ? tokenRecord.userId : null;
+  }
+
+  async markPasswordResetTokenAsUsed(token: string): Promise<void> {
+    await db.update(passwordResetTokensTable)
+      .set({ used: true })
+      .where(eq(passwordResetTokensTable.token, token));
+  }
+
+  async updateUserPassword(userId: string, hashedPassword: string): Promise<void> {
+    await db.update(usersTable)
+      .set({ password: hashedPassword })
+      .where(eq(usersTable.id, userId));
   }
 }
 

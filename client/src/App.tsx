@@ -9,6 +9,8 @@ import { useEffect } from "react";
 import Homepage from "@/pages/homepage";
 import Login from "@/pages/auth/login";
 import Signup from "@/pages/auth/signup";
+import ForgotPassword from "@/pages/auth/forgot-password";
+import ResetPassword from "@/pages/auth/reset-password";
 
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import Dashboard from "@/pages/dashboard/dashboard";
@@ -61,6 +63,8 @@ export default function App() {
           <Route path="/" component={Homepage} />
           <Route path="/login" component={Login} />
           <Route path="/signup" component={Signup} />
+          <Route path="/forgot-password" component={ForgotPassword} />
+          <Route path="/reset-password" component={ResetPassword} />
 
           {/* DASHBOARD */}
           <Route path="/dashboard">
