@@ -178,104 +178,125 @@ export default function ClientTemplatesPage() {
               תבנית חדשה
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader className="space-y-2">
+              <DialogTitle className="text-xl font-bold">
                 {editingTemplate ? "עריכת תבנית" : "תבנית חדשה"}
               </DialogTitle>
-              <DialogDescription>
-                צור תבנית מותאמת אישית לכרטיסי לקוח
+              <DialogDescription className="text-gray-600">
+                צור תבנית מותאמת אישית לכרטיסי לקוח עבור תחום תעשייה ספציפי
               </DialogDescription>
             </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>שם התבנית</FormLabel>
-                      <FormControl>
-                        <Input placeholder="הזן שם התבנית" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>תיאור</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="תיאור התבנית" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="industry"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>תחום תעשייה</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="בחר תחום תעשייה" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {industryOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="isPublic"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                      <div className="space-y-0.5">
-                        <FormLabel>תבנית ציבורית</FormLabel>
-                        <p className="text-sm text-gray-600">
-                          אפשר לסוכנויות אחרות להשתמש בתבנית זו
-                        </p>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <div className="flex justify-end space-x-2 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                  >
-                    ביטול
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={createTemplateMutation.isPending || updateTemplateMutation.isPending}
-                  >
-                    {editingTemplate ? "עדכן" : "צור"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
+            <div className="mt-6">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <div className="grid gap-6">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-base font-semibold">שם התבנית</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="למשל: תבנית לקוחות עסקיים" 
+                              className="mt-1"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-base font-semibold">תיאור התבנית</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="תאר את מטרת התבנית ואיך היא תשמש את הצוות שלך"
+                              className="mt-1 min-h-[80px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="industry"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-base font-semibold">תחום תעשייה</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="בחר את התחום הרלוונטי ביותר" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {industryOptions.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="isPublic"
+                      render={({ field }) => (
+                        <FormItem className="flex items-start justify-between rounded-lg border p-4 shadow-sm bg-gray-50/50">
+                          <div className="space-y-1 flex-1 pl-4">
+                            <FormLabel className="text-base font-semibold">תבנית ציבורית</FormLabel>
+                            <p className="text-sm text-gray-600 leading-relaxed">
+                              כאשר מופעלת, תבנית זו תהיה זמינה גם לסוכנויות אחרות במערכת
+                            </p>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end gap-3 pt-6 border-t">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                      className="px-6"
+                    >
+                      ביטול
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={createTemplateMutation.isPending || updateTemplateMutation.isPending}
+                      className="px-6"
+                    >
+                      {createTemplateMutation.isPending || updateTemplateMutation.isPending 
+                        ? "שומר..." 
+                        : editingTemplate ? "עדכן תבנית" : "צור תבנית"
+                      }
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
