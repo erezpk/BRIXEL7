@@ -379,35 +379,76 @@ export default function ProjectDetails() {
 
           {/* Leads Section */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-right">לידים מקושרים לפרויקט</CardTitle>
-              <CardDescription className="text-right">לידים שצורפו לפרויקט זה</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div className="text-right">
+                <CardTitle className="text-right">לידים שנכנסו</CardTitle>
+                <CardDescription className="text-right">כל הלידים שנכנסו למערכת</CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <select className="px-3 py-1 border rounded-md text-sm">
+                  <option value="all">כל התקופות</option>
+                  <option value="today">היום</option>
+                  <option value="week">השבוע</option>
+                  <option value="month">החודש</option>
+                  <option value="quarter">הרבעון</option>
+                  <option value="year">השנה</option>
+                </select>
+                <input
+                  type="date"
+                  className="px-3 py-1 border rounded-md text-sm"
+                  placeholder="מתאריך"
+                />
+                <input
+                  type="date"
+                  className="px-3 py-1 border rounded-md text-sm"
+                  placeholder="עד תאריך"
+                />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {/* Mock leads data - in real app this would come from API */}
                 {[
-                  { id: '1', name: 'דוד כהן', email: 'david@example.com', phone: '050-1234567', status: 'qualified', value: 15000 },
-                  { id: '2', name: 'רחל לוי', email: 'rachel@example.com', phone: '052-7654321', status: 'proposal', value: 8000 }
+                  { id: '1', name: 'דוד כהן', email: 'david@example.com', phone: '050-1234567', status: 'qualified', value: 15000, createdAt: '2024-01-15' },
+                  { id: '2', name: 'רחל לוי', email: 'rachel@example.com', phone: '052-7654321', status: 'proposal', value: 8000, createdAt: '2024-01-10' },
+                  { id: '3', name: 'משה יוסף', email: 'moshe@example.com', phone: '053-9876543', status: 'new', value: 12000, createdAt: '2024-01-08' },
+                  { id: '4', name: 'שרה אברהם', email: 'sara@example.com', phone: '054-1122334', status: 'contacted', value: 9500, createdAt: '2024-01-05' }
                 ].map((lead) => (
                   <div key={lead.id} className="bg-gray-50 p-4 rounded-lg flex justify-between items-center">
                     <div className="text-right">
                       <p className="font-medium">{lead.name}</p>
                       <p className="text-sm text-gray-500">{lead.email}</p>
                       <p className="text-sm text-gray-500">{lead.phone}</p>
+                      <p className="text-xs text-gray-400">נכנס ב: {new Date(lead.createdAt).toLocaleDateString('he-IL')}</p>
                     </div>
                     <div className="text-left">
-                      <Badge variant={lead.status === 'qualified' ? 'default' : 'outline'}>
-                        {lead.status === 'qualified' ? 'מוכשר' : lead.status === 'proposal' ? 'הצעה' : lead.status}
+                      <Badge variant={lead.status === 'qualified' ? 'default' : lead.status === 'proposal' ? 'secondary' : lead.status === 'contacted' ? 'outline' : 'destructive'}>
+                        {lead.status === 'qualified' ? 'מוכשר' : 
+                         lead.status === 'proposal' ? 'הצעה' : 
+                         lead.status === 'contacted' ? 'נוצר קשר' :
+                         lead.status === 'new' ? 'חדש' : lead.status}
                       </Badge>
                       <p className="text-sm font-medium mt-1">₪{lead.value.toLocaleString()}</p>
                     </div>
                   </div>
                 ))}
                 
-                {/* If no leads */}
-                <div className="text-center py-8 text-gray-500">
-                  <p>אין לידים מקושרים לפרויקט זה</p>
+                {/* Summary stats */}
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="bg-blue-50 p-3 rounded-lg">
+                      <div className="text-lg font-bold text-blue-600">4</div>
+                      <div className="text-sm text-gray-600">סה"כ לידים</div>
+                    </div>
+                    <div className="bg-green-50 p-3 rounded-lg">
+                      <div className="text-lg font-bold text-green-600">₪44,500</div>
+                      <div className="text-sm text-gray-600">ערך כולל</div>
+                    </div>
+                    <div className="bg-purple-50 p-3 rounded-lg">
+                      <div className="text-lg font-bold text-purple-600">₪11,125</div>
+                      <div className="text-sm text-gray-600">ערך ממוצע</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
