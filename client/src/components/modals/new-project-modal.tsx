@@ -154,111 +154,112 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-right font-rubik text-2xl">פרויקט חדש</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-right font-rubik text-2xl">פרויקט חדש</DialogTitle>
+          </DialogHeader>
 
-        <form onSubmit={handleProjectSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="projectName" className="text-right block">
-              שם הפרויקט *
-            </Label>
-            <Input
-              id="projectName"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              placeholder="הכנס שם פרויקט"
-              className="text-right"
-              required
-            />
-          </div>
+          <form onSubmit={handleProjectSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="projectName" className="text-right block">
+                שם הפרויקט *
+              </Label>
+              <Input
+                id="projectName"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="הכנס שם פרויקט"
+                className="text-right"
+                required
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="projectDescription" className="text-right block">
-              תיאור הפרויקט
-            </Label>
-            <Textarea
-              id="projectDescription"
-              value={projectDescription}
-              onChange={(e) => setProjectDescription(e.target.value)}
-              placeholder="תאר את הפרויקט"
-              className="text-right min-h-[100px]"
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="projectDescription" className="text-right block">
+                תיאור הפרויקט
+              </Label>
+              <Textarea
+                id="projectDescription"
+                value={projectDescription}
+                onChange={(e) => setProjectDescription(e.target.value)}
+                placeholder="תאר את הפרויקט"
+                className="text-right min-h-[100px]"
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="projectType" className="text-right block">
-              סוג הפרויקט
-            </Label>
-            <Select value={projectType} onValueChange={setProjectType}>
-              <SelectTrigger className="text-right">
-                <SelectValue placeholder="בחר סוג פרויקט" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="website">אתר אינטרנט</SelectItem>
-                <SelectItem value="mobile-app">אפליקציית מובייל</SelectItem>
-                <SelectItem value="web-app">אפליקציית ווב</SelectItem>
-                <SelectItem value="ecommerce">חנות מקוונת</SelectItem>
-                <SelectItem value="social-media">ניהול רשתות חברתיות</SelectItem>
-                <SelectItem value="video-editing">עריכת וידאו</SelectItem>
-                <SelectItem value="graphic-design">עיצוב גרפי</SelectItem>
-                <SelectItem value="other">אחר</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-right block">
-              לקוח
-            </Label>
-            <div className="flex gap-2">
-              <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-                <SelectTrigger className="flex-1 text-right">
-                  <SelectValue placeholder="בחר לקוח" />
+            <div className="space-y-2">
+              <Label htmlFor="projectType" className="text-right block">
+                סוג הפרויקט
+              </Label>
+              <Select value={projectType} onValueChange={setProjectType}>
+                <SelectTrigger className="text-right">
+                  <SelectValue placeholder="בחר סוג פרויקט" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">ללא לקוח</SelectItem>
-                  {clients?.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="website">אתר אינטרנט</SelectItem>
+                  <SelectItem value="mobile-app">אפליקציית מובייל</SelectItem>
+                  <SelectItem value="web-app">אפליקציית ווב</SelectItem>
+                  <SelectItem value="ecommerce">חנות מקוונת</SelectItem>
+                  <SelectItem value="social-media">ניהול רשתות חברתיות</SelectItem>
+                  <SelectItem value="video-editing">עריכת וידאו</SelectItem>
+                  <SelectItem value="graphic-design">עיצוב גרפי</SelectItem>
+                  <SelectItem value="other">אחר</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-right block">
+                לקוח
+              </Label>
+              <div className="flex gap-2">
+                <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                  <SelectTrigger className="flex-1 text-right">
+                    <SelectValue placeholder="בחר לקוח" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">ללא לקוח</SelectItem>
+                    {clients?.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowNewClientModal(true)}
+                  className="px-3"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex space-x-reverse space-x-2 pt-4">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowNewClientModal(true)}
-                className="px-3"
+                onClick={onClose}
               >
-                <Plus className="h-4 w-4" />
+                ביטול
+              </Button>
+              <Button
+                type="submit"
+                disabled={createProjectMutation.isPending}
+              >
+                {createProjectMutation.isPending ? "יוצר פרויקט..." : "צור פרויקט"}
               </Button>
             </div>
-          </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-          <div className="flex space-x-reverse space-x-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-            >
-              ביטול
-            </Button>
-            <Button
-              type="submit"
-              disabled={createProjectMutation.isPending}
-            >
-              {createProjectMutation.isPending ? "יוצר פרויקט..." : "צור פרויקט"}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-
-    {/* New Client Modal - Outside main dialog to prevent nesting issues */}
-    <Dialog open={showNewClientModal} onOpenChange={setShowNewClientModal}>
+      {/* New Client Modal - Outside main dialog to prevent nesting issues */}
+      <Dialog open={showNewClientModal} onOpenChange={setShowNewClientModal}>
       <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-right font-rubik">לקוח חדש</DialogTitle>
@@ -350,5 +351,6 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
         </form>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
