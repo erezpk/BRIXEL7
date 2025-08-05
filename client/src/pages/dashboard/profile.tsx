@@ -81,16 +81,66 @@ export default function Profile() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const imageUrl = e.target?.result as string;
-        setFormData(prev => ({ ...prev, avatar: imageUrl }));
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "שגיאה",
+          description: "גודל הקובץ חייב להיות קטן מ-5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "שגיאה", 
+          description: "ניתן להעלות רק קבצי תמונה",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create canvas for compression
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // Set max dimensions
+        const maxWidth = 300;
+        const maxHeight = 300;
+        
+        let { width, height } = img;
+        
+        // Calculate new dimensions
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw and compress
+        ctx?.drawImage(img, 0, 0, width, height);
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        
+        setFormData(prev => ({ ...prev, avatar: compressedDataUrl }));
         toast({
           title: "תמונה הועלתה",
           description: "תמונת הפרופיל עודכנה"
         });
       };
-      reader.readAsDataURL(file);
+      
+      img.src = URL.createObjectURL(file);
     }
   };
 

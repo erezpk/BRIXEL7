@@ -26,6 +26,9 @@ export const users = pgTable("users", {
   fullName: text("full_name").notNull(),
   role: text("role").notNull(), // super_admin, agency_admin, team_member, client
   agencyId: uuid("agency_id").references(() => agencies.id),
+  phone: text("phone"),
+  company: text("company"),
+  bio: text("bio"),
   avatar: text("avatar"),
   isActive: boolean("is_active").default(true).notNull(),
   lastLogin: timestamp("last_login"),
@@ -275,12 +278,16 @@ export const insertAgencySchema = createInsertSchema(agencies).omit({
   updatedAt: true,
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  lastLogin: true,
-});
+export const insertUserSchema = createInsertSchema(users, {
+  email: z.string().email("כתובת אימייל לא תקינה"),
+  password: z.string().min(6, "הסיסמה חייבת להכיל לפחות 6 תווים"),
+  fullName: z.string().min(2, "השם חייב להכיל לפחות 2 תווים"),
+  role: z.enum(["super_admin", "agency_admin", "team_member", "client"]),
+  phone: z.string().optional(),
+  company: z.string().optional(),
+  bio: z.string().optional(),
+  avatar: z.string().optional(),
+}).omit({ id: true, createdAt: true, updatedAt: true });
 
 export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,

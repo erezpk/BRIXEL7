@@ -188,6 +188,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put('/api/auth/profile', requireAuth, async (req, res) => {
+    try {
+      const user = req.user!;
+      const updateData = {
+        fullName: req.body.fullName,
+        email: req.body.email,
+        phone: req.body.phone,
+        company: req.body.company,
+        bio: req.body.bio,
+        avatar: req.body.avatar
+      };
+
+      // Remove undefined values
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key as keyof typeof updateData] === undefined) {
+          delete updateData[key as keyof typeof updateData];
+        }
+      });
+
+      const updatedUser = await storage.updateUser(user.id, updateData);
+
+      // Update session
+      req.user = {
+        ...req.user,
+        ...updateData
+      };
+
+      const { password, ...safeUser } = updatedUser;
+      res.json({ user: safeUser, message: 'פרופיל עודכן בהצלחה' });
+    } catch (error) {
+      console.error('Profile update error:', error);
+      res.status(500).json({ message: 'שגיאה בעדכון פרופיל' });
+    }
+  });
+
   // Dashboard routes
   app.get('/api/dashboard/stats', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
