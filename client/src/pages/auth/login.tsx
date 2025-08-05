@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const { login, isLoginLoading, loginError, loginMutation } = useAuth();
+  const { user, isLoading, login, isLoginLoading, loginError, loginMutation } = useAuth();
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
@@ -20,6 +20,13 @@ export default function Login() {
     rememberMe: false,
   });
   const [showPassword, setShowPassword] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!isLoading && user) {
+      setLocation("/dashboard");
+    }
+  }, [user, isLoading, setLocation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

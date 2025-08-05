@@ -1,9 +1,10 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
+import { useEffect } from "react";
 
 import Homepage from "@/pages/homepage";
 import Login from "@/pages/auth/login";
@@ -28,16 +29,26 @@ import HelpCenter from "@/pages/help-center";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
-  if (isLoading)
+  const [, setLocation] = useLocation();
+  
+  useEffect(() => {
+    if (!isLoading && !user) {
+      setLocation("/login");
+    }
+  }, [user, isLoading, setLocation]);
+
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary" />
       </div>
     );
-  if (!user) {
-    window.location.href = "/login";
-    return null;
   }
+  
+  if (!user) {
+    return null; // הייעוד יקרה דרך useEffect
+  }
+  
   return <>{children}</>;
 }
 
