@@ -133,19 +133,6 @@ export default function ClientDashboard() {
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
 
-  // Update profile data when client profile is loaded
-  useEffect(() => {
-    if (currentClientProfile) {
-      setProfileData({
-        fullName: currentClientProfile.contactName || currentClientProfile.name || '',
-        email: currentClientProfile.email || '',
-        phone: currentClientProfile.phone || '',
-        company: currentClientProfile.name || '',
-        avatar: null
-      });
-    }
-  }, [currentClientProfile]);
-  
   // Check if this is an agency admin viewing a client's dashboard
   const isAgencyAdmin = user?.role === 'agency_admin' || user?.role === 'team_member';
   const urlParams = new URLSearchParams(window.location.search);
@@ -208,6 +195,19 @@ export default function ClientDashboard() {
     queryKey: ['/api/clients', effectiveClientId],
     enabled: !!effectiveClientId,
   });
+
+  // Update profile data when client profile is loaded
+  useEffect(() => {
+    if (currentClientProfile) {
+      setProfileData({
+        fullName: currentClientProfile.contactName || currentClientProfile.name || '',
+        email: currentClientProfile.email || '',
+        phone: currentClientProfile.phone || '',
+        company: currentClientProfile.name || '',
+        avatar: null
+      });
+    }
+  }, [currentClientProfile]);
 
   const { data: clientProjects = [] } = useQuery({
     queryKey: ['/api/projects', { clientId: effectiveClientId }],
