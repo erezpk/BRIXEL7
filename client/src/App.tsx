@@ -21,8 +21,8 @@ import Projects from "@/pages/dashboard/projects"; // index.tsx
 import NewProject from "@/pages/dashboard/projects/NewProject";
 import ProjectDetails from "@/pages/dashboard/ProjectDetails";
 import Tasks from "@/pages/dashboard/tasks";
-import Assets from "@/pages/dashboard/assets";
 import Team from "@/pages/dashboard/team";
+import Reports from "@/pages/dashboard/reports";
 import ClientDashboard from "@/pages/client-portal/client-dashboard";
 import Profile from "@/pages/dashboard/profile";
 import Settings from "@/pages/dashboard/settings";
@@ -144,10 +144,11 @@ export default function App() {
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
-          <Route path="/dashboard/assets">
+          
+          <Route path="/dashboard/reports">
             <ProtectedRoute>
               <DashboardLayout>
-                <Assets />
+                <Reports />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>

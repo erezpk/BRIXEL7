@@ -25,9 +25,7 @@ const navigation = [
   { name: "פרויקטים", href: "/dashboard/projects", icon: Projector },
   { name: "משימות", href: "/dashboard/tasks", icon: CheckSquare },
   { name: "צוות", href: "/dashboard/team", icon: UserCheck },
-  { name: "נכסים דיגיטליים", href: "/dashboard/assets", icon: Globe },
   { name: "דוחות", href: "/dashboard/reports", icon: BarChart3 },
-  { name: "תבניות", href: "/dashboard/templates", icon: Layers },
 ];
 
 export default function Sidebar({ isOpen, onToggle, isMobile }: SidebarProps) {

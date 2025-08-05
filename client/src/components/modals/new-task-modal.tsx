@@ -89,7 +89,11 @@ export default function NewTaskModal({ isOpen, onClose, editingTask }: NewTaskMo
 
   const createTaskMutation = useMutation({
     mutationFn: async (data: Omit<InsertTask, 'agencyId' | 'createdBy'>) => {
-      const response = await apiRequest('POST', '/api/tasks', data);
+      const response = await apiRequest({
+        method: 'POST',
+        url: '/api/tasks',
+        body: data
+      });
       return response.json();
     },
     onSuccess: () => {
