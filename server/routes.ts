@@ -6,6 +6,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema } from "@shared/schema";
 import { z } from "zod";
+import express from "express"; // Import express to use its Router
 
 // Extend Express types
 declare global {
@@ -20,6 +21,8 @@ declare global {
     }
   }
 }
+
+const router = express.Router();
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session configuration
@@ -112,11 +115,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Auth routes
-  app.post('/api/auth/login', passport.authenticate('local'), (req, res) => {
+  router.post('/api/auth/login', passport.authenticate('local'), (req, res) => {
     res.json({ user: req.user, message: 'התחברות הצליחה' });
   });
 
-  app.post('/api/auth/signup', async (req, res) => {
+  router.post('/api/auth/signup', async (req, res) => {
     try {
       const signupSchema = z.object({
         email: z.string().email(),
@@ -171,7 +174,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/auth/logout', (req, res) => {
+  router.post('/api/auth/logout', (req, res) => {
     req.logout((err) => {
       if (err) {
         return res.status(500).json({ message: 'שגיאה ביציאה' });
@@ -180,7 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  app.get('/api/auth/me', (req, res) => {
+  router.get('/api/auth/me', (req, res) => {
     if (req.isAuthenticated()) {
       res.json({ user: req.user });
     } else {
@@ -188,7 +191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/auth/profile', requireAuth, async (req, res) => {
+  router.put('/api/auth/profile', requireAuth, async (req, res) => {
     try {
       const user = req.user!;
       const updateData = {
@@ -224,7 +227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard routes
-  app.get('/api/dashboard/stats', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.get('/api/dashboard/stats', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
       const stats = await storage.getDashboardStats(user.agencyId!);
@@ -234,7 +237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/dashboard/activity', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.get('/api/dashboard/activity', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
       const limit = parseInt(req.query.limit as string) || 20;
@@ -246,7 +249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Client Portal routes
-  app.get('/api/client/stats', requireAuth, requireClientRole, async (req, res) => {
+  router.get('/api/client/stats', requireAuth, requireClientRole, async (req, res) => {
     try {
       const user = req.user!;
       // Get client's projects and tasks stats
@@ -267,7 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/client/projects', requireAuth, requireClientRole, async (req, res) => {
+  router.get('/api/client/projects', requireAuth, requireClientRole, async (req, res) => {
     try {
       const user = req.user!;
       const projects = await storage.getProjectsByClient(user.id);
@@ -277,7 +280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/client/activity', requireAuth, requireClientRole, async (req, res) => {
+  router.get('/api/client/activity', requireAuth, requireClientRole, async (req, res) => {
     try {
       // Get activity related to client's projects and tasks
       const limit = parseInt(req.query.limit as string) || 10;
@@ -288,7 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/client/files', requireAuth, requireClientRole, async (req, res) => {
+  router.get('/api/client/files', requireAuth, requireClientRole, async (req, res) => {
     try {
       // Return empty array for now - file management would be implemented later
       res.json([]);
@@ -298,7 +301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Clients routes
-  app.get('/api/clients', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.get('/api/clients', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
       const clients = await storage.getClientsByAgency(user.agencyId!);
@@ -308,7 +311,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/clients', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.post('/api/clients', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
 
@@ -338,7 +341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/clients/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.get('/api/clients/:id', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const client = await storage.getClient(req.params.id);
       if (!client || client.agencyId !== req.user!.agencyId) {
@@ -350,7 +353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/clients/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.put('/api/clients/:id', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const client = await storage.getClient(req.params.id);
       if (!client || client.agencyId !== req.user!.agencyId) {
@@ -378,7 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/clients/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.delete('/api/clients/:id', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const client = await storage.getClient(req.params.id);
       if (!client || client.agencyId !== req.user!.agencyId) {
@@ -403,7 +406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Projects routes
-  app.get('/api/projects', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.get('/api/projects', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const clientId = req.query.clientId as string;
       let projects;
@@ -425,7 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/projects', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.post('/api/projects', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const projectData = insertProjectSchema.parse({
         ...req.body,
@@ -454,7 +457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get specific project
-  app.get('/api/projects/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.get('/api/projects/:id', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const project = await storage.getProject(req.params.id);
       if (!project || project.agencyId !== req.user!.agencyId) {
@@ -467,7 +470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update project
-  app.put('/api/projects/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.put('/api/projects/:id', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const project = await storage.getProject(req.params.id);
       if (!project || project.agencyId !== req.user!.agencyId) {
@@ -492,7 +495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get project tasks
-  app.get('/api/projects/:id/tasks', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.get('/api/projects/:id/tasks', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const project = await storage.getProject(req.params.id);
       if (!project || project.agencyId !== req.user!.agencyId) {
@@ -507,7 +510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get project assets
-  app.get('/api/projects/:id/assets', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.get('/api/projects/:id/assets', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const project = await storage.getProject(req.params.id);
       if (!project || project.agencyId !== req.user!.agencyId) {
@@ -528,7 +531,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Tasks routes
-  app.get('/api/tasks', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.get('/api/tasks', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const filters = {
         status: req.query.status as string,
@@ -544,7 +547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/tasks', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.post('/api/tasks', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const taskData = insertTaskSchema.parse({
         ...req.body,
@@ -572,7 +575,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/tasks/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.put('/api/tasks/:id', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const task = await storage.getTask(req.params.id);
       if (!task || task.agencyId !== req.user!.agencyId) {
@@ -601,7 +604,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Task Comments routes
-  app.get('/api/tasks/:id/comments', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.get('/api/tasks/:id/comments', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const task = await storage.getTask(req.params.id);
       if (!task || task.agencyId !== req.user!.agencyId) {
@@ -615,7 +618,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/tasks/:id/comments', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.post('/api/tasks/:id/comments', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const task = await storage.getTask(req.params.id);
       if (!task || task.agencyId !== req.user!.agencyId) {
@@ -649,7 +652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Digital Assets routes
-  app.get('/api/assets', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.get('/api/assets', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const clientId = req.query.clientId as string;
       let assets;
@@ -671,7 +674,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/assets', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.post('/api/assets', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const assetData = insertDigitalAssetSchema.parse({
         ...req.body,
@@ -699,7 +702,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Leads routes
-  app.get('/api/client/leads/:clientId', requireAuth, async (req, res) => {
+  router.get('/api/client/leads/:clientId', requireAuth, async (req, res) => {
     try {
       // Mock data for now - replace with actual database query
       const mockLeads = [
@@ -732,7 +735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/client/clients/:clientId', requireAuth, async (req, res) => {
+  router.get('/api/client/clients/:clientId', requireAuth, async (req, res) => {
     try {
       // Mock data for now - replace with actual database query
       const mockClients = [
@@ -768,7 +771,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Team routes
-  app.get('/api/team', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.get('/api/team', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const teamMembers = await storage.getUsersByAgency(req.user!.agencyId!);
       // Remove password from response
@@ -779,7 +782,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/team/invite', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.post('/api/team/invite', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
 
@@ -823,7 +826,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/team/:id/toggle-active', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.put('/api/team/:id/toggle-active', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
       const memberId = req.params.id;
@@ -863,7 +866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/team/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.put('/api/team/:id', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
       const memberId = req.params.id;
@@ -922,7 +925,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/team/:id/resend-invite', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.post('/api/team/:id/resend-invite', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
       const memberId = req.params.id;
@@ -969,6 +972,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'שגיאה בשליחת הזמנה מחדש' });
     }
   });
+
+  // Send credentials email endpoint
+  router.post('/api/send-credentials-email', async (req, res) => {
+    try {
+      const { clientId, clientName, clientEmail, username, password, portalUrl } = req.body;
+
+      if (!clientEmail) {
+        return res.status(400).json({ message: 'כתובת אימייל נדרשת' });
+      }
+
+      // Here you would integrate with your email service (SendGrid, Mailgun, etc.)
+      // For now, we'll simulate sending an email and log the details
+
+      console.log('Sending credentials email:', {
+        to: clientEmail,
+        clientName,
+        username,
+        password,
+        portalUrl
+      });
+
+      // Email content
+      const emailContent = `
+שלום ${clientName},
+
+פרטי ההתחברות שלך למערכת הלקוחות:
+
+שם משתמש: ${username}
+סיסמה: ${password}
+קישור למערכת: ${portalUrl}
+
+בברכה,
+הצוות שלנו
+    `;
+
+      // TODO: Replace this with actual email sending service
+      // Example with nodemailer or similar service:
+      /*
+      await emailService.send({
+        to: clientEmail,
+        subject: 'פרטי התחברות למערכת הלקוחות',
+        text: emailContent
+      });
+      */
+
+      // For now, just log and return success
+      console.log('Email content:', emailContent);
+
+      res.json({ 
+        message: 'פרטי התחברות נשלחו בהצלחה', 
+        sentTo: clientEmail 
+      });
+
+    } catch (error) {
+      console.error('Error sending credentials email:', error);
+      res.status(500).json({ message: 'שגיאה בשליחת האימייל' });
+    }
+  });
+
+  // Mount the router to the app
+  app.use('/', router);
 
   const httpServer = createServer(app);
   return httpServer;

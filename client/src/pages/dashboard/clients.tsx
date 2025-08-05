@@ -249,18 +249,39 @@ export default function Clients() {
                 שמור שינויים
               </Button>
               <Button 
-                onClick={() => {
-                  const credentials = {
-                    username: credentialsForm.username,
-                    password: credentialsForm.password,
-                    url: `${window.location.origin}/client-portal?clientId=${selectedClient.id}`
-                  };
-                  
-                  alert(`פרטי התחברות נשלחו ל-${selectedClient.name}:\n\nשם משתמש: ${credentials.username}\nסיסמה: ${credentials.password}\nקישור: ${credentials.url}`);
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/send-credentials-email', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        clientId: selectedClient.id,
+                        clientName: selectedClient.name,
+                        clientEmail: credentialsForm.email,
+                        username: credentialsForm.username,
+                        password: credentialsForm.password,
+                        portalUrl: `${window.location.origin}/client-portal?clientId=${selectedClient.id}`
+                      }),
+                    });
+
+                    if (response.ok) {
+                      alert(`פרטי התחברות נשלחו בהצלחה באימייל ל-${credentialsForm.email}`);
+                      setShowCredentialsModal(false);
+                      setSelectedClient(null);
+                    } else {
+                      const errorData = await response.json();
+                      throw new Error(errorData.message || 'שגיאה בשליחת האימייל');
+                    }
+                  } catch (error) {
+                    console.error('Error sending email:', error);
+                    alert('שגיאה בשליחת האימייל. אנא בדוק את כתובת האימייל ונסה שוב.');
+                  }
                 }}
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
-                שלח ללקוח
+                📧 שלח ללקוח באימייל
               </Button>
             </div>
           </div>
