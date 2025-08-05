@@ -663,6 +663,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Leads routes
+  app.get('/api/client/leads/:clientId', requireAuth, async (req, res) => {
+    try {
+      // Mock data for now - replace with actual database query
+      const mockLeads = [
+        {
+          id: '1',
+          name: 'דני כהן',
+          email: 'danny@example.com',
+          phone: '054-1234567',
+          source: 'google',
+          status: 'new',
+          value: 15000,
+          notes: 'מעוניין באתר אינטרנט',
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: '2',
+          name: 'שרה לוי',
+          email: 'sara@example.com',
+          phone: '052-9876543',
+          source: 'facebook',
+          status: 'contacted',
+          value: 25000,
+          notes: 'פגישה קבועה לשבוע הבא',
+          createdAt: new Date().toISOString()
+        }
+      ];
+      res.json(mockLeads);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת לידים' });
+    }
+  });
+
+  app.get('/api/client/clients/:clientId', requireAuth, async (req, res) => {
+    try {
+      // Mock data for now - replace with actual database query
+      const mockClients = [
+        {
+          id: '1',
+          name: 'חברת הטכנולוגיה בע"מ',
+          contactName: 'יוסי כהן',
+          email: 'yossi@techcompany.com',
+          phone: '03-1234567',
+          industry: 'טכנולוגיה',
+          status: 'active',
+          totalValue: 150000,
+          projectsCount: 3,
+          lastContact: new Date().toISOString()
+        },
+        {
+          id: '2',
+          name: 'סטודיו עיצוב',
+          contactName: 'מיכל לוי',
+          email: 'michal@design.com',
+          phone: '054-9876543',
+          industry: 'עיצוב',
+          status: 'active',
+          totalValue: 85000,
+          projectsCount: 2,
+          lastContact: new Date().toISOString()
+        }
+      ];
+      res.json(mockClients);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת לקוחות' });
+    }
+  });
+
   // Team routes
   app.get('/api/team', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
