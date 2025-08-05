@@ -39,7 +39,10 @@ export default function Login() {
             title: "התחברות הצליחה",
             description: "ברוכים הבאים למערכת",
           });
-          setLocation("/");
+          
+          // Redirect based on user role
+          const redirectPath = result.user?.role === 'client' ? '/client-portal' : '/dashboard';
+          setLocation(redirectPath);
         }
       })
       .catch((error) => {
@@ -100,9 +103,13 @@ export default function Login() {
           title: "התחברות הצליחה",
           description: "ברוכים הבאים למערכת",
         });
+        
+        // Redirect based on user role
+        const redirectPath = result.user.role === 'client' ? '/client-portal' : '/dashboard';
+        
         // רגע קצר לפני הפניה כדי שהמערכת תעדכן את הסטטוס
         setTimeout(() => {
-          setLocation("/");
+          setLocation(redirectPath);
         }, 100);
       }
     } catch (error: any) {

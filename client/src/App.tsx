@@ -43,6 +43,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, setLocation]);
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!isLoading && user) {
+      const redirectPath = user.role === 'client' ? '/client-portal' : '/dashboard';
+      setLocation(redirectPath);
+    }
+  }, [user, isLoading, setLocation]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">

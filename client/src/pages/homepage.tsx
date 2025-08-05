@@ -1,24 +1,27 @@
-import { useState } from "react";
-import { Link } from "wouter";
+import { useState, useEffect } from "react";
+import { Link, useLocation, navigate } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Users,
-  Projector,
-  BarChart3,
-  Globe,
-  Shield,
-  Settings,
-  ChevronLeft,
-  Menu,
-  X,
-  Mail,
-  Phone,
-  MapPin,
-} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, CheckCircle, Users, BarChart3, Zap, Shield, Globe, Link as LucideLink } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Homepage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, isAuthenticated } = useAuth();
+  const [location] = useLocation();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (user.role === "admin") {
+        navigate("/dashboard/admin");
+      } else if (user.role === "agency") {
+        navigate("/dashboard/agency");
+      } else if (user.role === "client") {
+        navigate("/dashboard/client");
+      }
+    }
+  }, [isAuthenticated, user, location]);
 
   return (
     <div
@@ -66,14 +69,24 @@ export default function Homepage() {
                 צור קשר
               </a>
               <div className="flex items-center space-x-reverse space-x-3 mr-6">
-                <Link href="/login">
-                  <Button variant="ghost" data-testid="nav-login">
-                    כניסה
-                  </Button>
-                </Link>
-                <Link href="/signup">
-                  <Button data-testid="nav-signup">הרשמה</Button>
-                </Link>
+                {isAuthenticated ? (
+                  <Link href="/dashboard">
+                    <Button variant="ghost" data-testid="nav-dashboard">
+                      הדאשבורד שלי
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link href="/login">
+                    <Button variant="ghost" data-testid="nav-login">
+                      כניסה
+                    </Button>
+                  </Link>
+                )}
+                {!isAuthenticated && (
+                  <Link href="/signup">
+                    <Button data-testid="nav-signup">הרשמה</Button>
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -120,14 +133,24 @@ export default function Homepage() {
                   צור קשר
                 </a>
                 <div className="flex flex-col space-y-2 pt-4 border-t border-gray-100">
-                  <Link href="/login">
-                    <Button variant="ghost" className="w-full justify-center">
-                      כניסה
-                    </Button>
-                  </Link>
-                  <Link href="/signup">
-                    <Button className="w-full justify-center">הרשמה</Button>
-                  </Link>
+                  {isAuthenticated ? (
+                    <Link href="/dashboard">
+                      <Button variant="ghost" className="w-full justify-center">
+                        הדאשבורד שלי
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link href="/login">
+                      <Button variant="ghost" className="w-full justify-center">
+                        כניסה
+                      </Button>
+                    </Link>
+                  )}
+                  {!isAuthenticated && (
+                    <Link href="/signup">
+                      <Button className="w-full justify-center">הרשמה</Button>
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
