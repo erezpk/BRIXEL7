@@ -18,18 +18,14 @@ export const sessions = pgTable(
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
-  // Legacy fields for backward compatibility and additional functionality
   fullName: text("full_name"),
-  password: text("password"), // Optional for Replit Auth users
+  password: text("password"),
   role: text("role").default("team_member").notNull(), // super_admin, agency_admin, team_member, client
   agencyId: varchar("agency_id").references(() => agencies.id),
   phone: text("phone"),
   company: text("company"),
   bio: text("bio"),
-  avatar: text("avatar"), // Use profileImageUrl for Replit Auth
+  avatar: text("avatar"),
   isActive: boolean("is_active").default(true).notNull(),
   lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
