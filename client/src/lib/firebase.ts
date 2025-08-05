@@ -13,8 +13,16 @@ const firebaseConfig = {
   measurementId: "G-10K9Y627RN"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase - check if already initialized to prevent duplicate app error
+import { getApp, getApps } from 'firebase/app';
+
+let app;
+if (getApps().length === 0) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApp();
+}
+
 export const auth = getAuth(app);
 
 // Configure Google provider
