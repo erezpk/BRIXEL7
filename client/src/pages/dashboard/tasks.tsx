@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { type Task, type User, type Project } from '@shared/schema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { TaskCard } from '@/components/tasks/task-card';
+import { KanbanBoard } from '@/components/tasks/kanban-board';
 import NewTaskModal from '@/components/modals/new-task-modal';
 import {
   Plus,
@@ -39,35 +41,35 @@ export default function Tasks() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [assigneeFilter, setAssigneeFilter] = useState("all");
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
-  const [draggedTask, setDraggedTask] = useState(null);
+  const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: tasks = [], isLoading } = useQuery({
+  const { data: tasks = [], isLoading } = useQuery<Task[]>({
     queryKey: ['/api/tasks'],
   });
 
-  const { data: users = [] } = useQuery({
+  const { data: users = [] } = useQuery<User[]>({
     queryKey: ['/api/users'],
   });
 
-  const { data: projects = [] } = useQuery({
+  const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: async ({ taskId, status }) => {
-      const response = await apiRequest('PUT', `/api/tasks/${taskId}`, { status });
+    mutationFn: async ({ taskId, updates }: { taskId: string; updates: Partial<Task> }) => {
+      const response = await apiRequest('PUT', `/api/tasks/${taskId}`, updates);
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
       toast({
         title: "המשימה עודכנה בהצלחה",
-        description: "הסטטוס של המשימה השתנה",
+        description: "המשימה עודכנה בהצלחה",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "שגיאה בעדכון המשימה",
         description: error?.message || "אירעה שגיאה לא צפויה",
@@ -76,55 +78,32 @@ export default function Tasks() {
     },
   });
 
+  const handleTaskUpdate = (taskId: string, updates: Partial<Task>) => {
+    updateTaskMutation.mutate({ taskId, updates });
+  };
+
+  const handleTaskTimer = (taskId: string, action: 'start' | 'pause' | 'stop') => {
+    // Timer functionality - could be expanded with actual time tracking
+    toast({
+      title: "טיימר משימה",
+      description: action === 'start' ? "הטיימר התחיל" : action === 'pause' ? "הטיימר הושהה" : "הטיימר הופסק",
+    });
+  };
+
   const filteredTasks = React.useMemo(() => {
     if (!tasks) return [];
     
-    return tasks.filter((task) => {
+    return tasks.filter((task: Task) => {
       const matchesSearch = searchQuery === "" || 
         task.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         task.description?.toLowerCase().includes(searchQuery.toLowerCase());
       
       const matchesStatus = statusFilter === "all" || task.status === statusFilter;
-      const matchesAssignee = assigneeFilter === "all" || task.assigneeId === assigneeFilter;
+      const matchesAssignee = assigneeFilter === "all" || task.assignedTo === assigneeFilter;
       
       return matchesSearch && matchesStatus && matchesAssignee;
     });
   }, [tasks, searchQuery, statusFilter, assigneeFilter]);
-
-  const groupedTasks = React.useMemo(() => {
-    const grouped = {};
-    TASK_STATUSES.forEach(status => {
-      grouped[status.value] = filteredTasks.filter(task => task.status === status.value);
-    });
-    return grouped;
-  }, [filteredTasks]);
-
-  const handleDragStart = (e, task) => {
-    setDraggedTask(task);
-    e.dataTransfer.effectAllowed = 'move';
-    e.target.style.opacity = '0.5';
-  };
-
-  const handleDragEnd = (e) => {
-    e.target.style.opacity = '1';
-    setDraggedTask(null);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDrop = (e, newStatus) => {
-    e.preventDefault();
-    
-    if (draggedTask && draggedTask.status !== newStatus) {
-      updateTaskMutation.mutate({
-        taskId: draggedTask.id,
-        status: newStatus
-      });
-    }
-  };
 
   if (isLoading) {
     return (
@@ -156,10 +135,26 @@ export default function Tasks() {
       <div className="mb-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">משימות</h1>
-          <Button onClick={() => setShowNewTaskModal(true)}>
-            <Plus className="h-4 w-4 ml-2" />
-            משימה חדשה
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === 'kanban' ? 'default' : 'outline'}
+              onClick={() => setViewMode('kanban')}
+              size="sm"
+            >
+              לוח משימות
+            </Button>
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'outline'}
+              onClick={() => setViewMode('table')}
+              size="sm"
+            >
+              טבלה
+            </Button>
+            <Button onClick={() => setShowNewTaskModal(true)}>
+              <Plus className="h-4 w-4 ml-2" />
+              משימה חדשה
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -203,63 +198,37 @@ export default function Tasks() {
         </div>
       </div>
 
-      {/* Kanban Board */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {TASK_STATUSES.map((statusConfig) => {
-          const StatusIcon = statusConfig.icon;
-          const statusTasks = groupedTasks[statusConfig.value] || [];
-          
-          return (
-            <div 
-              key={statusConfig.value}
-              className="flex flex-col"
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, statusConfig.value)}
-            >
-              <Card className={`${statusConfig.color} border-2 border-dashed min-h-[600px]`}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                    <StatusIcon className="h-4 w-4" />
-                    {statusConfig.label}
-                    <Badge variant="secondary" className="mr-auto">
-                      {statusTasks.length}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                
-                <CardContent className="space-y-3">
-                  {statusTasks.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <CheckSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">אין משימות</p>
-                    </div>
-                  ) : (
-                    statusTasks.map((task) => (
-                      <div
-                        key={task.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, task)}
-                        onDragEnd={handleDragEnd}
-                        className="cursor-move"
-                      >
-                        <TaskCard 
-                          task={task} 
-                          projects={projects}
-                          users={users}
-                        />
-                      </div>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
+      {viewMode === 'kanban' ? (
+        <KanbanBoard
+          tasks={filteredTasks}
+          users={users}
+          projects={projects}
+          onTaskUpdate={handleTaskUpdate}
+          onTaskTimer={handleTaskTimer}
+        />
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>משימות - תצוגת טבלה</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {filteredTasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  users={users}
+                  projects={projects}
+                />
+              ))}
             </div>
-          );
-        })}
-      </div>
+          </CardContent>
+        </Card>
+      )}
 
       <NewTaskModal 
-        open={showNewTaskModal} 
-        onOpenChange={setShowNewTaskModal}
+        isOpen={showNewTaskModal} 
+        onClose={() => setShowNewTaskModal(false)}
       />
     </div>
   );

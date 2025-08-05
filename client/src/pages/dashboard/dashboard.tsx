@@ -31,6 +31,7 @@ export default function Dashboard() {
   const [showNewClientModal, setShowClientModal] = useState(false);
   const [showNewProjectModal, setShowProjectModal] = useState(false);
   const [showNewTaskModal, setShowTaskModal] = useState(false);
+  const [showInviteTeamModal, setShowInviteTeamModal] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -44,18 +45,23 @@ export default function Dashboard() {
     notes: "",
   });
 
-  const [projectData, setProjectData] = useState<Omit<InsertProject, 'agencyId'>>({
+  const [projectData, setProjectData] = useState<Omit<InsertProject, 'agencyId' | 'createdBy'>>({
     name: "",
     description: "",
-    type: "",
     clientId: "",
   });
 
-  const [taskData, setTaskData] = useState<Omit<InsertTask, 'agencyId' | 'assignedTo'>>({
+  const [taskData, setTaskData] = useState<Omit<InsertTask, 'agencyId' | 'createdBy'>>({
     title: "",
     description: "",
     priority: "medium",
     projectId: "",
+  });
+
+  const [inviteData, setInviteData] = useState({
+    email: "",
+    fullName: "",
+    role: "team_member",
   });
 
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
@@ -69,7 +75,7 @@ export default function Dashboard() {
   });
 
   const { data: projects = [] } = useQuery({
-    queryKey: ['projects'],
+    queryKey: ['/api/projects'],
     staleTime: 30000,
   });
 
@@ -93,12 +99,12 @@ export default function Dashboard() {
 
   // Create project mutation
   const createProjectMutation = useMutation({
-    mutationFn: async (data: Omit<InsertProject, 'agencyId'>) => {
+    mutationFn: async (data: Omit<InsertProject, 'agencyId' | 'createdBy'>) => {
       const response = await apiRequest('POST', '/api/projects', data);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
       setShowProjectModal(false);
       resetProjectForm();
@@ -111,7 +117,7 @@ export default function Dashboard() {
 
   // Create task mutation
   const createTaskMutation = useMutation({
-    mutationFn: async (data: Omit<InsertTask, 'agencyId' | 'assignedTo'>) => {
+    mutationFn: async (data: Omit<InsertTask, 'agencyId' | 'createdBy'>) => {
       const response = await apiRequest('POST', '/api/tasks', data);
       return response.json();
     },
@@ -143,7 +149,6 @@ export default function Dashboard() {
     setProjectData({
       name: "",
       description: "",
-      type: "",
       clientId: "",
     });
   };
@@ -156,6 +161,37 @@ export default function Dashboard() {
       projectId: "",
     });
   };
+
+  const resetInviteForm = () => {
+    setInviteData({
+      email: "",
+      fullName: "",
+      role: "team_member",
+    });
+  };
+
+  // Invite team member mutation
+  const inviteTeamMutation = useMutation({
+    mutationFn: async (data: typeof inviteData) => {
+      const response = await apiRequest('POST', '/api/team/invite', data);
+      return response.json();
+    },
+    onSuccess: () => {
+      setShowInviteTeamModal(false);
+      resetInviteForm();
+      toast({
+        title: "הזמנה נשלחה בהצלחה",
+        description: "הזמנה נשלחה לחבר הצוות החדש",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "שגיאה בשליחת הזמנה",
+        description: error?.message || "אירעה שגיאה לא צפויה",
+        variant: "destructive",
+      });
+    },
+  });
 
 
   const statsCards = [
@@ -238,7 +274,7 @@ export default function Dashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Button
               onClick={() => setShowClientModal(true)}
               className="h-20 flex flex-col items-center space-y-2"
@@ -264,6 +300,15 @@ export default function Dashboard() {
             >
               <CheckSquare className="h-6 w-6" />
               <span>משימה חדשה</span>
+            </Button>
+
+            <Button
+              onClick={() => setShowInviteTeamModal(true)}
+              className="h-20 flex flex-col items-center space-y-2"
+              variant="outline"
+            >
+              <Plus className="h-6 w-6" />
+              <span>הזמן חבר צוות</span>
             </Button>
           </div>
         </CardContent>
@@ -377,7 +422,7 @@ export default function Dashboard() {
             createProjectMutation.mutate({
               ...projectData,
               status: 'planning',
-              clientId: projectData.clientId || null,
+              clientId: projectData.clientId === "none" ? null : projectData.clientId || null,
             });
           }} className="space-y-4">
             <div className="space-y-2">
@@ -408,7 +453,7 @@ export default function Dashboard() {
                   <SelectValue placeholder="בחר לקוח" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">ללא לקוח</SelectItem>
+                  <SelectItem value="none">ללא לקוח</SelectItem>
                   {clients.map((client) => (
                     <SelectItem key={client.id} value={client.id}>
                       {client.name}
@@ -441,8 +486,8 @@ export default function Dashboard() {
             e.preventDefault();
             createTaskMutation.mutate({
               ...taskData,
-              status: 'pending',
-              projectId: taskData.projectId || null,
+              status: 'new',
+              projectId: taskData.projectId === "none" ? null : taskData.projectId || null,
             });
           }} className="space-y-4">
             <div className="space-y-2">
@@ -473,7 +518,7 @@ export default function Dashboard() {
                   <SelectValue placeholder="בחר פרויקט" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">ללא פרויקט</SelectItem>
+                  <SelectItem value="none">ללא פרויקט</SelectItem>
                   {projects.map((project: any) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
@@ -489,6 +534,65 @@ export default function Dashboard() {
               </Button>
               <Button type="submit" disabled={createTaskMutation.isPending}>
                 {createTaskMutation.isPending ? "יוצר..." : "צור משימה"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invite Team Member Modal */}
+      <Dialog open={showInviteTeamModal} onOpenChange={setShowInviteTeamModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-right">הזמן חבר צוות</DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            inviteTeamMutation.mutate(inviteData);
+          }} className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-right">שם מלא *</Label>
+              <Input
+                value={inviteData.fullName}
+                onChange={(e) => setInviteData(prev => ({ ...prev, fullName: e.target.value }))}
+                placeholder="הכנס שם מלא"
+                className="text-right"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-right">אימייל *</Label>
+              <Input
+                type="email"
+                value={inviteData.email}
+                onChange={(e) => setInviteData(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="הכנס כתובת אימייל"
+                className="text-right"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-right">תפקיד</Label>
+              <Select value={inviteData.role} onValueChange={(value) => setInviteData(prev => ({ ...prev, role: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="בחר תפקיד" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="team_member">חבר צוות</SelectItem>
+                  <SelectItem value="agency_admin">מנהל סוכנות</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex space-x-reverse space-x-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setShowInviteTeamModal(false)}>
+                ביטול
+              </Button>
+              <Button type="submit" disabled={inviteTeamMutation.isPending}>
+                {inviteTeamMutation.isPending ? "שולח..." : "שלח הזמנה"}
               </Button>
             </div>
           </form>
