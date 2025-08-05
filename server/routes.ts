@@ -10,7 +10,7 @@ import express from "express"; // Import express to use its Router
 import { emailService } from "./email-service"; // Import from email-service.ts
 import crypto from 'crypto'; // Import crypto for token generation
 import { verifyGoogleToken } from "./google-auth";
-import bcrypt from 'bcryptjs'; // Import bcrypt for password hashing
+import bcrypt from 'bcrypt'; // Import bcrypt for password hashing
 
 // Import necessary modules for profile update endpoint (if they were intended to be used)
 // import { db } from './db'; // Assuming you have a database connection setup
