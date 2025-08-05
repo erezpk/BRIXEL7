@@ -26,6 +26,7 @@ import Reports from "@/pages/dashboard/reports";
 import ClientDashboard from "@/pages/client-portal/client-dashboard";
 import Profile from "@/pages/dashboard/profile";
 import Settings from "@/pages/dashboard/settings";
+import Assets from "@/pages/dashboard/assets";
 import NotFound from "@/pages/not-found";
 import HelpCenter from "@/pages/help-center";
 
@@ -172,6 +173,14 @@ export default function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <Settings />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          <Route path="/dashboard/assets">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Assets />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>

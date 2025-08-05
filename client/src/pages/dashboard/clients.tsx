@@ -9,7 +9,7 @@ import ClientCard from "@/components/clients/client-card";
 import NewClientModal from "@/components/modals/new-client-modal";
 import { Plus, Search, Users } from "lucide-react";
 import { type Client } from "@shared/schema";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Clients() {
   const [showNewClientModal, setShowNewClientModal] = useState(false);
