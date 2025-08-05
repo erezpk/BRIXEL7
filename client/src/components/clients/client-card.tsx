@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Eye, MoreHorizontal, User } from "lucide-react";
+import { Edit, Eye, MoreHorizontal, User, ExternalLink, Send } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,9 +16,11 @@ interface ClientCardProps {
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
   onManageCredentials?: (client: Client) => void; // Added for managing credentials
+  onSendCredentials?: (client: Client) => void; // Added for sending credentials
+  onViewDashboard?: (client: Client) => void; // Added for viewing dashboard
 }
 
-export default function ClientCard({ client, onView, onEdit, onDelete, onManageCredentials }: ClientCardProps) {
+export default function ClientCard({ client, onView, onEdit, onDelete, onManageCredentials, onSendCredentials, onViewDashboard }: ClientCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -80,9 +82,21 @@ export default function ClientCard({ client, onView, onEdit, onDelete, onManageC
                   <Eye className="ml-2 h-4 w-4" />
                   צפה בפרטים
                 </DropdownMenuItem>
+                {onViewDashboard && (
+                  <DropdownMenuItem onClick={() => onViewDashboard(client)} data-testid="client-view-dashboard">
+                    <ExternalLink className="ml-2 h-4 w-4" />
+                    צפה בדאשבורד לקוח
+                  </DropdownMenuItem>
+                )}
+                {onSendCredentials && (
+                  <DropdownMenuItem onClick={() => onSendCredentials(client)} data-testid="client-send-credentials">
+                    <Send className="ml-2 h-4 w-4" />
+                    שלח פרטי התחברות
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => onEdit(client)} data-testid="client-edit">
                   <Edit className="ml-2 h-4 w-4" />
-                  ערוך
+                  ערוך לקוח
                 </DropdownMenuItem>
                 {onManageCredentials && (
                   <DropdownMenuItem onClick={() => onManageCredentials(client)} data-testid="client-credentials">

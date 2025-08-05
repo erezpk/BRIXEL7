@@ -16,7 +16,10 @@ import {
   FileText,
   Folder,
   Save,
-  X
+  X,
+  Send,
+  Eye,
+  ExternalLink
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -55,11 +58,11 @@ export default function ClientDetails() {
         },
         body: JSON.stringify(updatedClient),
       });
-      
+
       if (!response.ok) {
         throw new Error('שגיאה בעדכון הלקוח');
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -80,6 +83,33 @@ export default function ClientDetails() {
     },
   });
 
+  const sendCredentialsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/clients/${clientId}/send-credentials`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('שגיאה בשליחת פרטי התחברות');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "פרטי התחברות נשלחו בהצלחה",
+        description: "הלקוח יקבל אימייל עם פרטי ההתחברות לדאשבורד",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "שגיאה בשליחת פרטי התחברות",
+        description: "אנא ודא שכתובת האימייל של הלקוח תקינה ונסה שוב",
+        variant: "destructive",
+      });
+    },
+  });
+
   const addNoteMutation = useMutation({
     mutationFn: async (note: string) => {
       const currentNotes = client?.notes || '';
@@ -87,7 +117,7 @@ export default function ClientDetails() {
       const newNotesContent = currentNotes 
         ? `${currentNotes}\n\n[${timestamp}]\n${note}`
         : `[${timestamp}]\n${note}`;
-      
+
       const response = await fetch(`/api/clients/${clientId}`, {
         method: 'PUT',
         headers: {
@@ -95,11 +125,11 @@ export default function ClientDetails() {
         },
         body: JSON.stringify({ notes: newNotesContent }),
       });
-      
+
       if (!response.ok) {
         throw new Error('שגיאה בהוספת הערה');
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -162,6 +192,16 @@ export default function ClientDetails() {
     }
   };
 
+  const handleSendCredentials = () => {
+    sendCredentialsMutation.mutate();
+  };
+
+  const handleViewClientDashboard = () => {
+    if (client?.id) {
+      window.open(`/dashboard/clients/${client.id}`, '_blank');
+    }
+  };
+
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateClientMutation.mutate(editFormData);
@@ -220,10 +260,34 @@ export default function ClientDetails() {
           <Badge className={getStatusColor(client.status)}>
             {getStatusText(client.status)}
           </Badge>
-          <Button variant="outline" size="sm" onClick={handleEditClick}>
-            <Edit className="h-4 w-4 ml-2" />
-            ערוך לקוח
-          </Button>
+          <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={handleSendCredentials}
+                  disabled={!client?.email || sendCredentialsMutation.isPending}
+                  className="flex items-center gap-2"
+                >
+                  <Send className="h-4 w-4" />
+                  {sendCredentialsMutation.isPending ? 'שולח...' : 'שלח פרטי התחברות'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleViewClientDashboard}
+                  className="flex items-center gap-2"
+                >
+                  <Eye className="h-4 w-4" />
+                  צפה בדאשבורד
+                  <ExternalLink className="h-3 w-3" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleEditClick}
+                  className="flex items-center gap-2"
+                >
+                  <Edit className="h-4 w-4" />
+                  ערוך לקוח
+                </Button>
+              </div>
         </div>
       </div>
 
@@ -414,7 +478,7 @@ export default function ClientDetails() {
           <DialogHeader>
             <DialogTitle className="text-right font-rubik">ערוך לקוח</DialogTitle>
           </DialogHeader>
-          
+
           <form onSubmit={handleEditSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="clientName" className="text-right">שם הלקוח *</Label>
@@ -427,7 +491,7 @@ export default function ClientDetails() {
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="contactName" className="text-right">איש קשר</Label>
               <Input
@@ -438,7 +502,7 @@ export default function ClientDetails() {
                 className="text-right"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="email" className="text-right">אימייל</Label>
               <Input
@@ -450,7 +514,7 @@ export default function ClientDetails() {
                 className="text-right"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="phone" className="text-right">טלפון</Label>
               <Input
@@ -461,7 +525,7 @@ export default function ClientDetails() {
                 className="text-right"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="industry" className="text-right">תחום עיסוק</Label>
               <Select value={editFormData.industry || ''} onValueChange={(value) => handleInputChange('industry', value)}>
@@ -496,7 +560,7 @@ export default function ClientDetails() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="notes" className="text-right">הערות</Label>
               <Textarea
@@ -508,7 +572,7 @@ export default function ClientDetails() {
                 rows={3}
               />
             </div>
-            
+
             <div className="flex space-x-reverse space-x-2 pt-4">
               <Button
                 type="button"
@@ -534,7 +598,7 @@ export default function ClientDetails() {
           <DialogHeader>
             <DialogTitle className="text-right font-rubik">הוסף הערה</DialogTitle>
           </DialogHeader>
-          
+
           <form onSubmit={handleAddNoteSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="newNote" className="text-right">הערה חדשה</Label>
@@ -548,7 +612,7 @@ export default function ClientDetails() {
                 required
               />
             </div>
-            
+
             <div className="flex space-x-reverse space-x-2 pt-4">
               <Button
                 type="button"

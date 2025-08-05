@@ -38,6 +38,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
 interface Project {
   id: string;
@@ -99,6 +100,12 @@ interface Client {
 
 export default function ClientDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
+  const { user } = useAuth();
+  
+  // Check if this is an agency admin viewing a client's dashboard
+  const isAgencyAdmin = user?.role === 'agency_admin' || user?.role === 'team_member';
+  const urlParams = new URLSearchParams(window.location.search);
+  const viewingClientId = urlParams.get('clientId');
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [showClientModal, setShowClientModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
@@ -288,7 +295,14 @@ export default function ClientDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <div className="text-xl font-bold text-primary">לוח הבקרה שלי</div>
+              <div className="text-xl font-bold text-primary">
+                {isAgencyAdmin && viewingClientId ? 'צפיה בדאשבורד לקוח' : 'לוח הבקרה שלי'}
+              </div>
+              {isAgencyAdmin && viewingClientId && (
+                <Badge variant="outline" className="mr-2">
+                  מצב צפיה - מנהל סוכנות
+                </Badge>
+              )}
             </div>
             <div className="flex items-center space-x-4">
               <Button variant="ghost" size="sm">
@@ -301,6 +315,14 @@ export default function ClientDashboard() {
                 <User className="h-4 w-4" />
                 החשבון שלי
               </Button>
+              {isAgencyAdmin && viewingClientId && (
+                <Button variant="outline" size="sm" onClick={() => {
+                  window.close();
+                }}>
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                  חזור לדאשבורד
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={() => {
                 // Clear auth data and redirect to login
                 localStorage.removeItem('authToken');

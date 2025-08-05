@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import ClientCard from "@/components/clients/client-card";
 import NewClientModal from "@/components/modals/new-client-modal";
 import { Plus, Search, Users } from "lucide-react";
 import { type Client } from "@shared/schema";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function Clients() {
   const [showNewClientModal, setShowNewClientModal] = useState(false);
@@ -17,6 +18,61 @@ export default function Clients() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Send login credentials to client
+  const sendCredentialsMutation = useMutation({
+    mutationFn: async (clientId: string) => {
+      const client = clients.find(c => c.id === clientId);
+      const response = await fetch(`/api/clients/${clientId}/send-credentials`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          username: client?.email,
+          password: `${client?.name.toLowerCase().replace(/\s+/g, '')}_${clientId.slice(0, 8)}`
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'שגיאה בשליחת פרטי ההתחברות');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "פרטי ההתחברות נשלחו",
+        description: "פרטי ההתחברות נשלחו בהצלחה ללקוח באימייל"
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "שגיאה",
+        description: error.message
+      });
+    }
+  });
+
+  const handleSendCredentials = (client: Client) => {
+    if (!client.email) {
+      toast({
+        variant: "destructive",
+        title: "שגיאה",
+        description: "ללקוח אין כתובת אימייל"
+      });
+      return;
+    }
+    sendCredentialsMutation.mutate(client.id);
+  };
+
+  const handleViewClientDashboard = (clientId: string) => {
+    const clientPortalUrl = `/client-portal?clientId=${clientId}`;
+    window.open(clientPortalUrl, '_blank');
+  };
 
   const [credentialsForm, setCredentialsForm] = useState({
     username: '',
@@ -172,10 +228,22 @@ export default function Clients() {
             <ClientCard
               key={client.id}
               client={client}
-              onView={handleViewClient}
-              onEdit={handleEditClient}
-              onDelete={handleDeleteClient}
-              onManageCredentials={handleManageCredentials}
+              onEdit={() => {
+                setEditingClient(client);
+                setEditFormData({
+                  name: client.name,
+                  contactName: client.contactName,
+                  email: client.email,
+                  phone: client.phone || "",
+                  industry: client.industry,
+                  status: client.status,
+                  notes: client.notes || "",
+                });
+                setShowEditModal(true);
+              }}
+              onView={() => navigate(`/dashboard/clients/${client.id}`)}
+              onSendCredentials={() => handleSendCredentials(client)}
+              onViewDashboard={() => handleViewClientDashboard(client.id)}
             />
           ))}
         </div>
