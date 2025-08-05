@@ -74,13 +74,6 @@ export function KanbanBoard({ tasks, users, projects, onTaskUpdate, onTaskTimer,
     onTaskTimer?.(taskId, action);
   };
 
-  const formatTimer = (startTime: number) => {
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    const minutes = Math.floor(elapsed / 60);
-    const seconds = elapsed % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
   // Update timers every second
   React.useEffect(() => {
     const interval = setInterval(() => {
