@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Switch } from '@/components/ui/switch';
 import { 
   FileText, 
   Clock, 
@@ -37,7 +38,9 @@ import {
   Users,
   TrendingUp,
   ArrowRight,
-  Shield
+  Shield,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
@@ -102,7 +105,33 @@ interface Client {
 
 export default function ClientDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [notifications, setNotifications] = useState({
+    emailLeads: true,
+    projectUpdates: true,
+    newMessages: true
+  });
+  const [language, setLanguage] = useState('he');
+  const [timezone, setTimezone] = useState('Asia/Jerusalem');
   const { user } = useAuth();
+
+  // Load dark mode preference from localStorage
+  useEffect(() => {
+    const savedDarkMode = localStorage.getItem('darkMode');
+    if (savedDarkMode) {
+      setIsDarkMode(JSON.parse(savedDarkMode));
+    }
+  }, []);
+
+  // Apply dark mode to document
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+  }, [isDarkMode]);
   
   // Check if this is an agency admin viewing a client's dashboard
   const isAgencyAdmin = user?.role === 'agency_admin' || user?.role === 'team_member';
@@ -460,10 +489,95 @@ export default function ClientDashboard() {
     setShowProfileModal(false);
   };
 
+  const handleConnectFacebook = () => {
+    // In real app, this would open Facebook OAuth
+    toast({
+      title: "מתחבר לפייסבוק",
+      description: "פותח חלון התחברות לפייסבוק..."
+    });
+    
+    // Simulate connection success after 2 seconds
+    setTimeout(() => {
+      toast({
+        title: "התחברות בוצעה בהצלחה",
+        description: "חשבון פייסבוק אדס חובר בהצלחה"
+      });
+    }, 2000);
+  };
+
+  const handleConnectGoogle = () => {
+    // In real app, this would open Google OAuth
+    toast({
+      title: "מתחבר לגוגל",
+      description: "פותח חלון התחברות לגוגל אדס..."
+    });
+    
+    // Simulate connection success after 2 seconds
+    setTimeout(() => {
+      toast({
+        title: "התחברות בוצעה בהצלחה",
+        description: "חשבון גוגל אדס חובר בהצלחה"
+      });
+    }, 2000);
+  };
+
+  const handleNotificationChange = (type: keyof typeof notifications, value: boolean) => {
+    setNotifications(prev => ({
+      ...prev,
+      [type]: value
+    }));
+    
+    toast({
+      title: "הגדרות התראות עודכנו",
+      description: "ההגדרות נשמרו בהצלחה"
+    });
+  };
+
+  const handleLanguageChange = (newLanguage: string) => {
+    setLanguage(newLanguage);
+    toast({
+      title: "שפה עודכנה",
+      description: `השפה שונתה ל${newLanguage === 'he' ? 'עברית' : 'English'}`
+    });
+  };
+
+  const handleTimezoneChange = (newTimezone: string) => {
+    setTimezone(newTimezone);
+    toast({
+      title: "אזור זמן עודכן",
+      description: "אזור הזמן נשמר בהצלחה"
+    });
+  };
+
+  const handleDeleteAccount = () => {
+    if (confirm('האם אתה בטוח שברצונך למחוק את החשבון? פעולה זו לא ניתנת לביטול.')) {
+      toast({
+        variant: "destructive",
+        title: "מחיקת חשבון",
+        description: "החשבון נמחק בהצלחה"
+      });
+    }
+  };
+
+  const handleChangePassword = () => {
+    // In real app, this would open a change password modal
+    toast({
+      title: "שינוי סיסמה",
+      description: "נשלח אליך קישור לשינוי סיסמה באימייל"
+    });
+  };
+
+  const handleToggle2FA = () => {
+    toast({
+      title: "התחברות דו-שלבית",
+      description: "ההגדרה של התחברות דו-שלבית עודכנה"
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
+    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`} dir="rtl">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className={`shadow-sm border-b transition-colors duration-300 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
@@ -516,7 +630,7 @@ export default function ClientDashboard() {
 
       <div className="flex min-h-screen bg-gray-50">
         {/* Sidebar */}
-        <div className="w-64 bg-white shadow-lg">
+        <div className={`w-64 shadow-lg transition-colors duration-300 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
           <div className="p-6">
             <h2 className="text-xl font-bold text-gray-800">לוח בקרה</h2>
           </div>
@@ -594,7 +708,7 @@ export default function ClientDashboard() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 p-8">
+        <div className={`flex-1 p-8 transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
           {/* Overview Tab */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
@@ -844,12 +958,22 @@ export default function ClientDashboard() {
           {activeTab === 'settings' && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-gray-900">הגדרות</h1>
+                <h1 className="text-3xl font-bold">הגדרות</h1>
+                <div className="flex items-center gap-3">
+                  <Sun className="h-4 w-4" />
+                  <Switch
+                    checked={isDarkMode}
+                    onCheckedChange={setIsDarkMode}
+                    className="data-[state=checked]:bg-blue-600"
+                  />
+                  <Moon className="h-4 w-4" />
+                  <span className="text-sm">מצב כהה</span>
+                </div>
               </div>
 
               <div className="grid gap-6">
                 {/* Lead Sync Settings */}
-                <Card>
+                <Card className={isDarkMode ? 'bg-gray-800 border-gray-700' : ''}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Settings className="h-5 w-5" />
@@ -857,10 +981,10 @@ export default function ClientDashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                    <div className={`flex items-center justify-between p-4 rounded-lg ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
                       <div>
-                        <h3 className="font-medium text-blue-800">חיבור לפלטפורמות פרסום</h3>
-                        <p className="text-sm text-blue-600">חבר את חשבונות הפרסום שלך לסנכרון אוטומטי של לידים</p>
+                        <h3 className={`font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-800'}`}>חיבור לפלטפורמות פרסום</h3>
+                        <p className={`text-sm ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>חבר את חשבונות הפרסום שלך לסנכרון אוטומטי של לידים</p>
                       </div>
                       <Button onClick={() => {
                         window.open('/client-settings', '_blank');
@@ -871,7 +995,7 @@ export default function ClientDashboard() {
                     </div>
                     
                     <div className="grid gap-4 md:grid-cols-2">
-                      <Card>
+                      <Card className={isDarkMode ? 'bg-gray-700 border-gray-600' : ''}>
                         <CardContent className="p-4">
                           <div className="flex items-center gap-3 mb-3">
                             <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
@@ -879,18 +1003,16 @@ export default function ClientDashboard() {
                             </div>
                             <div>
                               <h4 className="font-medium">פייסבוק אדס</h4>
-                              <p className="text-sm text-gray-600">לא מחובר</p>
+                              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>לא מחובר</p>
                             </div>
                           </div>
-                          <Button variant="outline" size="sm" className="w-full" onClick={() => {
-                            window.open('/client-settings', '_blank');
-                          }}>
+                          <Button variant="outline" size="sm" className="w-full" onClick={handleConnectFacebook}>
                             חבר חשבון
                           </Button>
                         </CardContent>
                       </Card>
                       
-                      <Card>
+                      <Card className={isDarkMode ? 'bg-gray-700 border-gray-600' : ''}>
                         <CardContent className="p-4">
                           <div className="flex items-center gap-3 mb-3">
                             <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center">
@@ -898,12 +1020,10 @@ export default function ClientDashboard() {
                             </div>
                             <div>
                               <h4 className="font-medium">גוגל אדס</h4>
-                              <p className="text-sm text-gray-600">לא מחובר</p>
+                              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>לא מחובר</p>
                             </div>
                           </div>
-                          <Button variant="outline" size="sm" className="w-full" onClick={() => {
-                            window.open('/client-settings', '_blank');
-                          }}>
+                          <Button variant="outline" size="sm" className="w-full" onClick={handleConnectGoogle}>
                             חבר חשבון
                           </Button>
                         </CardContent>
@@ -913,7 +1033,7 @@ export default function ClientDashboard() {
                 </Card>
 
                 {/* Notification Settings */}
-                <Card>
+                <Card className={isDarkMode ? 'bg-gray-800 border-gray-700' : ''}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Bell className="h-5 w-5" />
@@ -924,31 +1044,43 @@ export default function ClientDashboard() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-medium">התראות אימייל על לידים חדשים</h4>
-                        <p className="text-sm text-gray-600">קבל התראה באימייל כשמגיע ליד חדש</p>
+                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>קבל התראה באימייל כשמגיע ליד חדש</p>
                       </div>
-                      <input type="checkbox" className="toggle" defaultChecked />
+                      <Switch
+                        checked={notifications.emailLeads}
+                        onCheckedChange={(checked) => handleNotificationChange('emailLeads', checked)}
+                        className="data-[state=checked]:bg-blue-600"
+                      />
                     </div>
                     
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-medium">התראות על עדכוני פרויקט</h4>
-                        <p className="text-sm text-gray-600">קבל התראות על התקדמות ועדכונים בפרויקטים</p>
+                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>קבל התראות על התקדמות ועדכונים בפרויקטים</p>
                       </div>
-                      <input type="checkbox" className="toggle" defaultChecked />
+                      <Switch
+                        checked={notifications.projectUpdates}
+                        onCheckedChange={(checked) => handleNotificationChange('projectUpdates', checked)}
+                        className="data-[state=checked]:bg-blue-600"
+                      />
                     </div>
                     
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-medium">התראות על הודעות חדשות</h4>
-                        <p className="text-sm text-gray-600">קבל התראות כשמגיעות הודעות מהסוכנות</p>
+                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>קבל התראות כשמגיעות הודעות מהסוכנות</p>
                       </div>
-                      <input type="checkbox" className="toggle" defaultChecked />
+                      <Switch
+                        checked={notifications.newMessages}
+                        onCheckedChange={(checked) => handleNotificationChange('newMessages', checked)}
+                        className="data-[state=checked]:bg-blue-600"
+                      />
                     </div>
                   </CardContent>
                 </Card>
 
                 {/* Account Settings */}
-                <Card>
+                <Card className={isDarkMode ? 'bg-gray-800 border-gray-700' : ''}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <User className="h-5 w-5" />
@@ -959,26 +1091,36 @@ export default function ClientDashboard() {
                     <div className="grid gap-4 md:grid-cols-2">
                       <div>
                         <Label>שפת הממשק</Label>
-                        <select className="w-full p-2 border rounded-lg">
-                          <option value="he">עברית</option>
-                          <option value="en">English</option>
-                        </select>
+                        <Select value={language} onValueChange={handleLanguageChange}>
+                          <SelectTrigger className={isDarkMode ? 'bg-gray-700 border-gray-600' : ''}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="he">עברית</SelectItem>
+                            <SelectItem value="en">English</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       
                       <div>
                         <Label>אזור זמן</Label>
-                        <select className="w-full p-2 border rounded-lg">
-                          <option value="Asia/Jerusalem">ירושלים (GMT+2)</option>
-                          <option value="UTC">UTC</option>
-                        </select>
+                        <Select value={timezone} onValueChange={handleTimezoneChange}>
+                          <SelectTrigger className={isDarkMode ? 'bg-gray-700 border-gray-600' : ''}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Asia/Jerusalem">ירושלים (GMT+2)</SelectItem>
+                            <SelectItem value="UTC">UTC</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                     
-                    <div className="pt-4 border-t">
-                      <Button variant="destructive" size="sm">
+                    <div className="pt-4 border-t border-gray-300 dark:border-gray-600">
+                      <Button variant="destructive" size="sm" onClick={handleDeleteAccount}>
                         מחק חשבון
                       </Button>
-                      <p className="text-sm text-gray-500 mt-2">
+                      <p className={`text-sm mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                         פעולה זו תמחק את החשבון שלך לצמיתות ולא ניתן לבטל אותה
                       </p>
                     </div>
@@ -986,7 +1128,7 @@ export default function ClientDashboard() {
                 </Card>
 
                 {/* Privacy Settings */}
-                <Card>
+                <Card className={isDarkMode ? 'bg-gray-800 border-gray-700' : ''}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Shield className="h-5 w-5" />
@@ -997,23 +1139,23 @@ export default function ClientDashboard() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-medium">שיתוף נתונים לשיפור השירות</h4>
-                        <p className="text-sm text-gray-600">אפשר לנו להשתמש בנתונים שלך לשיפור השירות</p>
+                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>אפשר לנו להשתמש בנתונים שלך לשיפור השירות</p>
                       </div>
-                      <input type="checkbox" className="toggle" />
+                      <Switch className="data-[state=checked]:bg-blue-600" />
                     </div>
                     
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-medium">התחברות דו-שלבית</h4>
-                        <p className="text-sm text-gray-600">הגבר את האבטחה של החשבון שלך</p>
+                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>הגבר את האבטחה של החשבון שלך</p>
                       </div>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={handleToggle2FA}>
                         הפעל
                       </Button>
                     </div>
                     
                     <div>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={handleChangePassword}>
                         שנה סיסמה
                       </Button>
                     </div>
