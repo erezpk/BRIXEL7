@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { TaskCard } from '@/components/tasks/task-card';
-import { NewTaskModal } from '@/components/modals/new-task-modal';
+import NewTaskModal from '@/components/modals/new-task-modal';
 import {
   Plus,
   Search,
