@@ -21,7 +21,6 @@ import Tasks from "@/pages/dashboard/tasks";
 import Assets from "@/pages/dashboard/assets";
 import Team from "@/pages/dashboard/team";
 import ClientDashboard from "@/pages/client-portal/client-dashboard";
-import ProjectDetails from "@/pages/dashboard/ProjectDetails";
 import NotFound from "@/pages/not-found";
 import HelpCenter from "@/pages/help-center";
 
