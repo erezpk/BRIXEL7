@@ -21,44 +21,7 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-
-// Define interfaces for better type safety (replace with actual types if available)
-interface Client {
-  id: string;
-  name: string;
-}
-
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  status: string;
-  client?: Client;
-  clientId?: string;
-  createdAt: string;
-  type?: string;
-  // Add other relevant project properties
-}
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  priority: "low" | "medium" | "high";
-  dueDate: string;
-  status: string;
-  // Add other relevant task properties
-}
-
-interface DigitalAsset {
-  id: string;
-  name: string;
-  type: "domain" | "server" | "storage" | "other";
-  value: string;
-  expiryDate?: string;
-  notes?: string;
-  // Add other relevant asset properties
-}
+import { type Client, type Project, type Task, type DigitalAsset } from '@shared/schema';
 
 export default function ProjectDetails() {
   const { projectId } = useParams();
@@ -269,7 +232,7 @@ export default function ProjectDetails() {
               if (project.client) {
                 // שלח פרטי התחברות ללקוח
                 const credentials = {
-                  email: project.client.email || `${project.client.name.toLowerCase().replace(/\s+/g, '')}@client.portal`,
+                  email: project.client?.email || `${project.client.name.toLowerCase().replace(/\s+/g, '')}@client.portal`,
                   password: `${project.client.name.toLowerCase().replace(/\s+/g, '')}_${project.id.slice(0, 8)}`,
                   clientPortalUrl: `${window.location.origin}/client-portal?clientId=${project.clientId}`
                 };
@@ -440,7 +403,7 @@ export default function ProjectDetails() {
                         <p className="text-sm text-muted-foreground">{task.description}</p>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                           <Calendar className="h-3 w-3" />
-                          <span>{new Date(task.dueDate).toLocaleDateString('he-IL')}</span>
+                          <span>{task.dueDate ? new Date(task.dueDate).toLocaleDateString('he-IL') : 'ללא תאריך'}</span>
                           <Badge variant={task.priority === 'high' ? 'destructive' : task.priority === 'medium' ? 'outline' : 'secondary'}>{task.priority}</Badge>
                         </div>
                       </div>
@@ -478,8 +441,8 @@ export default function ProjectDetails() {
                       <div>
                         <h4 className="font-medium">{asset.name}</h4>
                         <p className="text-sm text-muted-foreground">סוג: {asset.type}</p>
-                        <p className="text-sm text-muted-foreground">ערך: {asset.value}</p>
-                        {asset.expiryDate && <p className="text-sm text-muted-foreground">תפוגה: {new Date(asset.expiryDate).toLocaleDateString('he-IL')}</p>}
+                        <p className="text-sm text-muted-foreground">ספק: {asset.provider}</p>
+                        {asset.renewalDate && <p className="text-sm text-muted-foreground">תפוגה: {new Date(asset.renewalDate).toLocaleDateString('he-IL')}</p>}
                         {asset.notes && <p className="text-sm text-muted-foreground">הערות: {asset.notes}</p>}
                       </div>
                     </div>

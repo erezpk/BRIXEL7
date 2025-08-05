@@ -709,9 +709,9 @@ export default function Homepage() {
               <ul className="space-y-2 text-gray-400">
                 <li>
                   <Link href="/help">
-                    <a className="hover:text-white transition-colors">
+                    <span className="hover:text-white transition-colors cursor-pointer">
                       מרכז עזרה
-                    </a>
+                    </span>
                   </Link>
                 </li>
               </ul>
