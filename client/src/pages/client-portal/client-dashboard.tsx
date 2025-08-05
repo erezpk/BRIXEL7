@@ -1130,19 +1130,6 @@ export default function ClientDashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className={`flex items-center justify-between p-4 rounded-lg ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
-                      <div>
-                        <h3 className={`font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-800'}`}>חיבור לפלטפורמות פרסום</h3>
-                        <p className={`text-sm ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>חבר את חשבונות הפרסום שלך לסנכרון אוטומטי של לידים</p>
-                      </div>
-                      <Button onClick={() => {
-                        window.open('/client-settings', '_blank');
-                      }}>
-                        <Settings className="h-4 w-4 ml-2" />
-                        נהל חיבורים
-                      </Button>
-                    </div>
-                    
                     <div className="grid gap-4 md:grid-cols-2">
                       <Card className={isDarkMode ? 'bg-gray-700 border-gray-600' : ''}>
                         <CardContent className="p-4">
@@ -1263,15 +1250,6 @@ export default function ClientDashboard() {
                           </SelectContent>
                         </Select>
                       </div>
-                    </div>
-                    
-                    <div className="pt-4 border-t border-gray-300 dark:border-gray-600">
-                      <Button variant="destructive" size="sm" onClick={handleDeleteAccount}>
-                        מחק חשבון
-                      </Button>
-                      <p className={`text-sm mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        פעולה זו תמחק את החשבון שלך לצמיתות ולא ניתן לבטל אותה
-                      </p>
                     </div>
                   </CardContent>
                 </Card>
