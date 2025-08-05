@@ -356,28 +356,6 @@ export default function ClientDashboard() {
                 לידים
               </button>
               <button
-                onClick={() => setActiveTab('clients')}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-right rounded-lg transition-colors ${
-                  activeTab === 'clients' 
-                    ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-700' 
-                    : 'text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <Users className="h-5 w-5" />
-                לקוחות
-              </button>
-              <button
-                onClick={() => setActiveTab('assets')}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-right rounded-lg transition-colors ${
-                  activeTab === 'assets' 
-                    ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-700' 
-                    : 'text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <FileText className="h-5 w-5" />
-                נכסים דיגיטליים
-              </button>
-              <button
                 onClick={() => setActiveTab('messages')}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-right rounded-lg transition-colors ${
                   activeTab === 'messages' 
@@ -541,7 +519,13 @@ export default function ClientDashboard() {
           {/* Leads Tab */}
           {activeTab === 'leads' && (
             <div className="space-y-6">
-              <h1 className="text-3xl font-bold text-gray-900">ניהול לידים</h1>
+              <div className="flex justify-between items-center">
+                <h1 className="text-3xl font-bold text-gray-900">ניהול לידים</h1>
+                <Button onClick={() => setShowLeadModal(true)}>
+                  <Plus className="h-4 w-4 ml-2" />
+                  הוסף ליד חדש
+                </Button>
+              </div>
 
               <Card>
                 <CardContent className="p-6">
@@ -554,12 +538,13 @@ export default function ClientDashboard() {
                         <TableHead className="text-right">מקור</TableHead>
                         <TableHead className="text-right">סטטוס</TableHead>
                         <TableHead className="text-right">ערך</TableHead>
+                        <TableHead className="text-right">הערות</TableHead>
                         <TableHead className="text-right">פעולות</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {leads.map((lead) => (
-                        <TableRow key={lead.id}>
+                        <TableRow key={lead.id} className="hover:bg-gray-50">
                           <TableCell className="text-right font-medium">{lead.name}</TableCell>
                           <TableCell className="text-right">{lead.email}</TableCell>
                           <TableCell className="text-right">{lead.phone}</TableCell>
@@ -571,6 +556,9 @@ export default function ClientDashboard() {
                           </TableCell>
                           <TableCell className="text-right">{getStatusBadge(lead.status)}</TableCell>
                           <TableCell className="text-right font-medium">₪{lead.value.toLocaleString()}</TableCell>
+                          <TableCell className="text-right text-sm text-gray-600 max-w-[200px] truncate">
+                            {lead.notes || 'ללא הערות'}
+                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex gap-2 justify-end">
                               <Button size="sm" variant="outline" onClick={() => {
@@ -591,89 +579,6 @@ export default function ClientDashboard() {
                   </Table>
                 </CardContent>
               </Card>
-            </div>
-          )}
-
-          {/* Clients Tab */}
-          {activeTab === 'clients' && (
-            <div className="space-y-6">
-              <h1 className="text-3xl font-bold text-gray-900">ניהול לקוחות</h1>
-
-              <Card>
-                <CardContent className="p-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-right">שם החברה</TableHead>
-                        <TableHead className="text-right">איש קשר</TableHead>
-                        <TableHead className="text-right">אימייל</TableHead>
-                        <TableHead className="text-right">טלפון</TableHead>
-                        <TableHead className="text-right">תחום</TableHead>
-                        <TableHead className="text-right">סטטוס</TableHead>
-                        <TableHead className="text-right">פרויקטים</TableHead>
-                        <TableHead className="text-right">פעולות</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {clients.map((client) => (
-                        <TableRow key={client.id}>
-                          <TableCell className="text-right font-medium">{client.name}</TableCell>
-                          <TableCell className="text-right">{client.contactName}</TableCell>
-                          <TableCell className="text-right">{client.email}</TableCell>
-                          <TableCell className="text-right">{client.phone}</TableCell>
-                          <TableCell className="text-right">{client.industry}</TableCell>
-                          <TableCell className="text-right">{getStatusBadge(client.status)}</TableCell>
-                          <TableCell className="text-right">
-                            <Badge variant="outline">{client.projectsCount}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex gap-2 justify-end">
-                              <Button size="sm" variant="outline" onClick={() => {
-                                setEditingClient(client);
-                                setClientForm(client);
-                                setShowClientModal(true);
-                              }}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button size="sm" variant="outline">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Assets Tab */}
-          {activeTab === 'assets' && (
-            <div className="space-y-6">
-              <h1 className="text-3xl font-bold text-gray-900">נכסים דיגיטליים</h1>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {clientAssets.map((asset) => (
-                  <Card key={asset.id}>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-right">{asset.name}</CardTitle>
-                        <Badge variant="outline">{asset.type}</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground mb-2">{asset.value}</p>
-                      {asset.expiryDate && (
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Calendar className="h-3 w-3" />
-                          <span>פוגה: {new Date(asset.expiryDate).toLocaleDateString('he-IL')}</span>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
             </div>
           )}
 
