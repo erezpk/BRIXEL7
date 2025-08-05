@@ -31,7 +31,11 @@ export default function NewClientModal({ isOpen, onClose }: NewClientModalProps)
 
   const createClientMutation = useMutation({
     mutationFn: async (data: Omit<InsertClient, 'agencyId'>) => {
-      const response = await apiRequest('POST', '/api/clients', data);
+      const response = await apiRequest({
+        method: 'POST',
+        url: '/api/clients',
+        body: data
+      });
       return response.json();
     },
     onSuccess: () => {
@@ -83,10 +87,10 @@ export default function NewClientModal({ isOpen, onClose }: NewClientModalProps)
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto" data-testid="new-client-modal">
+      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto" data-testid="new-client-modal" aria-describedby="new-client-description">
         <DialogHeader>
           <DialogTitle className="text-right font-rubik">לקוח חדש</DialogTitle>
-          <DialogDescription className="text-right">
+          <DialogDescription id="new-client-description" className="text-right">
             הוסף פרטי לקוח חדש למערכת
           </DialogDescription>
         </DialogHeader>
