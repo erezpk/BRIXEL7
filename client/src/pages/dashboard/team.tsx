@@ -441,7 +441,7 @@ export default function Team() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowInviteModal(false)}
+                onClick={() => setShowEditModal(false)}
                 data-testid="button-cancel-edit"
               >
                 ביטול
