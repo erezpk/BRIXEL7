@@ -41,8 +41,11 @@ export default function Login() {
             description: "ברוכים הבאים למערכת",
           });
           
-          // Refresh to load user data
-          window.location.reload();
+          // Redirect based on user role
+          const redirectPath = result.user?.role === 'client' ? '/client-portal' : '/dashboard';
+          setTimeout(() => {
+            setLocation(redirectPath);
+          }, 100);
         }
       } catch (error) {
         console.error('Google auth error:', error);
