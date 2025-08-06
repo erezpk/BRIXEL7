@@ -2022,9 +2022,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'הצעת מחיר לא נמצאה' });
       }
 
-      const client = await storage.getClient(quote.clientId);
-      if (!client) {
-        return res.status(404).json({ message: 'לקוח לא נמצא' });
+      // Get client or lead based on quote data
+      let recipient: { name: string; email: string } | null = null;
+      
+      if (quote.clientType === 'lead') {
+        const lead = await storage.getLead(quote.clientId);
+        if (!lead) {
+          return res.status(404).json({ message: 'ליד לא נמצא' });
+        }
+        recipient = { name: lead.name, email: lead.email || '' };
+      } else {
+        const client = await storage.getClient(quote.clientId);
+        if (!client) {
+          return res.status(404).json({ message: 'לקוח לא נמצא' });
+        }
+        recipient = { name: client.name, email: client.email || '' };
       }
 
       const agency = await storage.getAgency(req.user!.agencyId!);
@@ -2044,7 +2056,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ).join('\n') || 'אין פריטים';
 
       const emailBody = `
-שלום ${client.name},
+שלום ${recipient.name},
 
 בצוות ${agency.name} שמחים להציג לכם הצעת מחיר עבור: ${quote.title}
 
@@ -2066,12 +2078,12 @@ ${quote.notes || ''}
 צוות ${agency.name}
       `.trim();
 
-      if (!client.email) {
-        return res.status(400).json({ message: 'לא נמצא כתובת מייל ללקוח' });
+      if (!recipient.email) {
+        return res.status(400).json({ message: 'לא נמצא כתובת מייל לנמען' });
       }
 
       const success = await emailService.sendEmail({
-        to: client.email,
+        to: recipient.email,
         subject: `הצעת מחיר - ${quote.title} מאת ${senderName || agency.name}`,
         text: emailBody,
         html: emailBody.replace(/\n/g, '<br>'),
@@ -2092,7 +2104,8 @@ ${quote.notes || ''}
           entityType: 'quote',
           entityId: quote.id,
           details: { 
-            clientEmail: client.email,
+            recipientEmail: recipient.email,
+            recipientType: quote.clientType || 'client',
             quoteTitle: quote.title,
             totalAmount: quote.totalAmount 
           },

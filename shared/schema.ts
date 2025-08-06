@@ -146,7 +146,8 @@ export const products = pgTable("products", {
 export const quotes = pgTable("quotes", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   agencyId: uuid("agency_id").notNull().references(() => agencies.id),
-  clientId: uuid("client_id").notNull().references(() => clients.id),
+  clientId: uuid("client_id").notNull(), // can reference clients.id or leads.id
+  clientType: text("client_type").default("client").notNull(), // 'client' or 'lead'
   quoteNumber: text("quote_number").notNull().unique(),
   title: text("title").notNull(),
   description: text("description"),

@@ -18,7 +18,8 @@ import { SimpleQuoteItem } from '@/components/simple-quote-item';
 
 const quoteSchema = z.object({
   title: z.string().min(1, 'כותרת נדרשת'),
-  clientId: z.string().min(1, 'לקוח נדרש'),
+  clientId: z.string().min(1, 'לקוח או ליד נדרש'),
+  clientType: z.enum(['client', 'lead']).default('client'),
   description: z.string().optional(),
   validUntil: z.string().min(1, 'תאריך תוקף נדרש'),
   items: z.array(z.object({
@@ -31,7 +32,8 @@ const quoteSchema = z.object({
     total: z.number(),
   })).min(1, 'נדרש לפחות פריט אחד'),
   notes: z.string().optional(),
-  senderEmail: z.string().email().optional(),
+  senderName: z.string().optional(),
+  senderEmail: z.string().email('כתובת מייל לא תקינה').optional(),
   emailMessage: z.string().optional(),
 });
 
@@ -41,6 +43,14 @@ interface Client {
   id: string;
   name: string;
   email: string;
+}
+
+interface Lead {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  status: string;
 }
 
 interface Product {
@@ -61,10 +71,12 @@ export default function NewQuotePage() {
     defaultValues: {
       title: '',
       clientId: '',
+      clientType: 'client' as const,
       description: '',
       validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
       items: [{ productId: '', name: '', description: '', quantity: 1, unitPrice: 0, priceType: 'fixed' as const, total: 0 }],
       notes: '',
+      senderName: '',
       senderEmail: '',
       emailMessage: '',
     },
@@ -75,8 +87,13 @@ export default function NewQuotePage() {
     name: 'items',
   });
 
-  const { data: clients } = useQuery<Client[]>({
+  // Fetch clients and leads for dropdown
+  const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ['/api/clients'],
+  });
+
+  const { data: leads = [] } = useQuery<Lead[]>({
+    queryKey: ['/api/leads'],
   });
 
   const { data: products } = useQuery<Product[]>({
@@ -91,7 +108,7 @@ export default function NewQuotePage() {
 
       const response = await apiRequest('/api/quotes', 'POST', {
         ...data,
-        subtotalAmount: Math.round(subtotal * 100), // Convert to agorot
+        subtotal: Math.round(subtotal * 100), // Convert to agorot - matching schema field name
         vatAmount: Math.round(vatAmount * 100), // Convert to agorot
         totalAmount: Math.round(totalAmount * 100), // Convert to agorot
         status: 'draft',
@@ -134,8 +151,8 @@ export default function NewQuotePage() {
   };
 
   const sendEmailMutation = useMutation({
-    mutationFn: async (quoteId: string) => {
-      const response = await apiRequest(`/api/quotes/${quoteId}/send-email`, 'POST');
+    mutationFn: async ({ quoteId, senderData }: { quoteId: string, senderData: { senderName: string, senderEmail: string } }) => {
+      const response = await apiRequest(`/api/quotes/${quoteId}/send-email`, 'POST', senderData);
       return response.json();
     },
     onSuccess: () => {
@@ -154,7 +171,12 @@ export default function NewQuotePage() {
     try {
       const quote = await createMutation.mutateAsync(data);
       if (quote?.id) {
-        await sendEmailMutation.mutateAsync(quote.id);
+        // Get sender info from form or use default
+        const senderData = {
+          senderName: data.senderName || 'צוות הסוכנות',
+          senderEmail: data.senderEmail || 'info@agency.com'
+        };
+        await sendEmailMutation.mutateAsync({ quoteId: quote.id, senderData });
       }
     } catch (error) {
       console.error('Error creating and sending quote:', error);
@@ -204,30 +226,82 @@ export default function NewQuotePage() {
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="clientId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>לקוח</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="בחר לקוח" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {clients?.map((client) => (
-                                  <SelectItem key={client.id} value={client.id}>
-                                    {client.name}
+                      <div className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="clientType"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>סוג נמען</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="client">לקוח קיים</SelectItem>
+                                  <SelectItem value="lead">ליד/פרוספקט</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="clientId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {form.watch('clientType') === 'lead' ? 'ליד *' : 'לקוח *'}
+                              </FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={
+                                      form.watch('clientType') === 'lead' ? 'בחר ליד' : 'בחר לקוח'
+                                    } />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {form.watch('clientType') === 'lead' ? (
+                                    leads?.map((lead) => (
+                                      <SelectItem key={lead.id} value={lead.id}>
+                                        <div>
+                                          <div className="font-medium">{lead.name}</div>
+                                          {lead.email && (
+                                            <div className="text-sm text-gray-600">{lead.email}</div>
+                                          )}
+                                        </div>
+                                      </SelectItem>
+                                    ))
+                                  ) : (
+                                    clients?.map((client) => (
+                                      <SelectItem key={client.id} value={client.id}>
+                                        <div>
+                                          <div className="font-medium">{client.name}</div>
+                                          {client.email && (
+                                            <div className="text-sm text-gray-600">{client.email}</div>
+                                          )}
+                                        </div>
+                                      </SelectItem>
+                                    ))
+                                  )}
+                                  <SelectItem value="add_new">
+                                    <div className="flex items-center gap-2 text-blue-600 font-medium">
+                                      <Plus className="h-4 w-4" />
+                                      הוסף {form.watch('clientType') === 'lead' ? 'ליד' : 'לקוח'} חדש
+                                    </div>
                                   </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
 
                     <FormField
@@ -401,16 +475,52 @@ export default function NewQuotePage() {
                         {createMutation.isPending ? 'שומר...' : 'שמור הצעת מחיר'}
                       </Button>
                       
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full gap-2"
-                        onClick={form.handleSubmit(handleSendAndEmail)}
-                        disabled={createMutation.isPending || sendEmailMutation.isPending}
-                      >
-                        <Send className="h-4 w-4" />
-                        {sendEmailMutation.isPending ? 'שולח...' : 'שמור ושלח במייל'}
-                      </Button>
+                      <div className="space-y-4">
+                        {/* Sender Details for Email */}
+                        <div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+                          <h4 className="font-medium text-blue-800 mb-3">פרטי השולח למייל</h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name="senderName"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>שם השולח</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="צוות הסוכנות" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="senderEmail"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>כתובת מייל השולח</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="info@agency.com" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full gap-2 bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                          onClick={form.handleSubmit(handleSendAndEmail)}
+                          disabled={createMutation.isPending || sendEmailMutation.isPending}
+                        >
+                          <Send className="h-4 w-4" />
+                          {sendEmailMutation.isPending ? 'שולח...' : 'שמור ושלח במייל'}
+                        </Button>
+                      </div>
                       
                       <Button
                         type="button"
