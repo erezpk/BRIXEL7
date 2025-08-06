@@ -2469,10 +2469,12 @@ ${quote.notes || ''}
   });
 
   // Update agency logo for current user
-  router.put('/api/agencies/current/logo', requireAuth, requireUserWithAgency, async (req, res) => {
+  app.put('/api/agencies/current/logo', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const { logoURL } = req.body;
       const user = req.user!;
+
+      console.log('Updating logo for user:', user.id, 'agency:', user.agencyId, 'logo:', logoURL);
 
       const agency = await storage.updateAgency(user.agencyId!, {
         logo: logoURL
@@ -2486,7 +2488,7 @@ ${quote.notes || ''}
   });
 
   // Upload URL for current agency logo
-  router.post('/api/agencies/current/upload-logo', requireAuth, requireUserWithAgency, async (req, res) => {
+  app.post('/api/agencies/current/upload-logo', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const objectStorageService = new ObjectStorageService();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
@@ -2584,11 +2586,12 @@ ${quote.notes || ''}
         pdfColor: color || '#0066cc'
       };
 
-      const pdfBuffer = await generateQuotePDF(
-        testQuote,
-        testClient,
-        agencyWithTemplate,
-        user.fullName
+      const { generateQuotePDFHtml, sampleQuoteData } = await import('./pdf-generator-html');
+
+      const pdfBuffer = await generateQuotePDFHtml(
+        sampleQuoteData.quote,
+        sampleQuoteData.client,
+        agencyWithTemplate
       );
 
       res.setHeader('Content-Type', 'application/pdf');

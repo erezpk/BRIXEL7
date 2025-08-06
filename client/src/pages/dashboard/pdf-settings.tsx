@@ -44,10 +44,10 @@ export default function PDFSettingsPage() {
   // Set initial values when data loads
   useEffect(() => {
     if (agency) {
-      setSelectedTemplate(agency.pdfTemplate || 'modern');
-      setSelectedColor(agency.pdfColor || '#0066cc');
-      setCustomColor(agency.pdfColor || '#0066cc');
-      setAgencyLogo(agency.logo || null);
+      setSelectedTemplate((agency as any).pdfTemplate || 'modern');
+      setSelectedColor((agency as any).pdfColor || '#0066cc');
+      setCustomColor((agency as any).pdfColor || '#0066cc');
+      setAgencyLogo((agency as any).logo || null);
     }
   }, [agency]);
 
@@ -291,30 +291,36 @@ export default function PDFSettingsPage() {
               onComplete={async (result) => {
                 if (result.successful && result.successful[0]) {
                   const uploadURL = result.successful[0].uploadURL;
-                  try {
-                    const response = await fetch('/api/agencies/current/logo', {
-                      method: 'PUT',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ logoURL: uploadURL }),
-                      credentials: 'include'
-                    });
-                    
-                    if (response.ok) {
-                      setAgencyLogo(uploadURL);
-                      queryClient.invalidateQueries({ queryKey: ['/api/agencies/current'] });
-                      toast({
-                        title: "לוגו הועלה בהצלחה",
-                        description: "הלוגו יופיע בהצעות מחיר החדשות"
+                  if (uploadURL) {
+                    try {
+                      const response = await fetch('/api/agencies/current/logo', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ logoURL: uploadURL }),
+                        credentials: 'include'
                       });
-                    } else {
-                      throw new Error('Failed to save logo');
+                      
+                      if (response.ok) {
+                        // Extract the object path from the upload URL for display
+                        const objectPath = uploadURL.split('?')[0]; // Remove query params
+                        setAgencyLogo(objectPath);
+                        queryClient.invalidateQueries({ queryKey: ['/api/agencies/current'] });
+                        toast({
+                          title: "לוגו הועלה בהצלחה",
+                          description: "הלוגו יופיע בהצעות מחיר החדשות"
+                        });
+                      } else {
+                        const errorData = await response.json();
+                        console.error('Logo save error:', errorData);
+                        throw new Error('Failed to save logo');
+                      }
+                    } catch (error) {
+                      toast({
+                        title: "שגיאה בשמירת לוגו",
+                        description: "נסה שוב מאוחר יותר",
+                        variant: "destructive"
+                      });
                     }
-                  } catch (error) {
-                    toast({
-                      title: "שגיאה בשמירת לוגו",
-                      description: "נסה שוב מאוחר יותר",
-                      variant: "destructive"
-                    });
                   }
                 }
               }}
