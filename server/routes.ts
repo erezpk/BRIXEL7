@@ -10,6 +10,7 @@ import express from "express"; // Import express to use its Router
 import { emailService } from "./email-service.js"; // Import from email-service.ts
 import crypto from 'crypto'; // Import crypto for token generation
 import { ObjectStorageService, ObjectNotFoundError } from './objectStorage';
+import { generateQuotePDF } from './pdf-generator';
 // Removed Firebase/Google auth library import - using simple OAuth now
 
 // Extend Express types
@@ -2097,22 +2098,47 @@ ${quote.notes || ''}
         return res.status(400).json({ message: 'לא נמצא כתובת מייל לנמען' });
       }
 
-      console.log(`Sending email to: ${recipient.email} with sender: ${senderEmail || 'techpikado@gmail.com'}`);
+      console.log(`Sending email to: ${recipient.email} with sender: ${senderEmail}`);
       
-      const success = await emailService.sendEmail({
+      // Generate PDF attachment
+      console.log('Generating PDF for quote...');
+      let pdfBuffer: Buffer | null = null;
+      try {
+        pdfBuffer = await generateQuotePDF(quote, recipient, agency, senderName);
+        console.log('PDF generated successfully');
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        // Continue without PDF if generation fails
+      }
+
+      // Send email with PDF attachment
+      const emailOptions: any = {
         to: recipient.email,
         subject: `הצעת מחיר - ${quote.title} מאת ${senderName || agency.name}`,
         text: emailBody,
         html: emailBody.replace(/\n/g, '<br>'),
-        from: senderEmail || 'techpikado@gmail.com'
-      });
+        from: senderEmail // Always use the sender email from the form
+      };
+
+      // Add PDF attachment if available
+      if (pdfBuffer) {
+        emailOptions.attachments = [
+          {
+            filename: `הצעת-מחיר-${quote.quoteNumber}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf'
+          }
+        ];
+      }
+
+      const success = await emailService.sendEmail(emailOptions);
 
       console.log(`Email send result: ${success}`);
       
       if (success) {
         // Update quote as sent
-        await storage.updateQuote(quoteId, { 
-          sentAt: new Date().toISOString(),
+        await storage.updateQuote(quote.id, { 
+          sentAt: new Date(),
           status: 'sent'
         });
         console.log('Quote marked as sent');

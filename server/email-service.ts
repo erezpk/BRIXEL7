@@ -6,6 +6,11 @@ interface EmailParams {
   subject: string;
   text?: string;
   html?: string;
+  attachments?: Array<{
+    filename: string;
+    content: Buffer;
+    contentType: string;
+  }>;
 }
 
 interface EmailConfig {
@@ -91,7 +96,7 @@ class EmailService {
     }
 
     try {
-      const mailOptions = {
+      const mailOptions: any = {
         from: params.from || this.config.from,
         to: params.to,
         subject: params.subject,
@@ -99,8 +104,16 @@ class EmailService {
         html: params.html
       };
 
+      // Add attachments if provided
+      if (params.attachments && params.attachments.length > 0) {
+        mailOptions.attachments = params.attachments;
+      }
+
       const result = await this.transporter.sendMail(mailOptions);
       console.log('📧 Email sent successfully:', result.messageId);
+      if (mailOptions.attachments) {
+        console.log(`📎 Email sent with ${mailOptions.attachments.length} attachment(s)`);
+      }
       return true;
     } catch (error) {
       console.error('❌ Email sending failed:', error);
