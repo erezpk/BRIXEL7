@@ -76,8 +76,8 @@ export default function NewQuotePage() {
       validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
       items: [{ productId: '', name: '', description: '', quantity: 1, unitPrice: 0, priceType: 'fixed' as const, total: 0 }],
       notes: '',
-      senderName: '',
-      senderEmail: '',
+      senderName: 'צוות HORIZON-X',
+      senderEmail: 'techpikado@gmail.com',
       emailMessage: '',
     },
   });
@@ -174,7 +174,7 @@ export default function NewQuotePage() {
       if (quote?.id) {
         // Get sender info from form or use default
         const senderData = {
-          senderName: data.senderName || 'צוות הסוכנות',
+          senderName: data.senderName || 'צוות HORIZON-X',
           senderEmail: data.senderEmail || 'techpikado@gmail.com'
         };
         console.log('Sending email with sender data:', senderData);
@@ -291,12 +291,7 @@ export default function NewQuotePage() {
                                       </SelectItem>
                                     ))
                                   )}
-                                  <SelectItem value="demo_client">
-                                    <div className="flex items-center gap-2 text-green-600 font-medium">
-                                      <Plus className="h-4 w-4" />
-                                      לקוח דמו לבדיקה (errz190@gmail.com)
-                                    </div>
-                                  </SelectItem>
+
                                 </SelectContent>
                               </Select>
                               <FormMessage />

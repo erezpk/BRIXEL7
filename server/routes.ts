@@ -2000,6 +2000,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       console.log('Creating quote with data:', JSON.stringify(quoteData, null, 2));
+      
+      // Ensure required fields are present
+      if (!quoteData.subtotal && !quoteData.subtotalAmount) {
+        return res.status(400).json({ message: 'חסר שדה subtotal או subtotalAmount' });
+      }
+      
+      // Map subtotalAmount to subtotal if needed
+      if (quoteData.subtotalAmount && !quoteData.subtotal) {
+        quoteData.subtotal = quoteData.subtotalAmount;
+        delete quoteData.subtotalAmount;
+      }
+      
       const quote = await storage.createQuote(quoteData);
       res.json(quote);
     } catch (error) {
@@ -2085,13 +2097,17 @@ ${quote.notes || ''}
         return res.status(400).json({ message: 'לא נמצא כתובת מייל לנמען' });
       }
 
+      console.log(`Sending email to: ${recipient.email} with sender: ${senderEmail || 'techpikado@gmail.com'}`);
+      
       const success = await emailService.sendEmail({
         to: recipient.email,
         subject: `הצעת מחיר - ${quote.title} מאת ${senderName || agency.name}`,
         text: emailBody,
         html: emailBody.replace(/\n/g, '<br>'),
-        from: senderEmail || undefined
+        from: senderEmail || 'techpikado@gmail.com'
       });
+
+      console.log(`Email send result: ${success}`);
 
       if (success) {
         // Update quote status to indicate it was sent
