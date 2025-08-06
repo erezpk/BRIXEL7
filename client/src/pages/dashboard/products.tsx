@@ -88,12 +88,9 @@ export default function ProductsPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
-      return await apiRequest('/api/products', {
-        method: 'POST',
-        body: {
-          ...data,
-          price: Math.round(data.price * 100), // Convert to agorot
-        },
+      return await apiRequest('/api/products', 'POST', {
+        ...data,
+        price: Math.round(data.price * 100), // Convert to agorot
       });
     },
     onSuccess: () => {
@@ -110,12 +107,9 @@ export default function ProductsPage() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: ProductFormData }) => {
-      return await apiRequest(`/api/products/${id}`, {
-        method: 'PUT',
-        body: {
-          ...data,
-          price: Math.round(data.price * 100), // Convert to agorot
-        },
+      return await apiRequest(`/api/products/${id}`, 'PUT', {
+        ...data,
+        price: Math.round(data.price * 100), // Convert to agorot
       });
     },
     onSuccess: () => {
@@ -133,9 +127,7 @@ export default function ProductsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest(`/api/products/${id}`, {
-        method: 'DELETE',
-      });
+      return await apiRequest(`/api/products/${id}`, 'DELETE');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });

@@ -1936,14 +1936,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   router.post('/api/products', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
-      const productData = {
+      console.log('Creating product with data:', req.body);
+      
+      const productData = insertProductSchema.parse({
         ...req.body,
         agencyId: user.agencyId!,
         createdBy: user.id
-      };
+      });
+      
       const product = await storage.createProduct(productData);
+      console.log('Product created:', product);
       res.json(product);
     } catch (error) {
+      console.error('Product creation error:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'נתונים לא תקינים', errors: error.errors });
+      }
       res.status(500).json({ message: 'שגיאה ביצירת מוצר/שירות' });
     }
   });
