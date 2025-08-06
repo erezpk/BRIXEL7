@@ -100,6 +100,188 @@ export const taskComments = pgTable("task_comments", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Client Settings - Individual client configurations
+export const clientSettings = pgTable("client_settings", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: uuid("client_id").notNull().references(() => clients.id).unique(),
+  vatPercentage: integer("vat_percentage").default(17).notNull(), // VAT percentage for this client
+  currency: text("currency").default("ILS").notNull(), // Currency (ILS, USD, EUR, etc.)
+  paymentTerms: integer("payment_terms").default(30).notNull(), // Payment terms in days
+  settings: json("settings").$type<{
+    timezone?: string;
+    invoicePrefix?: string;
+    autoReminders?: boolean;
+    reminderDays?: number[];
+    defaultNotes?: string;
+  }>().default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Products and Services
+export const products = pgTable("products", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  category: text("category"), // website, design, marketing, video, etc.
+  price: integer("price").notNull(), // in agorot
+  unit: text("unit").default("project").notNull(), // project, hour, month, etc.
+  isActive: boolean("is_active").default(true).notNull(),
+  predefinedTasks: json("predefined_tasks").$type<{
+    id: string;
+    title: string;
+    description?: string;
+    estimatedHours?: number;
+    order: number;
+  }[]>().default([]),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Quotes/Proposals
+export const quotes = pgTable("quotes", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  clientId: uuid("client_id").notNull().references(() => clients.id),
+  quoteNumber: text("quote_number").notNull().unique(),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: text("status").default("draft").notNull(), // draft, sent, approved, rejected, expired
+  validUntil: date("valid_until"),
+  subtotal: integer("subtotal").notNull(), // in agorot
+  vatAmount: integer("vat_amount").notNull(),
+  totalAmount: integer("total_amount").notNull(),
+  items: json("items").$type<{
+    id: string;
+    productId?: string;
+    name: string;
+    description?: string;
+    quantity: number;
+    unitPrice: number; // in agorot
+    total: number; // in agorot
+  }[]>().default([]),
+  terms: text("terms"),
+  notes: text("notes"),
+  sentAt: timestamp("sent_at"),
+  approvedAt: timestamp("approved_at"),
+  signedAt: timestamp("signed_at"),
+  signatureData: json("signature_data").$type<{
+    signature?: string; // base64 signature image
+    ipAddress?: string;
+    userAgent?: string;
+    timestamp?: string;
+  }>(),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Contracts
+export const contracts = pgTable("contracts", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  clientId: uuid("client_id").notNull().references(() => clients.id),
+  projectId: uuid("project_id").references(() => projects.id),
+  quoteId: uuid("quote_id").references(() => quotes.id),
+  contractNumber: text("contract_number").notNull().unique(),
+  title: text("title").notNull(),
+  status: text("status").default("draft").notNull(), // draft, sent, signed, active, completed, cancelled
+  contractFile: text("contract_file"), // path to uploaded contract file
+  signatureFields: json("signature_fields").$type<{
+    id: string;
+    page: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    signerRole: string; // client, agency
+  }[]>().default([]),
+  clientSignature: json("client_signature").$type<{
+    signature?: string; // base64 signature image
+    signedAt?: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }>(),
+  agencySignature: json("agency_signature").$type<{
+    signature?: string;
+    signedAt?: string;
+    signedBy?: string; // user ID
+  }>(),
+  startDate: date("start_date"),
+  endDate: date("end_date"),
+  totalValue: integer("total_value"), // in agorot
+  paymentSchedule: json("payment_schedule").$type<{
+    id: string;
+    amount: number; // in agorot
+    dueDate: string;
+    description?: string;
+    status: 'pending' | 'paid' | 'overdue';
+  }[]>().default([]),
+  terms: text("terms"),
+  notes: text("notes"),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Invoices
+export const invoices = pgTable("invoices", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  clientId: uuid("client_id").notNull().references(() => clients.id),
+  projectId: uuid("project_id").references(() => projects.id),
+  contractId: uuid("contract_id").references(() => contracts.id),
+  invoiceNumber: text("invoice_number").notNull().unique(),
+  status: text("status").default("draft").notNull(), // draft, sent, paid, overdue, cancelled
+  issueDate: date("issue_date").notNull(),
+  dueDate: date("due_date").notNull(),
+  subtotal: integer("subtotal").notNull(), // in agorot
+  vatAmount: integer("vat_amount").notNull(),
+  totalAmount: integer("total_amount").notNull(),
+  paidAmount: integer("paid_amount").default(0).notNull(),
+  items: json("items").$type<{
+    id: string;
+    description: string;
+    quantity: number;
+    unitPrice: number; // in agorot
+    total: number; // in agorot
+  }[]>().default([]),
+  paymentMethod: text("payment_method"), // bank_transfer, credit_card, check, cash
+  paymentReference: text("payment_reference"), // transaction ID, check number, etc.
+  paidAt: timestamp("paid_at"),
+  notes: text("notes"),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Payments
+export const payments = pgTable("payments", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  clientId: uuid("client_id").notNull().references(() => clients.id),
+  invoiceId: uuid("invoice_id").references(() => invoices.id),
+  contractId: uuid("contract_id").references(() => contracts.id),
+  projectId: uuid("project_id").references(() => projects.id),
+  amount: integer("amount").notNull(), // in agorot
+  paymentDate: date("payment_date").notNull(),
+  paymentMethod: text("payment_method").notNull(), // bank_transfer, credit_card, check, cash
+  reference: text("reference"), // transaction ID, check number, etc.
+  status: text("status").default("completed").notNull(), // pending, completed, failed, cancelled
+  isRecurring: boolean("is_recurring").default(false).notNull(),
+  recurringSchedule: json("recurring_schedule").$type<{
+    frequency: 'monthly' | 'quarterly' | 'yearly';
+    nextPaymentDate?: string;
+    endDate?: string;
+  }>(),
+  notes: text("notes"),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Digital Assets
 export const digitalAssets = pgTable("digital_assets", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -223,10 +405,15 @@ export interface ClientCardField {
 export const agenciesRelations = relations(agencies, ({ many }) => ({
   users: many(users),
   clients: many(clients),
+  products: many(products),
   projects: many(projects),
   tasks: many(tasks),
   leads: many(leads),
   digitalAssets: many(digitalAssets),
+  quotes: many(quotes),
+  contracts: many(contracts),
+  invoices: many(invoices),
+  payments: many(payments),
   templates: many(agencyTemplates),
   clientCardTemplates: many(clientCardTemplates),
   activityLog: many(activityLog),
@@ -250,10 +437,18 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
     fields: [clients.agencyId],
     references: [agencies.id],
   }),
+  settings: one(clientSettings, {
+    fields: [clients.id],
+    references: [clientSettings.clientId],
+  }),
   projects: many(projects),
   tasks: many(tasks),
   leads: many(leads),
   digitalAssets: many(digitalAssets),
+  quotes: many(quotes),
+  contracts: many(contracts),
+  invoices: many(invoices),
+  payments: many(payments),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -378,6 +573,113 @@ export const activityLogRelations = relations(activityLog, ({ one }) => ({
   }),
 }));
 
+// New Relations
+export const clientSettingsRelations = relations(clientSettings, ({ one }) => ({
+  client: one(clients, {
+    fields: [clientSettings.clientId],
+    references: [clients.id],
+  }),
+}));
+
+export const productsRelations = relations(products, ({ one }) => ({
+  agency: one(agencies, {
+    fields: [products.agencyId],
+    references: [agencies.id],
+  }),
+  createdBy: one(users, {
+    fields: [products.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const quotesRelations = relations(quotes, ({ one }) => ({
+  agency: one(agencies, {
+    fields: [quotes.agencyId],
+    references: [agencies.id],
+  }),
+  client: one(clients, {
+    fields: [quotes.clientId],
+    references: [clients.id],
+  }),
+  createdBy: one(users, {
+    fields: [quotes.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const contractsRelations = relations(contracts, ({ one }) => ({
+  agency: one(agencies, {
+    fields: [contracts.agencyId],
+    references: [agencies.id],
+  }),
+  client: one(clients, {
+    fields: [contracts.clientId],
+    references: [clients.id],
+  }),
+  project: one(projects, {
+    fields: [contracts.projectId],
+    references: [projects.id],
+  }),
+  quote: one(quotes, {
+    fields: [contracts.quoteId],
+    references: [quotes.id],
+  }),
+  createdBy: one(users, {
+    fields: [contracts.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const invoicesRelations = relations(invoices, ({ one }) => ({
+  agency: one(agencies, {
+    fields: [invoices.agencyId],
+    references: [agencies.id],
+  }),
+  client: one(clients, {
+    fields: [invoices.clientId],
+    references: [clients.id],
+  }),
+  project: one(projects, {
+    fields: [invoices.projectId],
+    references: [projects.id],
+  }),
+  contract: one(contracts, {
+    fields: [invoices.contractId],
+    references: [contracts.id],
+  }),
+  createdBy: one(users, {
+    fields: [invoices.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  agency: one(agencies, {
+    fields: [payments.agencyId],
+    references: [agencies.id],
+  }),
+  client: one(clients, {
+    fields: [payments.clientId],
+    references: [clients.id],
+  }),
+  invoice: one(invoices, {
+    fields: [payments.invoiceId],
+    references: [invoices.id],
+  }),
+  contract: one(contracts, {
+    fields: [payments.contractId],
+    references: [contracts.id],
+  }),
+  project: one(projects, {
+    fields: [payments.projectId],
+    references: [projects.id],
+  }),
+  createdBy: one(users, {
+    fields: [payments.createdBy],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertAgencySchema = createInsertSchema(agencies).omit({
   id: true,
@@ -447,6 +749,43 @@ export const selectClientCardTemplateSchema = createSelectSchema(clientCardTempl
 export const insertActivityLogSchema = createInsertSchema(activityLog);
 export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens);
 
+// New insert schemas
+export const insertClientSettingsSchema = createInsertSchema(clientSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertProductSchema = createInsertSchema(products).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertQuoteSchema = createInsertSchema(quotes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertContractSchema = createInsertSchema(contracts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPaymentSchema = createInsertSchema(payments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type Agency = typeof agencies.$inferSelect;
 export type InsertAgency = z.infer<typeof insertAgencySchema>;
@@ -481,3 +820,22 @@ export type InsertClientCardTemplate = z.infer<typeof insertClientCardTemplateSc
 export type ActivityLog = typeof activityLog.$inferSelect;
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
+
+// New Types
+export type ClientSettings = typeof clientSettings.$inferSelect;
+export type InsertClientSettings = z.infer<typeof insertClientSettingsSchema>;
+
+export type Product = typeof products.$inferSelect;
+export type InsertProduct = z.infer<typeof insertProductSchema>;
+
+export type Quote = typeof quotes.$inferSelect;
+export type InsertQuote = z.infer<typeof insertQuoteSchema>;
+
+export type Contract = typeof contracts.$inferSelect;
+export type InsertContract = z.infer<typeof insertContractSchema>;
+
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
+
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;

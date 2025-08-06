@@ -33,6 +33,9 @@ import Settings from "@/pages/dashboard/settings";
 import EmailSetup from "@/pages/dashboard/email-setup";
 import ClientTemplates from "@/pages/dashboard/client-templates";
 import Assets from "@/pages/dashboard/assets";
+import Financial from "@/pages/dashboard/financial";
+import ProductsPage from "@/pages/dashboard/financial/products";
+import NewQuotePage from "@/pages/dashboard/financial/quotes/new";
 import TeamMemberDashboard from "@/pages/team-member-portal/team-member-dashboard";
 import NotFound from "@/pages/not-found";
 import HelpCenter from "@/pages/help-center";
@@ -238,6 +241,31 @@ export default function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <Assets />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          {/* FINANCIAL MANAGEMENT ROUTES */}
+          <Route path="/dashboard/financial">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Financial />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          <Route path="/dashboard/financial/products">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ProductsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          <Route path="/dashboard/financial/quotes/new">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <NewQuotePage />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>

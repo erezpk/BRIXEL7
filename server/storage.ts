@@ -1,8 +1,15 @@
 import {
   agencies, users, clients, projects, tasks, leads, taskComments, digitalAssets, agencyTemplates, clientCardTemplates, activityLog, passwordResetTokens,
+  clientSettings, products, quotes, contracts, invoices, payments,
   type Agency, type InsertAgency,
   type User, type InsertUser,
   type Client, type InsertClient,
+  type ClientSettings, type InsertClientSettings,
+  type Product, type InsertProduct,
+  type Quote, type InsertQuote,
+  type Contract, type InsertContract,
+  type Invoice, type InsertInvoice,
+  type Payment, type InsertPayment,
   type Project, type InsertProject,
   type Task, type InsertTask,
   type Lead, type InsertLead,
@@ -124,6 +131,51 @@ export interface IStorage {
   validatePasswordResetToken(token: string): Promise<string | null>;
   markPasswordResetTokenAsUsed(token: string): Promise<void>;
   updateUserPassword(userId: string, hashedPassword: string): Promise<void>;
+
+  // Client Settings
+  getClientSettings(clientId: string): Promise<ClientSettings | undefined>;
+  createClientSettings(settings: InsertClientSettings): Promise<ClientSettings>;
+  updateClientSettings(clientId: string, settings: Partial<InsertClientSettings>): Promise<ClientSettings>;
+
+  // Products
+  getProduct(id: string): Promise<Product | undefined>;
+  getProductsByAgency(agencyId: string): Promise<Product[]>;
+  createProduct(product: InsertProduct): Promise<Product>;
+  updateProduct(id: string, product: Partial<InsertProduct>): Promise<Product>;
+  deleteProduct(id: string): Promise<void>;
+
+  // Quotes
+  getQuote(id: string): Promise<Quote | undefined>;
+  getQuotesByAgency(agencyId: string): Promise<Quote[]>;
+  getQuotesByClient(clientId: string): Promise<Quote[]>;
+  createQuote(quote: InsertQuote): Promise<Quote>;
+  updateQuote(id: string, quote: Partial<InsertQuote>): Promise<Quote>;
+  deleteQuote(id: string): Promise<void>;
+
+  // Contracts
+  getContract(id: string): Promise<Contract | undefined>;
+  getContractsByAgency(agencyId: string): Promise<Contract[]>;
+  getContractsByClient(clientId: string): Promise<Contract[]>;
+  createContract(contract: InsertContract): Promise<Contract>;
+  updateContract(id: string, contract: Partial<InsertContract>): Promise<Contract>;
+  deleteContract(id: string): Promise<void>;
+
+  // Invoices
+  getInvoice(id: string): Promise<Invoice | undefined>;
+  getInvoicesByAgency(agencyId: string): Promise<Invoice[]>;
+  getInvoicesByClient(clientId: string): Promise<Invoice[]>;
+  createInvoice(invoice: InsertInvoice): Promise<Invoice>;
+  updateInvoice(id: string, invoice: Partial<InsertInvoice>): Promise<Invoice>;
+  deleteInvoice(id: string): Promise<void>;
+
+  // Payments
+  getPayment(id: string): Promise<Payment | undefined>;
+  getPaymentsByAgency(agencyId: string): Promise<Payment[]>;
+  getPaymentsByClient(clientId: string): Promise<Payment[]>;
+  getPaymentsByInvoice(invoiceId: string): Promise<Payment[]>;
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  updatePayment(id: string, payment: Partial<InsertPayment>): Promise<Payment>;
+  deletePayment(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -632,6 +684,224 @@ export class DatabaseStorage implements IStorage {
 
   async syncLeadsFromGoogle(agencyId: string, accessToken: string): Promise<Lead[]> {
     return [];
+  }
+
+  // Client Settings
+  async getClientSettings(clientId: string): Promise<ClientSettings | undefined> {
+    const [settings] = await this.db.select().from(clientSettings).where(eq(clientSettings.clientId, clientId));
+    return settings || undefined;
+  }
+
+  async createClientSettings(insertSettings: InsertClientSettings): Promise<ClientSettings> {
+    const [settings] = await this.db
+      .insert(clientSettings)
+      .values(insertSettings as any)
+      .returning();
+    return settings;
+  }
+
+  async updateClientSettings(clientId: string, updateSettings: Partial<InsertClientSettings>): Promise<ClientSettings> {
+    const [settings] = await this.db
+      .update(clientSettings)
+      .set({ ...updateSettings, updatedAt: new Date() } as any)
+      .where(eq(clientSettings.clientId, clientId))
+      .returning();
+    return settings;
+  }
+
+  // Products
+  async getProduct(id: string): Promise<Product | undefined> {
+    const [product] = await this.db.select().from(products).where(eq(products.id, id));
+    return product || undefined;
+  }
+
+  async getProductsByAgency(agencyId: string): Promise<Product[]> {
+    return await this.db.select().from(products)
+      .where(and(eq(products.agencyId, agencyId), eq(products.isActive, true)))
+      .orderBy(asc(products.name));
+  }
+
+  async createProduct(insertProduct: InsertProduct): Promise<Product> {
+    const [product] = await this.db
+      .insert(products)
+      .values(insertProduct as any)
+      .returning();
+    return product;
+  }
+
+  async updateProduct(id: string, updateProduct: Partial<InsertProduct>): Promise<Product> {
+    const [product] = await this.db
+      .update(products)
+      .set({ ...updateProduct, updatedAt: new Date() } as any)
+      .where(eq(products.id, id))
+      .returning();
+    return product;
+  }
+
+  async deleteProduct(id: string): Promise<void> {
+    await this.db.delete(products).where(eq(products.id, id));
+  }
+
+  // Quotes
+  async getQuote(id: string): Promise<Quote | undefined> {
+    const [quote] = await this.db.select().from(quotes).where(eq(quotes.id, id));
+    return quote || undefined;
+  }
+
+  async getQuotesByAgency(agencyId: string): Promise<Quote[]> {
+    return await this.db.select().from(quotes)
+      .where(eq(quotes.agencyId, agencyId))
+      .orderBy(desc(quotes.createdAt));
+  }
+
+  async getQuotesByClient(clientId: string): Promise<Quote[]> {
+    return await this.db.select().from(quotes)
+      .where(eq(quotes.clientId, clientId))
+      .orderBy(desc(quotes.createdAt));
+  }
+
+  async createQuote(insertQuote: InsertQuote): Promise<Quote> {
+    const [quote] = await this.db
+      .insert(quotes)
+      .values(insertQuote as any)
+      .returning();
+    return quote;
+  }
+
+  async updateQuote(id: string, updateQuote: Partial<InsertQuote>): Promise<Quote> {
+    const [quote] = await this.db
+      .update(quotes)
+      .set({ ...updateQuote, updatedAt: new Date() } as any)
+      .where(eq(quotes.id, id))
+      .returning();
+    return quote;
+  }
+
+  async deleteQuote(id: string): Promise<void> {
+    await this.db.delete(quotes).where(eq(quotes.id, id));
+  }
+
+  // Contracts
+  async getContract(id: string): Promise<Contract | undefined> {
+    const [contract] = await this.db.select().from(contracts).where(eq(contracts.id, id));
+    return contract || undefined;
+  }
+
+  async getContractsByAgency(agencyId: string): Promise<Contract[]> {
+    return await this.db.select().from(contracts)
+      .where(eq(contracts.agencyId, agencyId))
+      .orderBy(desc(contracts.createdAt));
+  }
+
+  async getContractsByClient(clientId: string): Promise<Contract[]> {
+    return await this.db.select().from(contracts)
+      .where(eq(contracts.clientId, clientId))
+      .orderBy(desc(contracts.createdAt));
+  }
+
+  async createContract(insertContract: InsertContract): Promise<Contract> {
+    const [contract] = await this.db
+      .insert(contracts)
+      .values(insertContract as any)
+      .returning();
+    return contract;
+  }
+
+  async updateContract(id: string, updateContract: Partial<InsertContract>): Promise<Contract> {
+    const [contract] = await this.db
+      .update(contracts)
+      .set({ ...updateContract, updatedAt: new Date() } as any)
+      .where(eq(contracts.id, id))
+      .returning();
+    return contract;
+  }
+
+  async deleteContract(id: string): Promise<void> {
+    await this.db.delete(contracts).where(eq(contracts.id, id));
+  }
+
+  // Invoices
+  async getInvoice(id: string): Promise<Invoice | undefined> {
+    const [invoice] = await this.db.select().from(invoices).where(eq(invoices.id, id));
+    return invoice || undefined;
+  }
+
+  async getInvoicesByAgency(agencyId: string): Promise<Invoice[]> {
+    return await this.db.select().from(invoices)
+      .where(eq(invoices.agencyId, agencyId))
+      .orderBy(desc(invoices.createdAt));
+  }
+
+  async getInvoicesByClient(clientId: string): Promise<Invoice[]> {
+    return await this.db.select().from(invoices)
+      .where(eq(invoices.clientId, clientId))
+      .orderBy(desc(invoices.createdAt));
+  }
+
+  async createInvoice(insertInvoice: InsertInvoice): Promise<Invoice> {
+    const [invoice] = await this.db
+      .insert(invoices)
+      .values(insertInvoice as any)
+      .returning();
+    return invoice;
+  }
+
+  async updateInvoice(id: string, updateInvoice: Partial<InsertInvoice>): Promise<Invoice> {
+    const [invoice] = await this.db
+      .update(invoices)
+      .set({ ...updateInvoice, updatedAt: new Date() } as any)
+      .where(eq(invoices.id, id))
+      .returning();
+    return invoice;
+  }
+
+  async deleteInvoice(id: string): Promise<void> {
+    await this.db.delete(invoices).where(eq(invoices.id, id));
+  }
+
+  // Payments
+  async getPayment(id: string): Promise<Payment | undefined> {
+    const [payment] = await this.db.select().from(payments).where(eq(payments.id, id));
+    return payment || undefined;
+  }
+
+  async getPaymentsByAgency(agencyId: string): Promise<Payment[]> {
+    return await this.db.select().from(payments)
+      .where(eq(payments.agencyId, agencyId))
+      .orderBy(desc(payments.createdAt));
+  }
+
+  async getPaymentsByClient(clientId: string): Promise<Payment[]> {
+    return await this.db.select().from(payments)
+      .where(eq(payments.clientId, clientId))
+      .orderBy(desc(payments.createdAt));
+  }
+
+  async getPaymentsByInvoice(invoiceId: string): Promise<Payment[]> {
+    return await this.db.select().from(payments)
+      .where(eq(payments.invoiceId, invoiceId))
+      .orderBy(desc(payments.createdAt));
+  }
+
+  async createPayment(insertPayment: InsertPayment): Promise<Payment> {
+    const [payment] = await this.db
+      .insert(payments)
+      .values(insertPayment as any)
+      .returning();
+    return payment;
+  }
+
+  async updatePayment(id: string, updatePayment: Partial<InsertPayment>): Promise<Payment> {
+    const [payment] = await this.db
+      .update(payments)
+      .set({ ...updatePayment, updatedAt: new Date() } as any)
+      .where(eq(payments.id, id))
+      .returning();
+    return payment;
+  }
+
+  async deletePayment(id: string): Promise<void> {
+    await this.db.delete(payments).where(eq(payments.id, id));
   }
 }
 

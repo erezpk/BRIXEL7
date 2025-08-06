@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema, insertClientCardTemplateSchema } from "@shared/schema";
+import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema, insertClientCardTemplateSchema, insertClientSettingsSchema, insertProductSchema, insertQuoteSchema, insertContractSchema, insertInvoiceSchema, insertPaymentSchema } from "@shared/schema";
 import { z } from "zod";
 import express from "express"; // Import express to use its Router
 import { emailService } from "./email-service.js"; // Import from email-service.ts
@@ -1885,6 +1885,297 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'נכס נמחק בהצלחה' });
     } catch (error) {
       res.status(500).json({ message: 'שגיאה במחיקת נכס דיגיטלי' });
+    }
+  });
+
+  // =================
+  // FINANCIAL MANAGEMENT ROUTES
+  // =================
+
+  // Client Settings Routes
+  router.get('/api/client-settings/:clientId', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const settings = await storage.getClientSettings(req.params.clientId);
+      if (!settings) {
+        // Create default settings if none exist
+        const defaultSettings = await storage.createClientSettings({
+          clientId: req.params.clientId,
+          vatPercentage: 17,
+          currency: 'ILS',
+          paymentTerms: 30,
+          settings: {}
+        });
+        return res.json(defaultSettings);
+      }
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת הגדרות לקוח' });
+    }
+  });
+
+  router.put('/api/client-settings/:clientId', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const settings = await storage.updateClientSettings(req.params.clientId, req.body);
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בעדכון הגדרות לקוח' });
+    }
+  });
+
+  // Products Routes
+  router.get('/api/products', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const products = await storage.getProductsByAgency(user.agencyId!);
+      res.json(products);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת מוצרים ושירותים' });
+    }
+  });
+
+  router.post('/api/products', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const productData = {
+        ...req.body,
+        agencyId: user.agencyId!,
+        createdBy: user.id
+      };
+      const product = await storage.createProduct(productData);
+      res.json(product);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה ביצירת מוצר/שירות' });
+    }
+  });
+
+  router.put('/api/products/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const product = await storage.updateProduct(req.params.id, req.body);
+      res.json(product);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בעדכון מוצר/שירות' });
+    }
+  });
+
+  router.delete('/api/products/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      await storage.deleteProduct(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה במחיקת מוצר/שירות' });
+    }
+  });
+
+  // Quotes Routes
+  router.get('/api/quotes', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const quotes = await storage.getQuotesByAgency(user.agencyId!);
+      res.json(quotes);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת הצעות מחיר' });
+    }
+  });
+
+  router.post('/api/quotes', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const timestamp = Date.now().toString().slice(-6);
+      const quoteNumber = `QU-${timestamp}`;
+      
+      const quoteData = {
+        ...req.body,
+        agencyId: user.agencyId!,
+        createdBy: user.id,
+        quoteNumber
+      };
+      const quote = await storage.createQuote(quoteData);
+      res.json(quote);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה ביצירת הצעת מחיר' });
+    }
+  });
+
+  router.put('/api/quotes/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const quote = await storage.updateQuote(req.params.id, req.body);
+      res.json(quote);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בעדכון הצעת מחיר' });
+    }
+  });
+
+  // Quote approval (for client portal)
+  router.post('/api/quotes/:id/approve', async (req, res) => {
+    try {
+      const { signature, ipAddress, userAgent } = req.body;
+      const quote = await storage.updateQuote(req.params.id, {
+        status: 'approved',
+        approvedAt: new Date(),
+        signedAt: new Date(),
+        signatureData: {
+          signature,
+          ipAddress,
+          userAgent,
+          timestamp: new Date().toISOString()
+        }
+      });
+      res.json(quote);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה באישור הצעת מחיר' });
+    }
+  });
+
+  // Contracts Routes
+  router.get('/api/contracts', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const contracts = await storage.getContractsByAgency(user.agencyId!);
+      res.json(contracts);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת חוזים' });
+    }
+  });
+
+  router.post('/api/contracts', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const timestamp = Date.now().toString().slice(-6);
+      const contractNumber = `CT-${timestamp}`;
+      
+      const contractData = {
+        ...req.body,
+        agencyId: user.agencyId!,
+        createdBy: user.id,
+        contractNumber
+      };
+      const contract = await storage.createContract(contractData);
+      res.json(contract);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה ביצירת חוזה' });
+    }
+  });
+
+  // Contract signing
+  router.post('/api/contracts/:id/sign', async (req, res) => {
+    try {
+      const { signature, role, ipAddress, userAgent } = req.body;
+      const signatureData = {
+        signature,
+        signedAt: new Date().toISOString(),
+        ipAddress,
+        userAgent
+      };
+      
+      const updateData = role === 'client' 
+        ? { clientSignature: signatureData }
+        : { agencySignature: { ...signatureData, signedBy: req.user?.id } };
+        
+      const contract = await storage.updateContract(req.params.id, updateData);
+      res.json(contract);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בחתימה על חוזה' });
+    }
+  });
+
+  // Invoices Routes
+  router.get('/api/invoices', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const invoices = await storage.getInvoicesByAgency(user.agencyId!);
+      res.json(invoices);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת חשבוניות' });
+    }
+  });
+
+  router.post('/api/invoices', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const timestamp = Date.now().toString().slice(-6);
+      const invoiceNumber = `INV-${timestamp}`;
+      
+      const invoiceData = {
+        ...req.body,
+        agencyId: user.agencyId!,
+        createdBy: user.id,
+        invoiceNumber
+      };
+      const invoice = await storage.createInvoice(invoiceData);
+      res.json(invoice);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה ביצירת חשבונית' });
+    }
+  });
+
+  // Payments Routes
+  router.get('/api/payments', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const payments = await storage.getPaymentsByAgency(user.agencyId!);
+      res.json(payments);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת תשלומים' });
+    }
+  });
+
+  router.post('/api/payments', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const paymentData = {
+        ...req.body,
+        agencyId: user.agencyId!,
+        createdBy: user.id
+      };
+      const payment = await storage.createPayment(paymentData);
+      
+      // Update invoice paid amount if invoiceId is provided
+      if (payment.invoiceId) {
+        const invoice = await storage.getInvoice(payment.invoiceId);
+        if (invoice) {
+          const newPaidAmount = invoice.paidAmount + payment.amount;
+          const newStatus = newPaidAmount >= invoice.totalAmount ? 'paid' : 'partially_paid';
+          await storage.updateInvoice(payment.invoiceId, {
+            paidAmount: newPaidAmount,
+            status: newStatus,
+            paidAt: newStatus === 'paid' ? new Date() : undefined
+          });
+        }
+      }
+      
+      res.json(payment);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה ביצירת תשלום' });
+    }
+  });
+
+  // Financial Dashboard Stats
+  router.get('/api/financial/stats', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      
+      const [invoices, payments, quotes, contracts] = await Promise.all([
+        storage.getInvoicesByAgency(user.agencyId!),
+        storage.getPaymentsByAgency(user.agencyId!),
+        storage.getQuotesByAgency(user.agencyId!),
+        storage.getContractsByAgency(user.agencyId!)
+      ]);
+
+      const totalRevenue = payments.reduce((sum, payment) => sum + payment.amount, 0);
+      const pendingInvoices = invoices.filter(inv => inv.status !== 'paid').length;
+      const overdueInvoices = invoices.filter(inv => 
+        inv.status !== 'paid' && new Date(inv.dueDate) < new Date()
+      ).length;
+
+      res.json({
+        totalRevenue: totalRevenue / 100, // Convert from agorot
+        pendingInvoices,
+        overdueInvoices,
+        activeQuotes: quotes.filter(q => q.status === 'sent').length,
+        signedContracts: contracts.filter(c => c.status === 'signed').length
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת נתונים פיננסיים' });
     }
   });
 
