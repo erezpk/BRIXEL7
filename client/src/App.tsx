@@ -34,7 +34,7 @@ import EmailSetup from "@/pages/dashboard/email-setup";
 import ClientTemplates from "@/pages/dashboard/client-templates";
 import Assets from "@/pages/dashboard/assets";
 import Financial from "@/pages/dashboard/financial";
-import ProductsPage from "@/pages/dashboard/financial/products";
+import ProductsPage from "@/pages/dashboard/products";
 import NewQuotePage from "@/pages/dashboard/financial/quotes/new";
 import TeamMemberDashboard from "@/pages/team-member-portal/team-member-dashboard";
 import NotFound from "@/pages/not-found";

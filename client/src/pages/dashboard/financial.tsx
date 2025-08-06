@@ -132,7 +132,7 @@ export default function FinancialPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">ניהול פיננסי</h1>
         <div className="flex gap-2">
-          <Link href="/dashboard/financial/products">
+          <Link href="/dashboard/products">
             <Button variant="outline">מוצרים ושירותים</Button>
           </Link>
           <Link href="/dashboard/financial/quotes/new">

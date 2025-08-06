@@ -20,16 +20,16 @@ import { apiRequest } from '@/lib/queryClient';
 
 const productSchema = z.object({
   name: z.string().min(1, 'שם המוצר/שירות נדרש'),
-  description: z.string().optional(),
-  category: z.string().optional(),
+  description: z.string().optional().default(''),
+  category: z.string().optional().default(''),
   price: z.number().min(0, 'המחיר חייב להיות גדול מ-0'),
   unit: z.string().default('project'),
   isActive: z.boolean().default(true),
   predefinedTasks: z.array(z.object({
     id: z.string(),
-    title: z.string(),
-    description: z.string().optional(),
-    estimatedHours: z.number().optional(),
+    title: z.string().min(1, 'כותרת המשימה נדרשת'),
+    description: z.string().optional().default(''),
+    estimatedHours: z.number().optional().default(1),
     order: z.number(),
   })).default([]),
 });
