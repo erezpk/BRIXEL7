@@ -1900,7 +1900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create default settings if none exist
         const defaultSettings = await storage.createClientSettings({
           clientId: req.params.clientId,
-          vatPercentage: 17,
+          vatPercentage: 18,
           currency: 'ILS',
           paymentTerms: 30,
           settings: {}
@@ -2010,6 +2010,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(quote);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בעדכון הצעת מחיר' });
+    }
+  });
+
+  // Send quote via email
+  router.post('/api/quotes/:id/send-email', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const quote = await storage.getQuote(req.params.id);
+      if (!quote || quote.agencyId !== req.user!.agencyId) {
+        return res.status(404).json({ message: 'הצעת מחיר לא נמצאה' });
+      }
+
+      const client = await storage.getClient(quote.clientId);
+      if (!client) {
+        return res.status(404).json({ message: 'לקוח לא נמצא' });
+      }
+
+      const agency = await storage.getAgency(req.user!.agencyId!);
+      if (!agency) {
+        return res.status(404).json({ message: 'סוכנות לא נמצאה' });
+      }
+
+      // Create quote approval link
+      const approvalLink = `${process.env.REPLIT_DEV_DOMAIN || 'https://your-domain.com'}/quote-approval/${quote.id}`;
+
+      // Format quote items for email
+      const formattedItems = quote.items?.map((item: any) => 
+        `${item.description} - כמות: ${item.quantity} × ${(item.unitPrice / 100).toLocaleString('he-IL')}₪ = ${(item.total / 100).toLocaleString('he-IL')}₪`
+      ).join('\n') || 'אין פריטים';
+
+      const emailBody = `
+שלום ${client.name},
+
+בצוות ${agency.name} שמחים להציג לכם הצעת מחיר עבור: ${quote.title}
+
+פרטי ההצעה:
+${quote.description ? `תיאור: ${quote.description}\n` : ''}
+פריטים:
+${formattedItems}
+
+סיכום פיננסי:
+סה"כ לתשלום: ${(quote.totalAmount / 100).toLocaleString('he-IL')}₪
+
+תוקף ההצעה: עד ${quote.validUntil ? new Date(quote.validUntil).toLocaleDateString('he-IL') : 'לא הוגדר'}
+
+לאישור ההצעה, לחצו על הקישור הבא:
+${approvalLink}
+
+${quote.notes || ''}
+בברכה,
+צוות ${agency.name}
+      `.trim();
+
+      const success = await emailService.sendEmail({
+        to: client.email,
+        subject: `הצעת מחיר - ${quote.title} מאת ${agency.name}`,
+        text: emailBody,
+        html: emailBody.replace(/\n/g, '<br>')
+      });
+
+      if (success) {
+        // Update quote status to indicate it was sent
+        await storage.updateQuote(req.params.id, {
+          status: 'sent',
+          sentAt: new Date()
+        });
+
+        await storage.logActivity({
+          agencyId: req.user!.agencyId!,
+          userId: req.user!.id,
+          action: 'sent_email',
+          entityType: 'quote',
+          entityId: quote.id,
+          details: { 
+            clientEmail: client.email,
+            quoteTitle: quote.title,
+            totalAmount: quote.totalAmount 
+          },
+        });
+
+        res.json({ message: 'הצעת המחיר נשלחה בהצלחה למייל הלקוח', success: true });
+      } else {
+        res.status(500).json({ message: 'שגיאה בשליחת המייל', success: false });
+      }
+    } catch (error) {
+      console.error('Error sending quote email:', error);
+      res.status(500).json({ message: 'שגיאה בשליחת הצעת מחיר במייל' });
     }
   });
 

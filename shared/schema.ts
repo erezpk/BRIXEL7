@@ -104,7 +104,7 @@ export const taskComments = pgTable("task_comments", {
 export const clientSettings = pgTable("client_settings", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   clientId: uuid("client_id").notNull().references(() => clients.id).unique(),
-  vatPercentage: integer("vat_percentage").default(17).notNull(), // VAT percentage for this client
+  vatPercentage: integer("vat_percentage").default(18).notNull(), // VAT percentage for this client
   currency: text("currency").default("ILS").notNull(), // Currency (ILS, USD, EUR, etc.)
   paymentTerms: integer("payment_terms").default(30).notNull(), // Payment terms in days
   settings: json("settings").$type<{

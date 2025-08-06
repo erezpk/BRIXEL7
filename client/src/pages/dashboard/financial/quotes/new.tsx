@@ -76,28 +76,30 @@ export default function NewQuotePage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: QuoteFormData) => {
-      const totalAmount = data.items.reduce((sum, item) => sum + item.total, 0);
-      return apiRequest('/api/quotes', {
-        method: 'POST',
-        body: {
-          ...data,
-          totalAmount: Math.round(totalAmount * 100), // Convert to agorot
-          subtotalAmount: Math.round(totalAmount * 100),
-          vatAmount: 0,
-          status: 'draft',
-          items: data.items.map(item => ({
-            ...item,
-            unitPrice: Math.round(item.unitPrice * 100),
-            total: Math.round(item.total * 100),
-          })),
-        },
+    mutationFn: async (data: QuoteFormData) => {
+      const subtotal = data.items.reduce((sum, item) => sum + item.total, 0);
+      const vatAmount = subtotal * 0.18; // 18% VAT
+      const totalAmount = subtotal + vatAmount;
+
+      const response = await apiRequest('/api/quotes', 'POST', {
+        ...data,
+        subtotalAmount: Math.round(subtotal * 100), // Convert to agorot
+        vatAmount: Math.round(vatAmount * 100), // Convert to agorot
+        totalAmount: Math.round(totalAmount * 100), // Convert to agorot
+        status: 'draft',
+        items: data.items.map(item => ({
+          ...item,
+          unitPrice: Math.round(item.unitPrice * 100), // Convert to agorot
+          total: Math.round(item.total * 100), // Convert to agorot
+        })),
       });
+      
+      return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (quote) => {
       queryClient.invalidateQueries({ queryKey: ['/api/quotes'] });
       toast({ title: 'הצעת מחיר נוצרה בהצלחה' });
-      navigate(`/dashboard/financial/quotes/${data.id}`);
+      navigate(`/dashboard/financial/quotes/${quote.id}`);
     },
     onError: () => {
       toast({ title: 'שגיאה ביצירת הצעת מחיר', variant: 'destructive' });
@@ -120,8 +122,32 @@ export default function NewQuotePage() {
     });
   };
 
+  const sendEmailMutation = useMutation({
+    mutationFn: async (quoteId: string) => {
+      const response = await apiRequest(`/api/quotes/${quoteId}/send-email`, 'POST');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: 'הצעת המחיר נשלחה בהצלחה למייל הלקוח!' });
+    },
+    onError: () => {
+      toast({ title: 'שגיאה בשליחת המייל', variant: 'destructive' });
+    },
+  });
+
   const onSubmit = (data: QuoteFormData) => {
     createMutation.mutate(data);
+  };
+
+  const handleSendAndEmail = async (data: QuoteFormData) => {
+    try {
+      const quote = await createMutation.mutateAsync(data);
+      if (quote?.id) {
+        await sendEmailMutation.mutateAsync(quote.id);
+      }
+    } catch (error) {
+      console.error('Error creating and sending quote:', error);
+    }
   };
 
   const watchedItems = form.watch('items');
@@ -366,13 +392,13 @@ export default function NewQuotePage() {
                       <span>{new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS' }).format(subtotal)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>מע"מ (17%):</span>
-                      <span>{new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS' }).format(subtotal * 0.17)}</span>
+                      <span>מע"מ (18%):</span>
+                      <span>{new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS' }).format(subtotal * 0.18)}</span>
                     </div>
                     <hr />
                     <div className="flex justify-between font-bold">
                       <span>סה"כ לתשלום:</span>
-                      <span>{new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS' }).format(subtotal * 1.17)}</span>
+                      <span>{new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS' }).format(subtotal * 1.18)}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -418,6 +444,14 @@ export default function NewQuotePage() {
                         disabled={createMutation.isPending}
                       >
                         צור הצעת מחיר
+                      </Button>
+                      <Button
+                        type="button"
+                        className="w-full"
+                        disabled={createMutation.isPending || sendEmailMutation.isPending}
+                        onClick={form.handleSubmit(handleSendAndEmail)}
+                      >
+                        צור ושלח במייל
                       </Button>
                       <Button
                         type="button"
