@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import ClientCard from "@/components/clients/client-card";
 import NewClientModal from "@/components/modals/new-client-modal";
-import { Plus, Search, Users } from "lucide-react";
+import { Plus, Search, Users, Grid, List } from "lucide-react";
 import { type Client } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -17,6 +17,7 @@ export default function Clients() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -151,7 +152,7 @@ export default function Clients() {
         </Button>
       </div>
 
-      {/* Filters */}
+      {/* Filters and View Toggle */}
       <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <div className="relative flex-1">
           <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -175,34 +176,74 @@ export default function Clients() {
             <SelectItem value="inactive">לא פעיל</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* View Mode Toggle */}
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          <Button
+            variant={viewMode === "cards" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("cards")}
+            className="flex items-center gap-2"
+          >
+            <Grid className="h-4 w-4" />
+            כרטיסים
+          </Button>
+          <Button
+            variant={viewMode === "table" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("table")}
+            className="flex items-center gap-2"
+          >
+            <List className="h-4 w-4" />
+            טבלה
+          </Button>
+        </div>
       </div>
 
-      {/* Clients Grid */}
+      {/* Content Area */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <Skeleton className="h-6 w-32 mb-2" />
-                  <Skeleton className="h-4 w-24" />
+        viewMode === "cards" ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <Skeleton className="h-6 w-32 mb-2" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                  <Skeleton className="h-6 w-16 rounded-full" />
                 </div>
-                <Skeleton className="h-6 w-16 rounded-full" />
+                <div className="space-y-2 mb-4">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                  <div className="flex justify-between">
+                    <Skeleton className="h-4 w-12" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </div>
+                <Skeleton className="h-8 w-full" />
               </div>
-              <div className="space-y-2 mb-4">
-                <div className="flex justify-between">
-                  <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-4 w-20" />
-                </div>
-                <div className="flex justify-between">
-                  <Skeleton className="h-4 w-12" />
-                  <Skeleton className="h-4 w-24" />
-                </div>
-              </div>
-              <Skeleton className="h-8 w-full" />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="p-4">
+              <Skeleton className="h-12 w-full" />
             </div>
-          ))}
-        </div>
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="border-t border-gray-100 p-4">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )
       ) : !filteredClients || filteredClients.length === 0 ? (
         <div className="text-center py-12" data-testid="no-clients">
           <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -222,7 +263,7 @@ export default function Clients() {
             </Button>
           )}
         </div>
-      ) : (
+      ) : viewMode === "cards" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredClients.map((client) => (
             <ClientCard
@@ -235,6 +276,65 @@ export default function Clients() {
               onViewDashboard={() => handleViewClientDashboard(client.id)}
             />
           ))}
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-right px-6 py-4 text-sm font-semibold text-gray-900">שם הלקוח</th>
+                  <th className="text-right px-6 py-4 text-sm font-semibold text-gray-900">תחום</th>
+                  <th className="text-right px-6 py-4 text-sm font-semibold text-gray-900">איש קשר</th>
+                  <th className="text-right px-6 py-4 text-sm font-semibold text-gray-900">אימייל</th>
+                  <th className="text-right px-6 py-4 text-sm font-semibold text-gray-900">טלפון</th>
+                  <th className="text-right px-6 py-4 text-sm font-semibold text-gray-900">סטטוס</th>
+                  <th className="text-right px-6 py-4 text-sm font-semibold text-gray-900">פעולות</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredClients.map((client) => (
+                  <tr key={client.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleViewClient(client)}>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{client.name}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{client.industry || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{client.contactName || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{client.email || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{client.phone || '-'}</td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        client.status === 'active' ? 'bg-green-100 text-green-800' :
+                        client.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {client.status === 'active' ? 'פעיל' : 
+                         client.status === 'pending' ? 'ממתין' : 'לא פעיל'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewClient(client)}
+                          className="text-xs"
+                        >
+                          צפה
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditClient(client)}
+                          className="text-xs"
+                        >
+                          ערוך
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
