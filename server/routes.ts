@@ -947,7 +947,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user!;
       const leadData = {
         ...req.body,
-        agencyId: user.agencyId!
+        agencyId: user.agencyId!,
+        assignedTo: req.body.assignedTo && req.body.assignedTo !== '' && req.body.assignedTo !== 'unassigned' ? req.body.assignedTo : null
       };
 
       console.log('Creating lead with data:', leadData);
@@ -981,7 +982,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const leadData = {
-        ...req.body
+        ...req.body,
+        assignedTo: req.body.assignedTo && req.body.assignedTo !== '' && req.body.assignedTo !== 'unassigned' ? req.body.assignedTo : null
       };
 
       const updatedLead = await storage.updateLead(leadId, leadData);

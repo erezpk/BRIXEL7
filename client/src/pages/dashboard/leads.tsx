@@ -72,7 +72,7 @@ export default function Leads() {
     priority: "medium",
     value: 0,
     notes: "",
-    assignedTo: "",
+    assignedTo: "unassigned",
   });
 
   const { toast } = useToast();
@@ -166,7 +166,7 @@ export default function Leads() {
       priority: "medium",
       value: 0,
       notes: "",
-      assignedTo: "",
+      assignedTo: "unassigned",
     });
   };
 
@@ -180,7 +180,12 @@ export default function Leads() {
       return;
     }
 
-    leadMutation.mutate(leadForm);
+    const leadData = {
+      ...leadForm,
+      assignedTo: leadForm.assignedTo && leadForm.assignedTo !== 'unassigned' ? leadForm.assignedTo : null
+    };
+
+    leadMutation.mutate(leadData);
   };
 
   const handleEdit = (lead: Lead) => {
@@ -194,7 +199,7 @@ export default function Leads() {
       priority: lead.priority,
       value: lead.value || 0,
       notes: lead.notes || "",
-      assignedTo: lead.assignedTo || "",
+      assignedTo: lead.assignedTo || "unassigned",
     });
     setIsLeadDialogOpen(true);
   };
