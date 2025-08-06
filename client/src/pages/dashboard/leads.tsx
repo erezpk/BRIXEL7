@@ -57,7 +57,7 @@ export default function Leads() {
 
   // Fetch leads with filters
   const { data: leads = [], isLoading } = useQuery({
-    queryKey: ['/api/leads', { status: filterStatus, source: filterSource, priority: filterPriority }],
+    queryKey: ['/api/leads'],
   }) as { data: Lead[], isLoading: boolean };
 
   // Fetch quotes for leads

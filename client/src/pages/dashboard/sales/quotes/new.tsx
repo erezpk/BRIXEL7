@@ -120,7 +120,7 @@ export default function NewQuotePage() {
     onSuccess: (quote) => {
       queryClient.invalidateQueries({ queryKey: ['/api/quotes'] });
       toast({ title: 'הצעת מחיר נוצרה בהצלחה' });
-      navigate('/dashboard/financial/quotes');
+      navigate('/dashboard/sales/quotes');
     },
     onError: (error: any) => {
       console.error('Create quote error:', error);
@@ -156,7 +156,7 @@ export default function NewQuotePage() {
       queryClient.invalidateQueries({ queryKey: ['/api/quotes'] });
       toast({ title: 'הצעת המחיר נשלחה בהצלחה למייל הלקוח!' });
       // Navigate to quotes table after successful email send
-      navigate('/dashboard/financial/quotes');
+      navigate('/dashboard/sales/quotes');
     },
     onError: (error: any) => {
       console.error('Email send error:', error);
@@ -195,7 +195,7 @@ export default function NewQuotePage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/dashboard/financial')}
+            onClick={() => navigate('/dashboard/sales/quotes')}
           >
             <ArrowRight className="h-4 w-4" />
           </Button>
@@ -473,7 +473,7 @@ export default function NewQuotePage() {
                         type="button"
                         variant="outline"
                         className="w-full"
-                        onClick={() => navigate('/dashboard/financial')}
+                        onClick={() => navigate('/dashboard/sales/quotes')}
                       >
                         ביטול
                       </Button>

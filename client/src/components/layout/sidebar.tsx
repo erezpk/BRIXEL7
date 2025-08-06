@@ -55,15 +55,23 @@ const navigation = [
     ]
   },
   { 
+    name: "מכירות", 
+    icon: BarChart3, 
+    subItems: [
+      { name: "הצעות מחיר", href: "/dashboard/sales/quotes", icon: FileText },
+      { name: "הצעת מחיר חדשה", href: "/dashboard/sales/quotes/new", icon: Plus },
+      { name: "ניהול מוצרים", href: "/dashboard/products", icon: Package },
+    ]
+  },
+  { 
     name: "ניהול פיננסי", 
     icon: FileText, 
     subItems: [
-      { name: "ניהול פיננסי", href: "/dashboard/financial", icon: FileText },
-      { name: "הצעות מחיר", href: "/dashboard/financial/quotes", icon: FileText },
-      { name: "הצעת מחיר חדשה", href: "/dashboard/financial/quotes/new", icon: Plus },
+      { name: "מסמכים", href: "/dashboard/financial/documents", icon: FileText },
+      { name: "עסקאות", href: "/dashboard/financial/transactions", icon: BarChart3 },
+      { name: "חשבוניות", href: "/dashboard/financial/invoices", icon: FileText },
     ]
   },
-  { name: "מוצרים ושירותים", href: "/dashboard/products", icon: Package },
   { name: "תבניות לקוח", href: "/dashboard/client-templates", icon: Layout },
   { name: "צוות", href: "/dashboard/team", icon: UserCheck },
   { name: "דוחות", href: "/dashboard/reports", icon: BarChart3 },

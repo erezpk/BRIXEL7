@@ -10,6 +10,20 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes & Current Status
 
+### Navigation Restructuring - Sales & Financial Sections (January 6, 2025)
+- **Sales Section Created**: Restructured navigation to include dedicated "מכירות" (Sales) section
+  - Quotes management moved from Financial to Sales section
+  - New quote creation now under Sales navigation
+  - Product management integrated into Sales section
+- **Financial Section Reorganized**: Created focused "ניהול פיננסי" (Financial Management) section
+  - Documents management: Template creation and management system for contracts, agreements, and appendices
+  - Transactions management: Full transaction tracking with invoice generation capabilities
+  - Invoices management: Complete invoicing system with status tracking and payment management
+- **Navigation Structure**: Clean separation between sales operations and financial management
+  - Sales: /dashboard/sales/quotes, /dashboard/sales/quotes/new, /dashboard/products
+  - Financial: /dashboard/financial/documents, /dashboard/financial/transactions, /dashboard/financial/invoices
+- **Data Integration Fixed**: Resolved issues with quotes not displaying in client cards and new leads not appearing
+
 ### Agency Settings Integration & Navigation Cleanup (January 6, 2025)
 - **Dedicated Agency Settings Page**: Created comprehensive agency settings management
   - New route: /dashboard/settings/agency with full agency information management

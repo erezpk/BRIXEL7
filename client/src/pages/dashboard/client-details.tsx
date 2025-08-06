@@ -52,10 +52,11 @@ export default function ClientDetails() {
   });
 
   // Fetch quotes for this client
-  const { data: quotes, isLoading: quotesLoading } = useQuery({
-    queryKey: ['/api/quotes', { clientId }],
-    enabled: !!clientId,
+  const { data: allQuotes = [], isLoading: quotesLoading } = useQuery({
+    queryKey: ['/api/quotes'],
   });
+  
+  const quotes = allQuotes.filter((quote: any) => quote.clientId === clientId);
 
   const updateClientMutation = useMutation({
     mutationFn: async (updatedClient: Partial<Client>) => {

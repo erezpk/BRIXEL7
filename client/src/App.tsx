@@ -35,9 +35,12 @@ import ClientTemplates from "@/pages/dashboard/client-templates";
 import Assets from "@/pages/dashboard/assets";
 import Financial from "@/pages/dashboard/financial";
 import ProductsPage from "@/pages/dashboard/products";
-import NewQuotePage from "@/pages/dashboard/financial/quotes/new";
-import QuotesPage from "@/pages/dashboard/financial/quotes/index";
-import QuoteDetailPage from "@/pages/dashboard/financial/quotes/[id]";
+import NewQuotePage from "@/pages/dashboard/sales/quotes/new";
+import QuotesPage from "@/pages/dashboard/sales/quotes/index";
+import QuoteDetailPage from "@/pages/dashboard/sales/quotes/[id]";
+import DocumentsPage from "@/pages/dashboard/financial/documents";
+import TransactionsPage from "@/pages/dashboard/financial/transactions";
+import InvoicesPage from "@/pages/dashboard/financial/invoices";
 import QuoteApprovalPage from "@/pages/quote-approval/[id]";
 import TeamMemberDashboard from "@/pages/team-member-portal/team-member-dashboard";
 import NotFound from "@/pages/not-found";
@@ -265,17 +268,22 @@ export default function App() {
             </ProtectedRoute>
           </Route>
 
-          {/* FINANCIAL MANAGEMENT ROUTES */}
-          {/* More specific routes first */}
-          <Route path="/dashboard/financial/quotes/new">
+          {/* Sales Routes */}
+          <Route path="/dashboard/sales/quotes">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <QuotesPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/dashboard/sales/quotes/new">
             <ProtectedRoute>
               <DashboardLayout>
                 <NewQuotePage />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
-
-          <Route path="/dashboard/financial/quotes/:id">
+          <Route path="/dashboard/sales/quotes/:id">
             <ProtectedRoute>
               <DashboardLayout>
                 <QuoteDetailPage />
@@ -283,18 +291,25 @@ export default function App() {
             </ProtectedRoute>
           </Route>
 
-          <Route path="/dashboard/financial/quotes">
+          {/* Financial Routes */}
+          <Route path="/dashboard/financial/documents">
             <ProtectedRoute>
               <DashboardLayout>
-                <QuotesPage />
+                <DocumentsPage />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
-
-          <Route path="/dashboard/financial">
+          <Route path="/dashboard/financial/transactions">
             <ProtectedRoute>
               <DashboardLayout>
-                <Financial />
+                <TransactionsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/dashboard/financial/invoices">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <InvoicesPage />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
