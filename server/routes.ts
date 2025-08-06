@@ -940,9 +940,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user!;
       const leadData = {
         ...req.body,
-        agencyId: user.agencyId!,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        agencyId: user.agencyId!
       };
 
       console.log('Creating lead with data:', leadData);
@@ -976,8 +974,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const leadData = {
-        ...req.body,
-        updatedAt: new Date().toISOString()
+        ...req.body
       };
 
       const updatedLead = await storage.updateLead(leadId, leadData);
@@ -1045,8 +1042,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: existingLead.phone,
         agencyId: user.agencyId!,
         status: 'active' as const,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
 
       const client = await storage.createClient(clientData);
@@ -1054,8 +1051,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update lead status to converted
       await storage.updateLead(leadId, { 
         status: 'won',
-        clientId: client.id,
-        updatedAt: new Date().toISOString()
+        clientId: client.id
       });
       
       await storage.logActivity({
