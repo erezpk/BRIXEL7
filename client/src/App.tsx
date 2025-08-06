@@ -36,6 +36,9 @@ import Assets from "@/pages/dashboard/assets";
 import Financial from "@/pages/dashboard/financial";
 import ProductsPage from "@/pages/dashboard/products";
 import NewQuotePage from "@/pages/dashboard/financial/quotes/new";
+import QuotesPage from "@/pages/dashboard/financial/quotes/index";
+import QuoteDetailPage from "@/pages/dashboard/financial/quotes/[id]";
+import QuoteApprovalPage from "@/pages/quote-approval/[id]";
 import TeamMemberDashboard from "@/pages/team-member-portal/team-member-dashboard";
 import NotFound from "@/pages/not-found";
 import HelpCenter from "@/pages/help-center";
@@ -254,6 +257,22 @@ export default function App() {
             </ProtectedRoute>
           </Route>
 
+          <Route path="/dashboard/financial/quotes">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <QuotesPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          <Route path="/dashboard/financial/quotes/:id">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <QuoteDetailPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
           <Route path="/dashboard/products">
             <ProtectedRoute>
               <DashboardLayout>
@@ -290,6 +309,9 @@ export default function App() {
               <TeamMemberDashboard />
             </ProtectedRoute>
           </Route>
+
+          {/* QUOTE APPROVAL - Public route */}
+          <Route path="/quote-approval/:id" component={QuoteApprovalPage} />
 
           {/* ADDED HELP CENTER ROUTE */}
           <Route path="/help" component={HelpCenter} />

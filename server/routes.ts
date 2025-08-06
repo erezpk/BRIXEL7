@@ -9,6 +9,7 @@ import { z } from "zod";
 import express from "express"; // Import express to use its Router
 import { emailService } from "./email-service.js"; // Import from email-service.ts
 import crypto from 'crypto'; // Import crypto for token generation
+import { ObjectStorageService, ObjectNotFoundError } from './objectStorage';
 // Removed Firebase/Google auth library import - using simple OAuth now
 
 // Extend Express types
@@ -2031,6 +2032,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'סוכנות לא נמצאה' });
       }
 
+      // Get sender info from request body
+      const { senderName, senderEmail } = req.body;
+
       // Create quote approval link
       const approvalLink = `${process.env.REPLIT_DEV_DOMAIN || 'https://your-domain.com'}/quote-approval/${quote.id}`;
 
@@ -2064,9 +2068,10 @@ ${quote.notes || ''}
 
       const success = await emailService.sendEmail({
         to: client.email,
-        subject: `הצעת מחיר - ${quote.title} מאת ${agency.name}`,
+        subject: `הצעת מחיר - ${quote.title} מאת ${senderName || agency.name}`,
         text: emailBody,
-        html: emailBody.replace(/\n/g, '<br>')
+        html: emailBody.replace(/\n/g, '<br>'),
+        from: senderEmail || undefined
       });
 
       if (success) {
@@ -2099,6 +2104,49 @@ ${quote.notes || ''}
     }
   });
 
+  // Get quote for public approval (no auth required)
+  router.get('/api/quotes/:id/public', async (req, res) => {
+    try {
+      const quote = await storage.getQuote(req.params.id);
+      if (!quote) {
+        return res.status(404).json({ message: 'הצעת מחיר לא נמצאה' });
+      }
+
+      const client = await storage.getClient(quote.clientId);
+      const agency = await storage.getAgency(quote.agencyId);
+
+      // Return quote with client and agency info for public view
+      res.json({
+        ...quote,
+        client,
+        agency
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת הצעת מחיר' });
+    }
+  });
+
+  // Track quote view
+  router.post('/api/quotes/:id/track-view', async (req, res) => {
+    try {
+      const quote = await storage.getQuote(req.params.id);
+      if (!quote) {
+        return res.status(404).json({ message: 'הצעת מחיר לא נמצאה' });
+      }
+
+      // Update view tracking
+      const updatedQuote = await storage.updateQuote(req.params.id, {
+        viewedAt: new Date(),
+        viewCount: (quote.viewCount || 0) + 1,
+        status: quote.status === 'sent' ? 'viewed' : quote.status
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה במעקב צפייה' });
+    }
+  });
+
   // Quote approval (for client portal)
   router.post('/api/quotes/:id/approve', async (req, res) => {
     try {
@@ -2117,6 +2165,19 @@ ${quote.notes || ''}
       res.json(quote);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה באישור הצעת מחיר' });
+    }
+  });
+
+  // Quote rejection
+  router.post('/api/quotes/:id/reject', async (req, res) => {
+    try {
+      const quote = await storage.updateQuote(req.params.id, {
+        status: 'rejected',
+        rejectedAt: new Date()
+      });
+      res.json(quote);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בדחיית הצעת מחיר' });
     }
   });
 
@@ -2270,6 +2331,97 @@ ${quote.notes || ''}
       });
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בטעינת נתונים פיננסיים' });
+    }
+  });
+
+  // Object Storage Routes
+  // Public object serving
+  router.get("/public-objects/:filePath(*)", async (req, res) => {
+    const filePath = req.params.filePath;
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const file = await objectStorageService.searchPublicObject(filePath);
+      if (!file) {
+        return res.status(404).json({ error: "File not found" });
+      }
+      objectStorageService.downloadObject(file, res);
+    } catch (error) {
+      console.error("Error searching for public object:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Upload logo endpoint
+  router.post('/api/agencies/:id/upload-logo', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error('Error getting upload URL:', error);
+      res.status(500).json({ error: 'Failed to get upload URL' });
+    }
+  });
+
+  // Update agency logo
+  router.put('/api/agencies/:id/logo', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const { logoURL } = req.body;
+      const agencyId = req.params.id;
+      
+      if (agencyId !== req.user!.agencyId) {
+        return res.status(403).json({ message: 'אין הרשאה לעדכן סוכנות אחרת' });
+      }
+
+      const agency = await storage.updateAgency(agencyId, {
+        logo: logoURL
+      });
+
+      res.json(agency);
+    } catch (error) {
+      console.error('Error updating agency logo:', error);
+      res.status(500).json({ message: 'שגיאה בעדכון לוגו' });
+    }
+  });
+
+  // Get current agency details
+  router.get('/api/agencies/current', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const agency = await storage.getAgencyById(user.agencyId!);
+      res.json(agency);
+    } catch (error) {
+      console.error('Error getting agency:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת פרטי סוכנות' });
+    }
+  });
+
+  // Update agency logo for current user
+  router.put('/api/agencies/current/logo', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const { logoURL } = req.body;
+      const user = req.user!;
+
+      const agency = await storage.updateAgency(user.agencyId!, {
+        logo: logoURL
+      });
+
+      res.json(agency);
+    } catch (error) {
+      console.error('Error updating agency logo:', error);
+      res.status(500).json({ message: 'שגיאה בעדכון לוגו' });
+    }
+  });
+
+  // Upload URL for current agency logo
+  router.post('/api/agencies/current/upload-logo', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error('Error getting upload URL:', error);
+      res.status(500).json({ error: 'Failed to get upload URL' });
     }
   });
 

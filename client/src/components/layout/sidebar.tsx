@@ -32,6 +32,7 @@ const navigation = [
   { name: "משימות", href: "/dashboard/tasks", icon: CheckSquare },
   { name: "מוצרים ושירותים", href: "/dashboard/products", icon: Package },
   { name: "ניהול פיננסי", href: "/dashboard/financial", icon: FileText },
+  { name: "הצעות מחיר", href: "/dashboard/financial/quotes", icon: FileText },
   { name: "הצעת מחיר חדשה", href: "/dashboard/financial/quotes/new", icon: Plus },
   { name: "תבניות לקוח", href: "/dashboard/client-templates", icon: Layout },
   { name: "צוות", href: "/dashboard/team", icon: UserCheck },

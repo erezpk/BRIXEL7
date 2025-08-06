@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertTriangle, Bell, Facebook, Chrome, Settings as SettingsIcon, Shield, Users, Palette, Zap, Plus, ExternalLink, Trash2, CheckCircle, RefreshCw, Mail, ArrowLeft } from "lucide-react";
+import { AlertTriangle, Bell, Facebook, Chrome, Settings as SettingsIcon, Shield, Users, Palette, Zap, Plus, ExternalLink, Trash2, CheckCircle, RefreshCw, Mail, ArrowLeft, Upload, Image, Building } from "lucide-react";
+import { ObjectUploader } from '@/components/ObjectUploader';
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { rtlClass } from "@/lib/rtl";
@@ -40,9 +41,29 @@ interface GoogleConnectionForm {
 
 export default function Settings() {
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState("integrations");
+  const [activeTab, setActiveTab] = useState("agency");
   const [isFacebookDialogOpen, setIsFacebookDialogOpen] = useState(false);
   const [isGoogleDialogOpen, setIsGoogleDialogOpen] = useState(false);
+  const [agencyLogo, setAgencyLogo] = useState<string | null>(null);
+
+  // Get current agency details
+  const { data: agency } = useQuery({
+    queryKey: ['/api/agencies/current'],
+    queryFn: async () => {
+      const response = await fetch('/api/agencies/current', {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch agency');
+      return response.json();
+    }
+  });
+
+  // Set agency logo when data loads
+  useEffect(() => {
+    if (agency?.logo) {
+      setAgencyLogo(agency.logo);
+    }
+  }, [agency]);
   const [facebookForm, setFacebookForm] = useState<FacebookConnectionForm>({
     appId: "",
     appSecret: "",
@@ -257,13 +278,93 @@ export default function Settings() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="agency">סוכנות</TabsTrigger>
           <TabsTrigger value="integrations">אינטגרציות</TabsTrigger>
           <TabsTrigger value="email">אימייל</TabsTrigger>
           <TabsTrigger value="notifications">התראות</TabsTrigger>
           <TabsTrigger value="leads">לידים</TabsTrigger>
           <TabsTrigger value="account">חשבון</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="agency" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building className="h-5 w-5" />
+                הגדרות סוכנות
+              </CardTitle>
+              <CardDescription>
+                עדכן פרטי הסוכנות ולוגו שיופיע בהצעות מחיר
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <Label>לוגו סוכנות</Label>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    העלה לוגו שיופיע בהצעות מחיר ובמסמכים הרשמיים
+                  </p>
+                  {agencyLogo && (
+                    <div className="mb-4">
+                      <img 
+                        src={agencyLogo} 
+                        alt="לוגו סוכנות" 
+                        className="max-w-48 max-h-24 object-contain border rounded-lg p-2"
+                      />
+                    </div>
+                  )}
+                  <ObjectUploader
+                    maxNumberOfFiles={1}
+                    maxFileSize={5 * 1024 * 1024} // 5MB
+                    onGetUploadParameters={async () => {
+                      const response = await fetch('/api/agencies/current/upload-logo', {
+                        method: 'POST',
+                        credentials: 'include'
+                      });
+                      if (!response.ok) throw new Error('Failed to get upload URL');
+                      const data = await response.json();
+                      return {
+                        method: 'PUT' as const,
+                        url: data.uploadURL,
+                      };
+                    }}
+                    onComplete={async (result) => {
+                      if (result.successful && result.successful[0]) {
+                        const uploadURL = result.successful[0].uploadURL;
+                        try {
+                          const response = await fetch('/api/agencies/current/logo', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ logoURL: uploadURL }),
+                            credentials: 'include'
+                          });
+                          
+                          if (response.ok) {
+                            setAgencyLogo(uploadURL);
+                            toast({
+                              title: "לוגו הועלה בהצלחה",
+                              description: "הלוגו יופיע בהצעות מחיר החדשות"
+                            });
+                          }
+                        } catch (error) {
+                          toast({
+                            title: "שגיאה בשמירת לוגו",
+                            description: "נסה שוב מאוחר יותר",
+                            variant: "destructive"
+                          });
+                        }
+                      }
+                    }}
+                  >
+                    <Upload className="h-4 w-4 me-2" />
+                    העלה לוגו
+                  </ObjectUploader>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="integrations" className="space-y-6">
           <Card>
