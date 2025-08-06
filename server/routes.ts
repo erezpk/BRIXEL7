@@ -2280,58 +2280,82 @@ ${quote.notes || ''}
 
       console.log(`Serving logo for agency ${agencyId}, logo URL: ${agency.logo}`);
       
-      // Use ObjectStorageService to get the logo file
+      // Try to serve logo from public object storage first
       try {
         const { ObjectStorageService } = await import('./objectStorage');
         const objectStorageService = new ObjectStorageService();
         
-        // Extract path from logo URL
-        let logoPath = agency.logo;
-        if (logoPath.startsWith('https://storage.googleapis.com/')) {
-          const url = new URL(logoPath);
-          logoPath = url.pathname; // Gets the /bucket/path part
+        // Extract filename from logo URL
+        let logoFileName = '';
+        if (agency.logo.startsWith('https://storage.googleapis.com/')) {
+          const url = new URL(agency.logo);
+          logoFileName = url.pathname.split('/').pop() || fileName;
+        } else {
+          logoFileName = fileName;
         }
         
-        console.log('Trying to get logo file from path:', logoPath);
+        console.log('Searching for logo in public directories:', logoFileName);
         
-        // Try to get as object entity first
-        const logoFile = await objectStorageService.getObjectEntityFile(`/objects/${logoPath.split('/').pop()}`);
-        console.log('Successfully found logo file');
+        // Try to find logo in public directories
+        const logoFile = await objectStorageService.searchPublicObject(`logos/${logoFileName}`);
+        if (logoFile) {
+          console.log('Found logo in public storage');
+          objectStorageService.downloadObject(logoFile, res);
+          return;
+        }
         
-        // Stream the file directly
-        objectStorageService.downloadObject(logoFile, res);
-        return;
+        console.log('Logo not found in public storage, trying direct fetch');
         
       } catch (error) {
-        console.error('Error with object storage service:', error);
-        
-        // Fallback to direct fetch
-        if (agency.logo.startsWith('https://storage.googleapis.com/')) {
-          console.log('Falling back to direct fetch...');
-          try {
-            const response = await fetch(agency.logo);
-            if (!response.ok) {
-              console.error('Failed to fetch logo from object storage:', response.status);
-              return res.status(404).json({ message: 'לוגו לא נמצא' });
-            }
-
-            const contentType = response.headers.get('content-type') || 'image/png';
-            console.log('Logo content type:', contentType);
-            
-            res.set('Content-Type', contentType);
-            res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
-            
-            const buffer = await response.arrayBuffer();
-            console.log('Logo buffer size:', buffer.byteLength);
-            res.send(Buffer.from(buffer));
-          } catch (fetchError) {
-            console.error('Direct fetch also failed:', fetchError);
-            res.status(404).json({ message: 'לוגו לא נמצא' });
+        console.error('Error with public object storage:', error);
+      }
+      
+      // Fallback to direct fetch for private storage (with auth)
+      if (agency.logo.startsWith('https://storage.googleapis.com/')) {
+        console.log('Attempting authenticated fetch from private storage');
+        try {
+          // Use object storage client for authenticated access
+          const { objectStorageClient } = await import('./objectStorage');
+          const url = new URL(agency.logo);
+          const pathParts = url.pathname.split('/');
+          const bucketName = pathParts[1];
+          const objectName = pathParts.slice(2).join('/');
+          
+          const bucket = objectStorageClient.bucket(bucketName);
+          const file = bucket.file(objectName);
+          
+          const [exists] = await file.exists();
+          if (!exists) {
+            console.error('Logo file does not exist in storage');
+            return res.status(404).json({ message: 'לוגו לא נמצא' });
           }
-        } else {
-          console.log('Logo URL does not match expected format');
+          
+          // Get file metadata
+          const [metadata] = await file.getMetadata();
+          const contentType = metadata.contentType || 'image/png';
+          
+          res.set('Content-Type', contentType);
+          res.set('Cache-Control', 'public, max-age=3600');
+          
+          // Stream the file
+          const stream = file.createReadStream();
+          stream.on('error', (err) => {
+            console.error('Stream error:', err);
+            if (!res.headersSent) {
+              res.status(500).json({ message: 'שגיאה בטעינת לוגו' });
+            }
+          });
+          
+          stream.pipe(res);
+          console.log('Successfully streamed logo from authenticated storage');
+          
+        } catch (fetchError) {
+          console.error('Authenticated fetch failed:', fetchError);
           res.status(404).json({ message: 'לוגו לא נמצא' });
         }
+      } else {
+        console.log('Logo URL does not match expected format');
+        res.status(404).json({ message: 'לוגו לא נמצא' });
       }
     } catch (error) {
       console.error('Error serving logo:', error);
@@ -2578,8 +2602,53 @@ ${quote.notes || ''}
   app.post('/api/agencies/current/upload-logo', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const objectStorageService = new ObjectStorageService();
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      res.json({ uploadURL });
+      // Upload logo to PUBLIC directory instead of private
+      const publicPaths = objectStorageService.getPublicObjectSearchPaths();
+      const publicPath = publicPaths[0]; // Use first public path
+      
+      const { randomUUID } = require('crypto');
+      const logoId = randomUUID();
+      const fullPath = `${publicPath}/logos/${logoId}`;
+      
+      // Parse the path to get bucket and object name
+      const { bucketName, objectName } = (() => {
+        let path = fullPath;
+        if (!path.startsWith("/")) {
+          path = `/${path}`;
+        }
+        const pathParts = path.split("/");
+        if (pathParts.length < 3) {
+          throw new Error("Invalid path: must contain at least a bucket name");
+        }
+        return {
+          bucketName: pathParts[1],
+          objectName: pathParts.slice(2).join("/")
+        };
+      })();
+      
+      // Create presigned URL for public upload
+      const request = {
+        bucket_name: bucketName,
+        object_name: objectName,
+        method: 'PUT',
+        expires_at: new Date(Date.now() + 900 * 1000).toISOString(), // 15 minutes
+      };
+      
+      const response = await fetch(
+        'http://127.0.0.1:1106/object-storage/signed-object-url',
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(request),
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Failed to sign URL: ${response.status}`);
+      }
+      
+      const { signed_url: signedURL } = await response.json();
+      res.json({ uploadURL: signedURL });
     } catch (error) {
       console.error('Error getting upload URL:', error);
       res.status(500).json({ error: 'Failed to get upload URL' });
