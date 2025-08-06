@@ -2280,28 +2280,58 @@ ${quote.notes || ''}
 
       console.log(`Serving logo for agency ${agencyId}, logo URL: ${agency.logo}`);
       
-      // If logo is stored in object storage, serve it directly
-      if (agency.logo.startsWith('https://storage.googleapis.com/')) {
-        console.log('Fetching logo from object storage...');
-        const response = await fetch(agency.logo);
-        if (!response.ok) {
-          console.error('Failed to fetch logo from object storage:', response.status);
-          return res.status(404).json({ message: 'לוגו לא נמצא' });
+      // Use ObjectStorageService to get the logo file
+      try {
+        const { ObjectStorageService } = await import('./objectStorage');
+        const objectStorageService = new ObjectStorageService();
+        
+        // Extract path from logo URL
+        let logoPath = agency.logo;
+        if (logoPath.startsWith('https://storage.googleapis.com/')) {
+          const url = new URL(logoPath);
+          logoPath = url.pathname; // Gets the /bucket/path part
         }
+        
+        console.log('Trying to get logo file from path:', logoPath);
+        
+        // Try to get as object entity first
+        const logoFile = await objectStorageService.getObjectEntityFile(`/objects/${logoPath.split('/').pop()}`);
+        console.log('Successfully found logo file');
+        
+        // Stream the file directly
+        objectStorageService.downloadObject(logoFile, res);
+        return;
+        
+      } catch (error) {
+        console.error('Error with object storage service:', error);
+        
+        // Fallback to direct fetch
+        if (agency.logo.startsWith('https://storage.googleapis.com/')) {
+          console.log('Falling back to direct fetch...');
+          try {
+            const response = await fetch(agency.logo);
+            if (!response.ok) {
+              console.error('Failed to fetch logo from object storage:', response.status);
+              return res.status(404).json({ message: 'לוגו לא נמצא' });
+            }
 
-        const contentType = response.headers.get('content-type') || 'image/png';
-        console.log('Logo content type:', contentType);
-        
-        res.set('Content-Type', contentType);
-        res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
-        
-        const buffer = await response.arrayBuffer();
-        console.log('Logo buffer size:', buffer.byteLength);
-        res.send(Buffer.from(buffer));
-      } else {
-        // Handle other logo types if needed
-        console.log('Logo URL does not match expected format');
-        res.status(404).json({ message: 'לוגו לא נמצא' });
+            const contentType = response.headers.get('content-type') || 'image/png';
+            console.log('Logo content type:', contentType);
+            
+            res.set('Content-Type', contentType);
+            res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+            
+            const buffer = await response.arrayBuffer();
+            console.log('Logo buffer size:', buffer.byteLength);
+            res.send(Buffer.from(buffer));
+          } catch (fetchError) {
+            console.error('Direct fetch also failed:', fetchError);
+            res.status(404).json({ message: 'לוגו לא נמצא' });
+          }
+        } else {
+          console.log('Logo URL does not match expected format');
+          res.status(404).json({ message: 'לוגו לא נמצא' });
+        }
       }
     } catch (error) {
       console.error('Error serving logo:', error);

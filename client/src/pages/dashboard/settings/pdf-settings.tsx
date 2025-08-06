@@ -254,18 +254,20 @@ export default function PDFSettingsPage() {
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
               {agency?.logo ? (
                 <div>
-                  <img 
-                    src={`/api/logo/${agency.id}/${agency.logo.split('/').pop()}`} 
-                    alt="לוגו הסוכנות" 
-                    className="mx-auto max-h-20 mb-4"
-                    onError={(e) => {
-                      // Fallback to original URL if proxy fails
-                      const img = e.target as HTMLImageElement;
-                      if (!img.src.includes('storage.googleapis.com')) {
-                        img.src = agency.logo;
-                      }
-                    }}
-                  />
+                  <div className="mb-2">
+                    <div className="text-sm text-gray-600 mb-2">תצוגה מקדימה:</div>
+                    <img 
+                      src={`/api/logo/${agency.id}/${agency.logo.split('/').pop()}`} 
+                      alt="לוגו הסוכנות" 
+                      className="mx-auto max-h-20 mb-4 border rounded-lg p-2 bg-white shadow-sm"
+                      onLoad={() => console.log('Logo loaded successfully')}
+                      onError={(e) => {
+                        console.error('Logo preview failed to load');
+                        const img = e.target as HTMLImageElement;
+                        img.style.display = 'none';
+                      }}
+                    />
+                  </div>
                   <Button variant="outline" onClick={() => document.getElementById('logo-upload')?.click()}>
                     החלפת לוגו
                   </Button>
