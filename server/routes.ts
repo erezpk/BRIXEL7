@@ -2224,13 +2224,31 @@ ${quote.notes || ''}
       const client = await storage.getClient(quote.clientId);
       const agency = await storage.getAgency(quote.agencyId);
 
+      // Convert object storage logo path to public serving path
+      let publicLogoUrl = null;
+      if (agency?.logo && agency.logo.startsWith('https://storage.googleapis.com/')) {
+        // Extract the file path from the object storage URL
+        const url = new URL(agency.logo);
+        const pathParts = url.pathname.split('/');
+        if (pathParts.length > 3) {
+          const fileName = pathParts[pathParts.length - 1];
+          publicLogoUrl = `/api/logo/${agency.id}/${fileName}`;
+        }
+      } else if (agency?.logo) {
+        publicLogoUrl = agency.logo;
+      }
+
       // Return quote with client and agency info for public view
       res.json({
         ...quote,
         client,
-        agency
+        agency: {
+          ...agency,
+          logo: publicLogoUrl
+        }
       });
     } catch (error) {
+      console.error('Error loading public quote:', error);
       res.status(500).json({ message: 'שגיאה בטעינת הצעת מחיר' });
     }
   });
@@ -2287,6 +2305,39 @@ ${quote.notes || ''}
       res.json(quote);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בדחיית הצעת מחיר' });
+    }
+  });
+
+  // Serve agency logo publicly for quotes
+  router.get('/api/logo/:agencyId/:fileName', async (req, res) => {
+    try {
+      const { agencyId, fileName } = req.params;
+      const agency = await storage.getAgency(agencyId);
+      
+      if (!agency || !agency.logo) {
+        return res.status(404).json({ message: 'לוגו לא נמצא' });
+      }
+
+      // If logo is stored in object storage, serve it directly
+      if (agency.logo.startsWith('https://storage.googleapis.com/')) {
+        const response = await fetch(agency.logo);
+        if (!response.ok) {
+          return res.status(404).json({ message: 'לוגו לא נמצא' });
+        }
+
+        const contentType = response.headers.get('content-type') || 'image/png';
+        res.set('Content-Type', contentType);
+        res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+        
+        const buffer = await response.arrayBuffer();
+        res.send(Buffer.from(buffer));
+      } else {
+        // Handle other logo types if needed
+        res.status(404).json({ message: 'לוגו לא נמצא' });
+      }
+    } catch (error) {
+      console.error('Error serving logo:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת לוגו' });
     }
   });
 
