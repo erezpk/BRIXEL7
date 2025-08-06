@@ -15,12 +15,20 @@ interface ClientCardProps {
   onView: (client: Client) => void;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
-  onManageCredentials?: (client: Client) => void; // Added for managing credentials
-  onSendCredentials?: (client: Client) => void; // Added for sending credentials
-  onViewDashboard?: (client: Client) => void; // Added for viewing dashboard
+  onManageCredentials?: (client: Client) => void;
+  onSendCredentials?: (client: Client) => void;
+  onViewDashboard?: (client: Client) => void;
 }
 
-export default function ClientCard({ client, onView, onEdit, onDelete, onManageCredentials, onSendCredentials, onViewDashboard }: ClientCardProps) {
+export default function ClientCard({ 
+  client, 
+  onView, 
+  onEdit, 
+  onDelete, 
+  onManageCredentials, 
+  onSendCredentials, 
+  onViewDashboard 
+}: ClientCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -47,110 +55,140 @@ export default function ClientCard({ client, onView, onEdit, onDelete, onManageC
     }
   };
 
-  // Generate default credentials if not present
-  const defaultEmail = client.email || `${client.name.toLowerCase().replace(/\s+/g, '')}@client.portal`;
-  const defaultPassword = `${client.name.toLowerCase().replace(/\s+/g, '')}_${client.id.slice(0, 8)}`;
-  const clientPortalUrl = `${window.location.origin}/client-portal?clientId=${client.id}`;
-
-
   return (
-    <Card className="card-hover" data-testid={`client-card-${client.id}`}>
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-4">
+    <Card className="card-hover bg-white border-0 shadow-lg rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300" data-testid={`client-card-${client.id}`}>
+      {/* Header Section with gradient background */}
+      <div className="bg-gradient-to-l from-blue-50 to-indigo-50 p-6 border-b border-gray-100">
+        <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 mb-1" data-testid="client-name">
-              {client.name}
-            </h3>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <User className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 font-rubik" data-testid="client-name">
+                  {client.name}
+                </h3>
+                <div className="flex items-center gap-2">
+                  {client.email && (
+                    <span className="text-sm text-gray-600">{client.email}</span>
+                  )}
+                  <Badge className={`${getStatusColor(client.status)} text-xs font-medium`} data-testid="client-status">
+                    {getStatusText(client.status)}
+                  </Badge>
+                </div>
+              </div>
+            </div>
             {client.industry && (
               <p className="text-sm text-gray-600" data-testid="client-industry">
-                {client.industry}
+                תחום: {client.industry}
               </p>
             )}
           </div>
-          <div className="flex items-center space-x-reverse space-x-2">
-            <Badge className={getStatusColor(client.status)} data-testid="client-status">
-              {getStatusText(client.status)}
-            </Badge>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" data-testid="client-menu">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onView(client)} data-testid="client-view">
-                  <Eye className="ml-2 h-4 w-4" />
-                  צפה בפרטים
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" data-testid="client-menu">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onView(client)} data-testid="client-view">
+                <Eye className="ml-2 h-4 w-4" />
+                צפה בפרטים
+              </DropdownMenuItem>
+              {onViewDashboard && (
+                <DropdownMenuItem onClick={() => onViewDashboard(client)} data-testid="client-view-dashboard">
+                  <ExternalLink className="ml-2 h-4 w-4" />
+                  צפה בדאשבורד לקוח
                 </DropdownMenuItem>
-                {onViewDashboard && (
-                  <DropdownMenuItem onClick={() => onViewDashboard(client)} data-testid="client-view-dashboard">
-                    <ExternalLink className="ml-2 h-4 w-4" />
-                    צפה בדאשבורד לקוח
-                  </DropdownMenuItem>
-                )}
-                {onSendCredentials && (
-                  <DropdownMenuItem onClick={() => onSendCredentials(client)} data-testid="client-send-credentials">
-                    <Send className="ml-2 h-4 w-4" />
-                    שלח פרטי התחברות
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={() => onEdit(client)} data-testid="client-edit">
-                  <Edit className="ml-2 h-4 w-4" />
-                  ערוך לקוח
+              )}
+              {onSendCredentials && (
+                <DropdownMenuItem onClick={() => onSendCredentials(client)} data-testid="client-send-credentials">
+                  <Send className="ml-2 h-4 w-4" />
+                  שלח פרטי התחברות
                 </DropdownMenuItem>
-                {onManageCredentials && (
-                  <DropdownMenuItem onClick={() => onManageCredentials(client)} data-testid="client-credentials">
-                    ניהול פרטי התחברות
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem 
-                  onClick={() => onDelete(client)} 
-                  className="text-red-600"
-                  data-testid="client-delete"
-                >
-                  מחק
+              )}
+              <DropdownMenuItem onClick={() => onEdit(client)} data-testid="client-edit">
+                <Edit className="ml-2 h-4 w-4" />
+                ערוך לקוח
+              </DropdownMenuItem>
+              {onManageCredentials && (
+                <DropdownMenuItem onClick={() => onManageCredentials(client)} data-testid="client-credentials">
+                  ניהול פרטי התחברות
                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              )}
+              <DropdownMenuItem 
+                onClick={() => onDelete(client)} 
+                className="text-red-600"
+                data-testid="client-delete"
+              >
+                מחק
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {/* Statistics Section */}
+      <CardContent className="p-6">
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="text-center p-4 bg-green-50 rounded-lg border border-green-100">
+            <div className="text-2xl font-bold text-green-600 font-rubik">₪0.00</div>
+            <div className="text-sm text-gray-600">הכנסות חודש זה</div>
+          </div>
+          <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <div className="text-2xl font-bold text-blue-600 font-rubik">₪0.00</div>
+            <div className="text-sm text-gray-600">סה״כ הכנסות</div>
           </div>
         </div>
 
-        <div className="space-y-2 mb-4">
+        {/* Contact Details */}
+        <div className="space-y-3 mb-6">
           {client.contactName && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">איש קשר:</span>
-              <span className="text-gray-900" data-testid="client-contact">
+              <span className="text-gray-900 font-medium" data-testid="client-contact">
                 {client.contactName}
-              </span>
-            </div>
-          )}
-          {client.email && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">אימייל:</span>
-              <span className="text-gray-900" data-testid="client-email">
-                {client.email}
               </span>
             </div>
           )}
           {client.phone && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">טלפון:</span>
-              <span className="text-gray-900" data-testid="client-phone">
+              <span className="text-gray-900 font-medium" data-testid="client-phone">
                 {client.phone}
               </span>
             </div>
           )}
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">תאריך הצטרפות:</span>
+            <span className="text-gray-900 font-medium">
+              {new Date(client.createdAt).toLocaleDateString('he-IL')}
+            </span>
+          </div>
         </div>
 
-        <div className="flex space-x-reverse space-x-2">
+        {/* Action Buttons */}
+        <div className="flex gap-3">
           <Button 
             variant="outline" 
             size="sm" 
             onClick={() => onView(client)}
-            className="flex-1"
+            className="flex-1 text-sm hover:bg-gray-50"
             data-testid="client-view-details"
           >
+            <Eye className="h-4 w-4 ml-1" />
             צפה בפרטים
+          </Button>
+          <Button 
+            variant="default" 
+            size="sm" 
+            onClick={() => onEdit(client)}
+            className="flex-1 text-sm bg-blue-600 hover:bg-blue-700 text-white"
+            data-testid="client-edit-btn"
+          >
+            <Edit className="h-4 w-4 ml-1" />
+            ערוך
           </Button>
         </div>
       </CardContent>

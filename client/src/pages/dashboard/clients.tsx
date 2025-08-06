@@ -24,7 +24,7 @@ export default function Clients() {
   // Send login credentials to client
   const sendCredentialsMutation = useMutation({
     mutationFn: async (clientId: string) => {
-      const client = clients.find(c => c.id === clientId);
+      const client = clients?.find(c => c.id === clientId);
       const response = await fetch(`/api/clients/${clientId}/send-credentials`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -228,20 +228,9 @@ export default function Clients() {
             <ClientCard
               key={client.id}
               client={client}
-              onEdit={() => {
-                setEditingClient(client);
-                setEditFormData({
-                  name: client.name,
-                  contactName: client.contactName,
-                  email: client.email,
-                  phone: client.phone || "",
-                  industry: client.industry,
-                  status: client.status,
-                  notes: client.notes || "",
-                });
-                setShowEditModal(true);
-              }}
-              onView={() => navigate(`/dashboard/clients/${client.id}`)}
+              onEdit={() => handleEditClient(client)}
+              onView={() => handleViewClient(client)}
+              onDelete={() => handleDeleteClient(client)}
               onSendCredentials={() => handleSendCredentials(client)}
               onViewDashboard={() => handleViewClientDashboard(client.id)}
             />
