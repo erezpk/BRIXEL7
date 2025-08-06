@@ -39,9 +39,11 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize email service
+  // Initialize email service (non-blocking)
   const { emailService } = await import("./email-service.js");
-  await emailService.initialize();
+  emailService.initialize().catch(error => {
+    console.warn('Email service initialization failed:', error.message);
+  });
   
   const server = await registerRoutes(app);
 

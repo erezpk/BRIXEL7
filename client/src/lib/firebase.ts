@@ -2,6 +2,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import type { User } from 'firebase/auth';
+import './firebase-types';
 
 // Firebase configuration - corrected values (environment variables are swapped)
 const firebaseConfig = {
