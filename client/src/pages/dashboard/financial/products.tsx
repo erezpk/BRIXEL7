@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Edit, Trash2, Package } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, CheckSquare, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -76,13 +76,15 @@ export default function ProductsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: ProductFormData) => apiRequest('/api/products', {
-      method: 'POST',
-      body: {
-        ...data,
-        price: Math.round(data.price * 100), // Convert to agorot
-      },
-    }),
+    mutationFn: (data: ProductFormData) => {
+      return apiRequest('/api/products', {
+        method: 'POST',
+        body: {
+          ...data,
+          price: Math.round(data.price * 100), // Convert to agorot
+        },
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       toast({ title: 'המוצר/שירות נוצר בהצלחה' });
@@ -95,14 +97,15 @@ export default function ProductsPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: ProductFormData }) => 
-      apiRequest(`/api/products/${id}`, {
+    mutationFn: ({ id, data }: { id: string; data: ProductFormData }) => {
+      return apiRequest(`/api/products/${id}`, {
         method: 'PUT',
         body: {
           ...data,
           price: Math.round(data.price * 100), // Convert to agorot
         },
-      }),
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       toast({ title: 'המוצר/שירות עודכן בהצלחה' });
@@ -116,9 +119,11 @@ export default function ProductsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest(`/api/products/${id}`, {
-      method: 'DELETE',
-    }),
+    mutationFn: (id: string) => {
+      return apiRequest(`/api/products/${id}`, {
+        method: 'DELETE',
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       toast({ title: 'המוצר/שירות נמחק בהצלחה' });
@@ -194,7 +199,7 @@ export default function ProductsPage() {
               מוצר/שירות חדש
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingProduct ? 'עריכת מוצר/שירות' : 'מוצר/שירות חדש'}
@@ -288,6 +293,117 @@ export default function ProductsPage() {
                             <SelectItem value="video">סרטון</SelectItem>
                           </SelectContent>
                         </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Task Template Section */}
+                <div className="space-y-4 border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <FormLabel className="text-base font-medium">תבנית משימות</FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        משימות שיתווספו אוטומטית כשלקוח רוכש את המוצר/שירות הזה
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const currentTasks = form.getValues('predefinedTasks') || [];
+                        form.setValue('predefinedTasks', [...currentTasks, {
+                          id: Date.now().toString(),
+                          title: '',
+                          description: '',
+                          estimatedHours: 1,
+                          order: currentTasks.length
+                        }]);
+                      }}
+                    >
+                      <Plus className="h-4 w-4 ml-1" />
+                      הוסף משימה
+                    </Button>
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="predefinedTasks"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <div className="space-y-3">
+                            {(field.value || []).map((task, index) => (
+                              <div key={task.id} className="border rounded-lg p-3 space-y-2">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1 space-y-2">
+                                    <Input
+                                      placeholder="כותרת המשימה"
+                                      value={task.title}
+                                      onChange={(e) => {
+                                        const newTasks = [...(field.value || [])];
+                                        newTasks[index] = { ...task, title: e.target.value };
+                                        field.onChange(newTasks);
+                                      }}
+                                    />
+                                    <Textarea
+                                      placeholder="תיאור המשימה (אופציונלי)"
+                                      value={task.description || ''}
+                                      rows={2}
+                                      onChange={(e) => {
+                                        const newTasks = [...(field.value || [])];
+                                        newTasks[index] = { ...task, description: e.target.value };
+                                        field.onChange(newTasks);
+                                      }}
+                                    />
+                                    <div className="flex items-center gap-2">
+                                      <Label htmlFor={`hours-${index}`} className="text-sm">
+                                        שעות משוערות:
+                                      </Label>
+                                      <Input
+                                        id={`hours-${index}`}
+                                        type="number"
+                                        min="0"
+                                        step="0.5"
+                                        className="w-20"
+                                        value={task.estimatedHours || 1}
+                                        onChange={(e) => {
+                                          const newTasks = [...(field.value || [])];
+                                          newTasks[index] = { 
+                                            ...task, 
+                                            estimatedHours: parseFloat(e.target.value) || 1 
+                                          };
+                                          field.onChange(newTasks);
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const newTasks = (field.value || []).filter((_, i) => i !== index);
+                                      field.onChange(newTasks);
+                                    }}
+                                    className="text-red-600 hover:text-red-700"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                            {(!field.value || field.value.length === 0) && (
+                              <div className="text-center text-muted-foreground py-4">
+                                <CheckSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                                <p>לא הוגדרו משימות עדיין</p>
+                                <p className="text-xs">לחץ על "הוסף משימה" כדי להתחיל</p>
+                              </div>
+                            )}
+                          </div>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
