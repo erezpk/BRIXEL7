@@ -12,6 +12,7 @@ import {
   Layers,
   Layout,
   FileText,
+  Package,
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ const navigation = [
   { name: "לקוחות", href: "/dashboard/clients", icon: Users },
   { name: "פרויקטים", href: "/dashboard/projects", icon: Projector },
   { name: "משימות", href: "/dashboard/tasks", icon: CheckSquare },
+  { name: "מוצרים ושירותים", href: "/dashboard/products", icon: Package },
   { name: "ניהול פיננסי", href: "/dashboard/financial", icon: FileText },
   { name: "תבניות לקוח", href: "/dashboard/client-templates", icon: Layout },
   { name: "צוות", href: "/dashboard/team", icon: UserCheck },

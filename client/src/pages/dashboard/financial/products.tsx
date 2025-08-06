@@ -14,6 +14,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, Edit, Trash2, Package, CheckSquare, X } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -25,10 +26,11 @@ const productSchema = z.object({
   unit: z.string().default('project'),
   isActive: z.boolean().default(true),
   predefinedTasks: z.array(z.object({
+    id: z.string(),
     title: z.string(),
     description: z.string().optional(),
     estimatedHours: z.number().optional(),
-    assignedTo: z.string().optional(),
+    order: z.number(),
   })).default([]),
 });
 
@@ -43,10 +45,11 @@ interface Product {
   unit: string;
   isActive: boolean;
   predefinedTasks: Array<{
+    id: string;
     title: string;
     description?: string;
     estimatedHours?: number;
-    assignedTo?: string;
+    order: number;
   }>;
   createdAt: string;
   updatedAt: string;
@@ -55,6 +58,7 @@ interface Product {
 export default function ProductsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [activeTab, setActiveTab] = useState('basic');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -76,8 +80,8 @@ export default function ProductsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: ProductFormData) => {
-      return apiRequest('/api/products', {
+    mutationFn: async (data: ProductFormData) => {
+      return await apiRequest('/api/products', {
         method: 'POST',
         body: {
           ...data,
@@ -97,8 +101,8 @@ export default function ProductsPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: ProductFormData }) => {
-      return apiRequest(`/api/products/${id}`, {
+    mutationFn: async ({ id, data }: { id: string; data: ProductFormData }) => {
+      return await apiRequest(`/api/products/${id}`, {
         method: 'PUT',
         body: {
           ...data,
@@ -119,8 +123,8 @@ export default function ProductsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => {
-      return apiRequest(`/api/products/${id}`, {
+    mutationFn: async (id: string) => {
+      return await apiRequest(`/api/products/${id}`, {
         method: 'DELETE',
       });
     },

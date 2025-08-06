@@ -254,7 +254,7 @@ export default function App() {
             </ProtectedRoute>
           </Route>
 
-          <Route path="/dashboard/financial/products">
+          <Route path="/dashboard/products">
             <ProtectedRoute>
               <DashboardLayout>
                 <ProductsPage />
