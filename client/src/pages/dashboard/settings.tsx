@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertTriangle, Bell, Facebook, Chrome, Settings as SettingsIcon, Shield, Users, Palette, Zap, Plus, ExternalLink, Trash2, CheckCircle, RefreshCw, Mail, ArrowLeft, Upload, Image, Building } from "lucide-react";
+import { AlertTriangle, Bell, Facebook, Chrome, Settings as SettingsIcon, Shield, Users, Palette, Zap, Plus, ExternalLink, Trash2, CheckCircle, RefreshCw, Mail, ArrowLeft, Upload, Image, Building, FileText } from "lucide-react";
 import { ObjectUploader } from '@/components/ObjectUploader';
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -42,9 +42,9 @@ interface GoogleConnectionForm {
 export default function Settings() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("agency");
+  const [agencyLogo, setAgencyLogo] = useState<string | null>(null);
   const [isFacebookDialogOpen, setIsFacebookDialogOpen] = useState(false);
   const [isGoogleDialogOpen, setIsGoogleDialogOpen] = useState(false);
-  const [agencyLogo, setAgencyLogo] = useState<string | null>(null);
 
   // Get current agency details
   const { data: agency } = useQuery({
@@ -247,11 +247,7 @@ export default function Settings() {
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: typeof settings) => {
-      return await apiRequest({
-        url: "/api/settings",
-        method: "PUT",
-        body: data,
-      });
+      return await apiRequest("/api/settings", "PUT", data);
     },
     onSuccess: () => {
       toast({
@@ -269,7 +265,7 @@ export default function Settings() {
   });
 
   return (
-    <div className={cn("space-y-8", rtlClass())}>
+    <div className={cn("container mx-auto py-6 space-y-6 max-w-7xl", rtlClass())}>
       <div>
         <h1 className="text-3xl font-bold tracking-tight">הגדרות</h1>
         <p className="text-muted-foreground">
@@ -278,14 +274,16 @@ export default function Settings() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="agency">סוכנות</TabsTrigger>
-          <TabsTrigger value="integrations">אינטגרציות</TabsTrigger>
-          <TabsTrigger value="email">אימייל</TabsTrigger>
-          <TabsTrigger value="notifications">התראות</TabsTrigger>
-          <TabsTrigger value="leads">לידים</TabsTrigger>
-          <TabsTrigger value="account">חשבון</TabsTrigger>
-        </TabsList>
+        <div className="border-b">
+          <TabsList className="grid grid-cols-2 md:grid-cols-6 w-full h-auto p-1 bg-transparent">
+            <TabsTrigger value="agency" className="text-sm px-2 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">סוכנות</TabsTrigger>
+            <TabsTrigger value="integrations" className="text-sm px-2 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">אינטגרציות</TabsTrigger>
+            <TabsTrigger value="email" className="text-sm px-2 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">אימייל</TabsTrigger>
+            <TabsTrigger value="notifications" className="text-sm px-2 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">התראות</TabsTrigger>
+            <TabsTrigger value="leads" className="text-sm px-2 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">לידים</TabsTrigger>
+            <TabsTrigger value="account" className="text-sm px-2 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">חשבון</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="agency" className="space-y-6">
           <Card>
@@ -341,7 +339,7 @@ export default function Settings() {
                           });
                           
                           if (response.ok) {
-                            setAgencyLogo(uploadURL);
+                            setAgencyLogo(uploadURL || null);
                             toast({
                               title: "לוגו הועלה בהצלחה",
                               description: "הלוגו יופיע בהצעות מחיר החדשות"
