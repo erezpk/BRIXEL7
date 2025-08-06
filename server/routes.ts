@@ -2066,6 +2066,10 @@ ${quote.notes || ''}
 צוות ${agency.name}
       `.trim();
 
+      if (!client.email) {
+        return res.status(400).json({ message: 'לא נמצא כתובת מייל ללקוח' });
+      }
+
       const success = await emailService.sendEmail({
         to: client.email,
         subject: `הצעת מחיר - ${quote.title} מאת ${senderName || agency.name}`,
