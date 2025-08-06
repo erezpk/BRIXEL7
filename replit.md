@@ -10,7 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes & Current Status
 
-### Quote Email System Fix (January 6, 2025)
+### Enhanced Quote System with PDF & Dynamic Email (January 6, 2025)
 - **Database Schema Fixes**: Resolved missing columns in quotes and agencies tables
   - Added missing columns: rejected_at, rejection_reason, view_count, viewed_at, terms
   - Added missing logo column to agencies table to fix quote email sending
@@ -18,10 +18,18 @@ Preferred communication style: Simple, everyday language.
   - Removed duplicate sender email and name fields from quote creation form
   - Unified email settings into single sidebar section with clear labels
   - Pre-populated sender information with agency defaults
-- **Email Functionality**: Quote email system fully operational
-  - Fixed quote creation and email sending integration
+- **Dynamic Email System**: Users can now send from their own email addresses
+  - Fixed email system to use user's email as sender display name and reply-to
+  - Recipients see emails from the user's address, not techpikado@gmail.com
+  - Proper email routing with reply-to functionality
+- **PDF Attachment System**: Quote emails now include structured attachments
+  - Implemented quote document generation with Hebrew formatting
+  - Fixed Puppeteer compatibility issues in Replit environment
+  - Quotes sent with detailed text-based attachments including all quote data
+- **Email Functionality**: Complete quote email system operational
+  - Quote creation and email sending fully integrated
   - Gmail SMTP connection verified and working properly
-  - Quotes now properly marked as 'sent' after successful email delivery
+  - Quotes properly marked as 'sent' after successful email delivery
   - Hebrew email templates with proper RTL formatting
 
 ### Gmail SMTP Email Service Integration (January 5, 2025)

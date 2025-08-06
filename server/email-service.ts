@@ -97,7 +97,8 @@ class EmailService {
 
     try {
       const mailOptions: any = {
-        from: params.from || this.config.from,
+        from: `"${params.from?.split('@')[0] || 'HORIZON-X'}" <${this.config.from}>`, // Display name with actual sender
+        replyTo: params.from, // Reply goes to the user's email
         to: params.to,
         subject: params.subject,
         text: params.text,

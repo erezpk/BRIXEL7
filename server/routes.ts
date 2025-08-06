@@ -2098,7 +2098,7 @@ ${quote.notes || ''}
         return res.status(400).json({ message: 'לא נמצא כתובת מייל לנמען' });
       }
 
-      console.log(`Sending email to: ${recipient.email} with sender: ${senderEmail}`);
+      console.log(`Sending email to: ${recipient.email} with sender: ${senderEmail} (reply-to: ${senderEmail})`);
       
       // Generate PDF attachment
       console.log('Generating PDF for quote...');
@@ -2124,9 +2124,9 @@ ${quote.notes || ''}
       if (pdfBuffer) {
         emailOptions.attachments = [
           {
-            filename: `הצעת-מחיר-${quote.quoteNumber}.pdf`,
+            filename: `הצעת-מחיר-${quote.quoteNumber}.txt`,
             content: pdfBuffer,
-            contentType: 'application/pdf'
+            contentType: 'text/plain; charset=utf-8'
           }
         ];
       }

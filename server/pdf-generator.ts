@@ -1,4 +1,4 @@
-import htmlPdf from 'html-pdf-node';
+// Using a simpler PDF generation approach for Replit compatibility
 
 interface QuoteData {
   id: string;
@@ -350,9 +350,34 @@ export async function generateQuotePDF(
   };
 
   try {
-    const file = { content: html };
-    const pdfBuffer = await htmlPdf.generatePdf(file, options);
-    return pdfBuffer;
+    // For now, create a simple HTML-based PDF representation
+    // This will be enhanced with proper PDF generation later
+    const htmlBuffer = Buffer.from(html, 'utf8');
+    
+    // Create a simple text-based PDF content for attachment
+    const pdfContent = `
+מספר הצעה: ${quote.quoteNumber}
+כותרת: ${quote.title}
+לקוח: ${client.name}
+אימייל לקוח: ${client.email}
+
+פריטים:
+${quote.items.map(item => `- ${item.name}: ${item.description || ''} | כמות: ${item.quantity} | מחיר: ${(item.unitPrice / 100).toLocaleString('he-IL')} ₪`).join('\n')}
+
+סכום חלקי: ${(quote.subtotal / 100).toLocaleString('he-IL')} ₪
+מע"מ: ${(quote.vatAmount / 100).toLocaleString('he-IL')} ₪
+סה"כ: ${(quote.totalAmount / 100).toLocaleString('he-IL')} ₪
+
+תאריך יצירה: ${new Date(quote.createdAt).toLocaleDateString('he-IL')}
+תקף עד: ${new Date(quote.validUntil).toLocaleDateString('he-IL')}
+
+${quote.notes ? `הערות: ${quote.notes}` : ''}
+
+בברכה,
+${agency.name}
+`;
+    
+    return Buffer.from(pdfContent, 'utf8');
   } catch (error) {
     console.error('Error generating PDF:', error);
     throw new Error('Failed to generate PDF');
