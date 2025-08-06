@@ -18,7 +18,9 @@ import {
   Plus,
   X,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  ChevronLeft,
+  Menu
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -27,6 +29,8 @@ interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   isMobile: boolean;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 const navigation = [
@@ -62,7 +66,7 @@ const navigation = [
   { name: "דוחות", href: "/dashboard/reports", icon: BarChart3 },
 ];
 
-export default function Sidebar({ isOpen, onToggle, isMobile }: SidebarProps) {
+export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = false, onToggleCollapse }: SidebarProps) {
   const [location] = useLocation();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
@@ -73,48 +77,160 @@ export default function Sidebar({ isOpen, onToggle, isMobile }: SidebarProps) {
     }));
   };
 
-  if (isMobile && !isOpen) {
-    return null;
-  }
-
-  return (
-    <>
-      {/* Mobile overlay */}
-      {isMobile && isOpen && (
+  // במובייל - הצגה כמו מודל מלא מסך
+  if (isMobile) {
+    if (!isOpen) return null;
+    
+    return (
+      <>
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={onToggle}
-          data-testid="sidebar-overlay"
         />
-      )}
-      <div className={cn(
-        "fixed right-0 top-0 h-full w-64 bg-white shadow-sm border-l border-gray-100 z-50 transform transition-transform duration-300",
-        isOpen ? "translate-x-0" : "translate-x-full",
-        !isMobile && "translate-x-0"
-      )} data-testid="sidebar">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <div className="text-lg font-bold text-primary font-rubik" data-testid="sidebar-logo">BRIXEL7</div>
-          {isMobile && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onToggle}
-              data-testid="sidebar-close"
-            >
+        <div className="fixed inset-0 bg-white z-50 flex flex-col">
+          {/* כותרת */}
+          <div className="flex items-center justify-between p-4 border-b">
+            <h2 className="text-lg font-bold">תפריט ניווט</h2>
+            <Button variant="ghost" size="sm" onClick={onToggle}>
               <X className="h-5 w-5" />
             </Button>
-          )}
+          </div>
+          
+          {/* תוכן התפריט */}
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-1">
+              {navigation.map((item) => {
+                const Icon = item.icon;
+                
+                if ('subItems' in item && item.subItems) {
+                  const isGroupOpen = openGroups[item.name];
+                  const hasActiveChild = item.subItems.some(subItem => location === subItem.href);
+                  
+                  return (
+                    <div key={item.name} className="space-y-1">
+                      <Button
+                        variant={hasActiveChild ? "secondary" : "ghost"}
+                        className="w-full justify-between h-12 text-base"
+                        onClick={() => toggleGroup(item.name)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon className="h-5 w-5" />
+                          <span>{item.name}</span>
+                        </div>
+                        {isGroupOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                      </Button>
+                      
+                      {isGroupOpen && (
+                        <div className="mr-8 space-y-1">
+                          {item.subItems.map((subItem) => {
+                            const SubIcon = subItem.icon;
+                            const isActive = location === subItem.href;
+                            
+                            return (
+                              <Link key={subItem.name} href={subItem.href}>
+                                <Button
+                                  variant={isActive ? "secondary" : "ghost"}
+                                  className="w-full justify-start h-10"
+                                  onClick={onToggle}
+                                >
+                                  <SubIcon className="h-4 w-4 ml-2" />
+                                  {subItem.name}
+                                </Button>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                } else {
+                  const isActive = location === item.href;
+                  
+                  return (
+                    <Link key={item.name} href={item.href}>
+                      <Button
+                        variant={isActive ? "secondary" : "ghost"}
+                        className="w-full justify-start h-12 text-base"
+                        onClick={onToggle}
+                      >
+                        <Icon className="h-5 w-5 ml-3" />
+                        {item.name}
+                      </Button>
+                    </Link>
+                  );
+                }
+              })}
+            </div>
+          </ScrollArea>
         </div>
+      </>
+    );
+  }
 
-        {/* Navigation */}
-        <ScrollArea className="flex-1 h-[calc(100vh-80px)]">
-          <nav className="p-4 space-y-2">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              
-              // If item has subItems, render as collapsible group
-              if ('subItems' in item && item.subItems) {
+  // תפריט לדסקטופ
+  return (
+    <div className={cn(
+      "fixed right-0 top-0 h-full bg-white shadow-sm border-l border-gray-100 z-50 transition-all duration-300",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
+      {/* כותרת עם כפתור צמצום */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-100">
+        {!isCollapsed && (
+          <div className="text-lg font-bold text-primary font-rubik">BRIXEL7</div>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onToggleCollapse}
+          className="h-8 w-8 p-0"
+        >
+          {isCollapsed ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </Button>
+      </div>
+
+      {/* תפריט ניווט */}
+      <ScrollArea className="flex-1 h-[calc(100vh-80px)]">
+        <nav className={cn("p-2 space-y-1", isCollapsed && "p-1")}>
+          {navigation.map((item) => {
+            const Icon = item.icon;
+            
+            if ('subItems' in item && item.subItems) {
+              if (isCollapsed) {
+                // במצב מצומצם - הצגה כטולטיפ פשוט
+                const hasActiveChild = item.subItems.some(subItem => location === subItem.href);
+                return (
+                  <div key={item.name} className="relative group">
+                    <Button
+                      variant={hasActiveChild ? "secondary" : "ghost"}
+                      className="w-full h-10 p-0 justify-center"
+                      title={item.name}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </Button>
+                    {/* תפריט מרחף */}
+                    <div className="absolute left-full top-0 ml-2 bg-white border shadow-lg rounded-md p-2 space-y-1 opacity-0 group-hover:opacity-100 transition-opacity z-50 min-w-48">
+                      <div className="font-medium text-sm text-gray-900 pb-1 border-b">{item.name}</div>
+                      {item.subItems.map((subItem) => {
+                        const SubIcon = subItem.icon;
+                        const isActive = location === subItem.href;
+                        return (
+                          <Link key={subItem.name} href={subItem.href}>
+                            <Button
+                              variant={isActive ? "secondary" : "ghost"}
+                              size="sm"
+                              className="w-full justify-start text-sm h-8"
+                            >
+                              <SubIcon className="h-3 w-3 ml-2" />
+                              {subItem.name}
+                            </Button>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              } else {
+                // במצב מורחב - תפריט רגיל
                 const isGroupOpen = openGroups[item.name];
                 const hasActiveChild = item.subItems.some(subItem => location === subItem.href);
                 
@@ -123,22 +239,16 @@ export default function Sidebar({ isOpen, onToggle, isMobile }: SidebarProps) {
                     <CollapsibleTrigger asChild>
                       <Button
                         variant={hasActiveChild ? "secondary" : "ghost"}
-                        className={cn(
-                          "w-full justify-start",
-                          hasActiveChild && "bg-primary/10 text-primary"
-                        )}
-                        data-testid={`nav-group-${item.name}`}
+                        className="w-full justify-between h-10"
                       >
-                        <Icon className="ml-2 h-4 w-4" />
-                        <span className="flex-1 text-right">{item.name}</span>
-                        {isGroupOpen ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
-                        )}
+                        <div className="flex items-center gap-3">
+                          <Icon className="h-4 w-4" />
+                          <span>{item.name}</span>
+                        </div>
+                        {isGroupOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                       </Button>
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-1 mt-1 mr-4">
+                    <CollapsibleContent className="space-y-1 mt-1 mr-6">
                       {item.subItems.map((subItem) => {
                         const SubIcon = subItem.icon;
                         const isActive = location === subItem.href;
@@ -148,14 +258,9 @@ export default function Sidebar({ isOpen, onToggle, isMobile }: SidebarProps) {
                             <Button
                               variant={isActive ? "secondary" : "ghost"}
                               size="sm"
-                              className={cn(
-                                "w-full justify-start text-sm",
-                                isActive && "bg-primary/10 text-primary"
-                              )}
-                              data-testid={`nav-${subItem.name}`}
-                              onClick={isMobile ? onToggle : undefined}
+                              className="w-full justify-start text-sm h-8"
                             >
-                              <SubIcon className="ml-2 h-3 w-3" />
+                              <SubIcon className="h-3 w-3 ml-2" />
                               {subItem.name}
                             </Button>
                           </Link>
@@ -164,38 +269,29 @@ export default function Sidebar({ isOpen, onToggle, isMobile }: SidebarProps) {
                     </CollapsibleContent>
                   </Collapsible>
                 );
-              } else {
-                // Regular navigation item
-                const isActive = location === item.href;
-                
-                return (
-                  <Link key={item.name} href={item.href}>
-                    <Button
-                      variant={isActive ? "secondary" : "ghost"}
-                      className={cn(
-                        "w-full justify-start",
-                        isActive && "bg-primary/10 text-primary"
-                      )}
-                      data-testid={`nav-${item.name}`}
-                      onClick={isMobile ? onToggle : undefined}
-                    >
-                      <Icon className="ml-2 h-4 w-4" />
-                      {item.name}
-                    </Button>
-                  </Link>
-                );
               }
-            })}
-          </nav>
-        </ScrollArea>
-
-        {/* Footer */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-100">
-          <div className="text-xs text-gray-500 text-center">
-            גרסה 1.0.0
-          </div>
-        </div>
-      </div>
-    </>
+            } else {
+              const isActive = location === item.href;
+              
+              return (
+                <Link key={item.name} href={item.href}>
+                  <Button
+                    variant={isActive ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full h-10",
+                      isCollapsed ? "justify-center p-0" : "justify-start"
+                    )}
+                    title={isCollapsed ? item.name : undefined}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {!isCollapsed && <span className="mr-3">{item.name}</span>}
+                  </Button>
+                </Link>
+              );
+            }
+          })}
+        </nav>
+      </ScrollArea>
+    </div>
   );
 }
