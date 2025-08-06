@@ -25,7 +25,8 @@ import {
   Building2,
   Mail,
   CreditCard,
-  Calendar
+  Calendar,
+  MessageCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -77,6 +78,7 @@ const navigation = [
 
   { name: "תשלומים", href: "/dashboard/payments", icon: CreditCard },
   { name: "יומן", href: "/dashboard/calendar", icon: Calendar },
+  { name: "תקשורת", href: "/dashboard/communications", icon: MessageCircle },
   { name: "צוות", href: "/dashboard/team", icon: UserCheck },
   { name: "דוחות", href: "/dashboard/reports", icon: BarChart3 },
   { 

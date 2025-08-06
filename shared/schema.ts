@@ -832,6 +832,54 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
   }),
 }));
 
+
+
+// Communications (calls, messages, meetings, summaries)
+export const communications = pgTable("communications", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  type: text("type").notNull(), // phone_call, email, whatsapp, sms, meeting, summary
+  contactType: text("contact_type").notNull(), // lead, client
+  contactId: uuid("contact_id").notNull(), // refers to lead or client
+  contactName: text("contact_name").notNull(), // cached name for easier queries
+  subject: text("subject").notNull(),
+  content: text("content").notNull(),
+  status: text("status").default("completed").notNull(), // completed, scheduled, failed, cancelled
+  scheduledDate: timestamp("scheduled_date"),
+  completedDate: timestamp("completed_date"),
+  duration: integer("duration"), // in minutes
+  outcome: text("outcome"), // results and conclusions
+  followUpRequired: boolean("follow_up_required").default(false),
+  followUpDate: timestamp("follow_up_date"),
+  tags: json("tags").$type<string[]>().default([]),
+  metadata: json("metadata").$type<Record<string, any>>().default({}), // additional data like phone numbers, email addresses, etc.
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Calendar Events (integrated with communications)
+export const calendarEvents = pgTable("calendar_events", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
+  location: text("location"),
+  type: text("type").default("meeting").notNull(), // meeting, task, deadline, reminder
+  priority: text("priority").default("medium").notNull(), // low, medium, high
+  status: text("status").default("scheduled").notNull(), // scheduled, completed, cancelled
+  contactType: text("contact_type"), // lead, client (optional)
+  contactId: uuid("contact_id"), // refers to lead or client (optional)
+  communicationId: uuid("communication_id").references(() => communications.id), // link to communication if applicable
+  attendees: json("attendees").$type<string[]>().default([]), // array of email addresses
+  googleEventId: text("google_event_id"), // for Google Calendar integration
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Insert schemas
 export const insertAgencySchema = createInsertSchema(agencies).omit({
   id: true,
@@ -925,6 +973,45 @@ export const insertContractSchema = createInsertSchema(contracts).omit({
   createdAt: true,
   updatedAt: true,
 });
+
+export const insertCommunicationSchema = createInsertSchema(communications).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCalendarEventSchema = createInsertSchema(calendarEvents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Relations for new tables
+export const communicationsRelations = relations(communications, ({ one }) => ({
+  agency: one(agencies, {
+    fields: [communications.agencyId],
+    references: [agencies.id],
+  }),
+  createdBy: one(users, {
+    fields: [communications.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const calendarEventsRelations = relations(calendarEvents, ({ one }) => ({
+  agency: one(agencies, {
+    fields: [calendarEvents.agencyId],
+    references: [agencies.id],
+  }),
+  communication: one(communications, {
+    fields: [calendarEvents.communicationId],
+    references: [communications.id],
+  }),
+  createdBy: one(users, {
+    fields: [calendarEvents.createdBy],
+    references: [users.id],
+  }),
+}));
 
 export const insertInvoiceSchema = createInsertSchema(invoices).omit({
   id: true,
@@ -1050,6 +1137,12 @@ export type InsertRetainerTransaction = z.infer<typeof insertRetainerTransaction
 
 export type OneTimePayment = typeof oneTimePayments.$inferSelect;
 export type InsertOneTimePayment = z.infer<typeof insertOneTimePaymentSchema>;
+
+export type Communication = typeof communications.$inferSelect;
+export type InsertCommunication = z.infer<typeof insertCommunicationSchema>;
+
+export type CalendarEvent = typeof calendarEvents.$inferSelect;
+export type InsertCalendarEvent = z.infer<typeof insertCalendarEventSchema>;
 
 // Lead forms types
 export type LeadCollectionForm = typeof leadCollectionForms.$inferSelect;

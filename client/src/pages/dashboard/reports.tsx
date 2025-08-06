@@ -1,314 +1,388 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { 
   BarChart3, 
   Users, 
-  Projector, 
-  CheckSquare, 
-  TrendingUp,
-  TrendingDown,
-  Calendar,
+  Phone, 
+  Mail, 
+  MessageCircle, 
+  Calendar, 
+  TrendingUp, 
+  Clock,
+  Download,
   Filter,
-  Download
+  User,
+  Building2
 } from "lucide-react";
-import { Bar, BarChart, Line, LineChart, Pie, PieChart, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { DateRange } from "react-day-picker";
+import { addDays, format } from "date-fns";
 
-interface DashboardStats {
-  totalClients: number;
-  totalProjects: number;
-  totalTasks: number;
-  teamMembers: number;
-  completedProjects: number;
-  pendingTasks: number;
-  revenue: number;
-  growth: number;
-}
+export default function ReportsPage() {
+  const [date, setDate] = useState<DateRange | undefined>({
+    from: addDays(new Date(), -30),
+    to: new Date(),
+  });
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+  // Fetch communication statistics
+  const { data: commStats, isLoading: commLoading } = useQuery({
+    queryKey: ["/api/communications/stats", date],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (date?.from) params.append("from", date.from.toISOString());
+      if (date?.to) params.append("to", date.to.toISOString());
+      return fetch(`/api/communications/stats?${params}`).then(r => r.json());
+    },
+  });
 
-export default function Reports() {
-  const [dateRange, setDateRange] = useState("30");
-  const [filterType, setFilterType] = useState("all");
+  // Mock team performance data (to be replaced with real data)
+  const teamPerformance = [
+    { name: "דניאל כהן", calls: 45, emails: 23, meetings: 12, total: 80 },
+    { name: "רונית לוי", calls: 38, emails: 31, meetings: 8, total: 77 },
+    { name: "משה אברהם", calls: 29, emails: 19, meetings: 15, total: 63 },
+    { name: "שרה פרץ", calls: 25, emails: 27, meetings: 6, total: 58 },
+  ];
 
-  // Mock data - replace with real API calls
-  const stats: DashboardStats = {
-    totalClients: 24,
-    totalProjects: 45,
-    totalTasks: 127,
-    teamMembers: 6,
-    completedProjects: 38,
-    pendingTasks: 23,
-    revenue: 124500,
-    growth: 12.5
+  const communicationTypeIcons: Record<string, any> = {
+    phone_call: Phone,
+    email: Mail,
+    whatsapp: MessageCircle,
+    sms: MessageCircle,
+    meeting: Calendar,
+    summary: BarChart3,
   };
 
-  const clientsData = [
-    { name: 'ינואר', clients: 4, projects: 8, revenue: 15000 },
-    { name: 'פברואר', clients: 3, projects: 6, revenue: 12000 },
-    { name: 'מרץ', clients: 6, projects: 12, revenue: 22000 },
-    { name: 'אפריל', clients: 8, projects: 15, revenue: 28000 },
-    { name: 'מאי', clients: 5, projects: 9, revenue: 18000 },
-    { name: 'יוני', clients: 7, projects: 13, revenue: 25000 },
-  ];
+  const getCommunicationTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      phone_call: "שיחות טלפון",
+      email: "אימיילים",
+      whatsapp: "וואטסאפ",
+      sms: "SMS",
+      meeting: "פגישות",
+      summary: "סיכומים",
+    };
+    return labels[type] || type;
+  };
 
-  const projectsStatusData = [
-    { name: 'הושלמו', value: 38, color: '#10B981' },
-    { name: 'בתהליך', value: 12, color: '#F59E0B' },
-    { name: 'ממתינים', value: 8, color: '#6B7280' },
-    { name: 'מושהים', value: 3, color: '#EF4444' },
-  ];
-
-  const tasksData = [
-    { name: 'ממתינות', count: 23, percentage: 35 },
-    { name: 'בתהליך', count: 45, percentage: 40 },
-    { name: 'הושלמו', count: 59, percentage: 25 },
-  ];
-
-  const teamPerformanceData = [
-    { name: 'אבי כהן', completed: 24, pending: 8, efficiency: 85 },
-    { name: 'שרה לוי', completed: 19, pending: 5, efficiency: 92 },
-    { name: 'יוסי ישראל', completed: 16, pending: 12, efficiency: 75 },
-    { name: 'רחל דוד', completed: 21, pending: 6, efficiency: 88 },
-  ];
+  const exportData = () => {
+    // Implementation for exporting reports
+    console.log("Exporting data...");
+  };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">דוחות ואנליטיקה</h1>
-          <p className="text-muted-foreground">
-            תובנות מפורטות על הביצועים העסקיים שלך
-          </p>
+          <h1 className="text-3xl font-bold">דוחות וסטטיסטיקות</h1>
+          <p className="text-muted-foreground">מעקב אחר ביצועי הצוות ופעילות תקשורת</p>
         </div>
-        
-        <div className="flex gap-2">
-          <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">7 ימים</SelectItem>
-              <SelectItem value="30">30 ימים</SelectItem>
-              <SelectItem value="90">3 חודשים</SelectItem>
-              <SelectItem value="365">שנה</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">הכל</SelectItem>
-              <SelectItem value="clients">לקוחות</SelectItem>
-              <SelectItem value="projects">פרויקטים</SelectItem>
-              <SelectItem value="tasks">משימות</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Button variant="outline" size="sm">
+
+        <div className="flex items-center gap-2">
+          <DatePickerWithRange date={date} setDate={setDate} />
+          <Button variant="outline" onClick={exportData}>
             <Download className="h-4 w-4 ml-2" />
-            ייצוא
+            ייצוא נתונים
           </Button>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">סה"כ לקוחות</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalClients}</div>
-            <p className="text-xs text-muted-foreground">
-              <TrendingUp className="inline h-3 w-3 ml-1 text-green-500" />
-              +{stats.growth}% מהחודש הקודם
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">פרויקטים פעילים</CardTitle>
-            <Projector className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalProjects}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.completedProjects} הושלמו השנה
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">משימות פתוחות</CardTitle>
-            <CheckSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingTasks}</div>
-            <p className="text-xs text-muted-foreground">
-              מתוך {stats.totalTasks} סה"כ
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">הכנסות</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₪{stats.revenue.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              <TrendingUp className="inline h-3 w-3 ml-1 text-green-500" />
-              +15% מהרבעון הקודם
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts */}
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs defaultValue="communication" className="w-full">
         <TabsList>
-          <TabsTrigger value="overview">סקירה כללית</TabsTrigger>
-          <TabsTrigger value="clients">לקוחות</TabsTrigger>
-          <TabsTrigger value="projects">פרויקטים</TabsTrigger>
-          <TabsTrigger value="team">צוות</TabsTrigger>
+          <TabsTrigger value="communication">תקשורת</TabsTrigger>
+          <TabsTrigger value="team">ביצועי צוות</TabsTrigger>
+          <TabsTrigger value="clients">לקוחות ולידים</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+        <TabsContent value="communication" className="space-y-6">
+          {/* Communication Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
-              <CardHeader>
-                <CardTitle>מגמות חודשיות</CardTitle>
-                <CardDescription>לקוחות ופרויקטים חדשים</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={clientsData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="clients" fill="#8884d8" name="לקוחות חדשים" />
-                    <Bar dataKey="projects" fill="#82ca9d" name="פרויקטים חדשים" />
-                  </BarChart>
-                </ResponsiveContainer>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Phone className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">שיחות</p>
+                    <p className="text-2xl font-bold">
+                      {commStats?.byType?.filter((s: any) => s.type === 'phone_call').reduce((sum: number, s: any) => sum + s.count, 0) || 0}
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>סטטוס פרויקטים</CardTitle>
-                <CardDescription>התפלגות לפי מצב</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={projectsStatusData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, value }) => `${name}: ${value}`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {projectsStatusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <Mail className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">אימיילים</p>
+                    <p className="text-2xl font-bold">
+                      {commStats?.byType?.filter((s: any) => s.type === 'email').reduce((sum: number, s: any) => sum + s.count, 0) || 0}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Calendar className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">פגישות</p>
+                    <p className="text-2xl font-bold">
+                      {commStats?.byType?.filter((s: any) => s.type === 'meeting').reduce((sum: number, s: any) => sum + s.count, 0) || 0}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <MessageCircle className="h-5 w-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">הודעות</p>
+                    <p className="text-2xl font-bold">
+                      {commStats?.byType?.filter((s: any) => ['whatsapp', 'sms'].includes(s.type)).reduce((sum: number, s: any) => sum + s.count, 0) || 0}
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
 
-        <TabsContent value="clients" className="space-y-4">
+          {/* Communication by Type */}
           <Card>
             <CardHeader>
-              <CardTitle>הכנסות מלקוחות</CardTitle>
-              <CardDescription>מגמת הכנסות לפי חודש</CardDescription>
+              <CardTitle>פירוט לפי סוג תקשורת</CardTitle>
+              <CardDescription>התפלגות פעילות התקשורת</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={clientsData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => [`₪${value.toLocaleString()}`, 'הכנסות']} />
-                  <Line type="monotone" dataKey="revenue" stroke="#8884d8" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
+              {commLoading ? (
+                <div className="text-center py-8">טוען נתונים...</div>
+              ) : (
+                <div className="space-y-4">
+                  {commStats?.byType?.map((item: any) => {
+                    const Icon = communicationTypeIcons[item.type] || MessageCircle;
+                    return (
+                      <div key={`${item.type}-${item.createdBy}`} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Icon className="h-5 w-5 text-muted-foreground" />
+                          <div>
+                            <h4 className="font-medium">{getCommunicationTypeLabel(item.type)}</h4>
+                            <p className="text-sm text-muted-foreground">על ידי: {item.createdByName}</p>
+                          </div>
+                        </div>
+                        <div className="text-left">
+                          <p className="font-bold">{item.count}</p>
+                          {item.totalDuration && (
+                            <p className="text-sm text-muted-foreground">{item.totalDuration} דקות</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Lead vs Client Communication */}
+          <Card>
+            <CardHeader>
+              <CardTitle>תקשורת לפי סוג איש קשר</CardTitle>
+              <CardDescription>התפלגות בין לידים ולקוחות</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                {commStats?.byContact?.map((item: any) => (
+                  <div key={item.contactType} className="p-4 border rounded-lg text-center">
+                    <h3 className="font-semibold text-lg">{item.contactType === 'lead' ? 'לידים' : 'לקוחות'}</h3>
+                    <p className="text-3xl font-bold text-blue-600">{item.count}</p>
+                    <p className="text-sm text-muted-foreground">תקשרויות</p>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="projects" className="space-y-4">
-          <div className="space-y-4">
-            {projectsStatusData.map((status) => (
-              <Card key={status.name}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-reverse space-x-4">
-                      <div 
-                        className="w-4 h-4 rounded-full" 
-                        style={{ backgroundColor: status.color }}
-                      />
-                      <div>
-                        <p className="text-sm font-medium">{status.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {status.value} פרויקטים
-                        </p>
-                      </div>
-                    </div>
-                    <Badge variant="secondary">
-                      {Math.round((status.value / projectsStatusData.reduce((sum, item) => sum + item.value, 0)) * 100)}%
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="team" className="space-y-4">
+        <TabsContent value="team" className="space-y-6">
+          {/* Team Performance */}
           <Card>
             <CardHeader>
-              <CardTitle>ביצועי צוות</CardTitle>
-              <CardDescription>משימות שהושלמו ויעילות</CardDescription>
+              <CardTitle>ביצועי חברי הצוות</CardTitle>
+              <CardDescription>מעקב אחר פעילות חברי הצוות בתקופה שנבחרה</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {teamPerformanceData.map((member) => (
+                {teamPerformance.map((member, index) => (
                   <div key={member.name} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="font-medium">{member.name}</p>
-                        <Badge variant={member.efficiency >= 85 ? "default" : "secondary"}>
-                          {member.efficiency}% יעילות
-                        </Badge>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                        {member.name.charAt(0)}
                       </div>
-                      <div className="flex gap-4 text-sm text-muted-foreground">
-                        <span>הושלמו: {member.completed}</span>
-                        <span>ממתינות: {member.pending}</span>
+                      <div>
+                        <h4 className="font-medium">{member.name}</h4>
+                        <p className="text-sm text-muted-foreground">חבר צוות</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-6 text-sm">
+                      <div className="text-center">
+                        <p className="font-semibold text-blue-600">{member.calls}</p>
+                        <p className="text-muted-foreground">שיחות</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="font-semibold text-green-600">{member.emails}</p>
+                        <p className="text-muted-foreground">אימיילים</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="font-semibold text-purple-600">{member.meetings}</p>
+                        <p className="text-muted-foreground">פגישות</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="font-bold text-lg">{member.total}</p>
+                        <p className="text-muted-foreground">סה״כ</p>
                       </div>
                     </div>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Team Ranking */}
+          <Card>
+            <CardHeader>
+              <CardTitle>דירוג חברי הצוות</CardTitle>
+              <CardDescription>המובילים בפעילות תקשורת</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {teamPerformance
+                  .sort((a, b) => b.total - a.total)
+                  .map((member, index) => (
+                    <div key={member.name} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${
+                        index === 0 ? 'bg-yellow-500' : 
+                        index === 1 ? 'bg-gray-400' : 
+                        index === 2 ? 'bg-amber-600' : 'bg-muted-foreground'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium">{member.name}</p>
+                        <p className="text-sm text-muted-foreground">{member.total} פעילויות</p>
+                      </div>
+                      {index < 3 && (
+                        <TrendingUp className={`h-5 w-5 ${
+                          index === 0 ? 'text-yellow-500' : 
+                          index === 1 ? 'text-gray-400' : 'text-amber-600'
+                        }`} />
+                      )}
+                    </div>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="clients" className="space-y-6">
+          {/* Client Communication Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Users className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">לידים פעילים</p>
+                    <p className="text-2xl font-bold">
+                      {commStats?.byContact?.find((s: any) => s.contactType === 'lead')?.count || 0}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <Building2 className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">לקוחות פעילים</p>
+                    <p className="text-2xl font-bold">
+                      {commStats?.byContact?.find((s: any) => s.contactType === 'client')?.count || 0}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Clock className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">זמן תגובה ממוצע</p>
+                    <p className="text-2xl font-bold">2.5 שעות</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Communication Insights */}
+          <Card>
+            <CardHeader>
+              <CardTitle>תובנות תקשורת</CardTitle>
+              <CardDescription>ניתוח דפוסי תקשורת ומגמות</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-semibold text-blue-900">💡 תובנה מרכזית</h4>
+                  <p className="text-blue-800 mt-1">
+                    הפעילות הגבוהה ביותר היא ביום שלישי בין השעות 10:00-12:00. 
+                    כדאי לתכנן פגישות חשובות בזמנים אלו.
+                  </p>
+                </div>
+                
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <h4 className="font-semibold text-green-900">📈 מגמה חיובית</h4>
+                  <p className="text-green-800 mt-1">
+                    עלייה של 23% בפגישות עם לקוחות לעומת החודש הקודם. 
+                    המגמה מעידה על שיפור ביחסי הלקוחות.
+                  </p>
+                </div>
+                
+                <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                  <h4 className="font-semibold text-orange-900">⚠️ נקודה לשיפור</h4>
+                  <p className="text-orange-800 mt-1">
+                    זמן התגובה לאימיילים גדל ל-4.2 שעות. 
+                    כדאי לשפר את זמני המענה לשיפור חווית הלקוח.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

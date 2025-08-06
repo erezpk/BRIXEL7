@@ -52,6 +52,8 @@ import PaymentsPage from "@/pages/dashboard/payments";
 import FreeLeadFormsPage from "@/pages/dashboard/free-lead-forms";
 import SubscriptionLanding from "@/pages/subscription/landing";
 import CalendarPage from "@/pages/dashboard/calendar";
+import CommunicationsPage from "@/pages/dashboard/communications";
+import ReportsPage from "@/pages/dashboard/reports";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -324,6 +326,22 @@ export default function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <CalendarPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          <Route path="/dashboard/communications">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <CommunicationsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          <Route path="/dashboard/reports">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ReportsPage />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>

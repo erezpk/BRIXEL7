@@ -2953,6 +2953,14 @@ ${quote.notes || ''}
     console.warn('Subscription routes not available:', error);
   }
 
+  // Import and mount communications routes
+  try {
+    const communicationsModule = await import('./routes/communications');
+    app.use('/api/communications', communicationsModule.default);
+  } catch (error) {
+    console.warn('Communications routes not available:', error);
+  }
+
   // Mount the router to the app
   app.use('/', router);
 
