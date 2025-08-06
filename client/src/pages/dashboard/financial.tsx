@@ -131,14 +131,9 @@ export default function FinancialPage() {
     <div className="p-6" dir="rtl">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">ניהול פיננסי</h1>
-        <div className="flex gap-2">
-          <Link href="/dashboard/products">
-            <Button variant="outline">מוצרים ושירותים</Button>
-          </Link>
-          <Link href="/dashboard/financial/quotes/new">
-            <Button>הצעת מחיר חדשה</Button>
-          </Link>
-        </div>
+        <Link href="/dashboard/financial/quotes/new">
+          <Button>הצעת מחיר חדשה</Button>
+        </Link>
       </div>
 
       {/* Statistics Cards */}
