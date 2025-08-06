@@ -187,7 +187,7 @@ export default function QuotesPage() {
                     </td>
                     <td className="p-4 font-mono text-sm">{quote.quoteNumber}</td>
                     <td className="p-4 font-medium">{quote.title}</td>
-                    <td className="p-4">{quote.client.name}</td>
+                    <td className="p-4">{quote.client?.name || 'לקוח לא זמין'}</td>
                     <td className="p-4 font-medium">{formatCurrency(quote.totalAmount)}</td>
                     <td className="p-4">
                       {new Date(quote.validUntil).toLocaleDateString('he-IL')}
