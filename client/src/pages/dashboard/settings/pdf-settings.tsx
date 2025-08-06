@@ -254,7 +254,18 @@ export default function PDFSettingsPage() {
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
               {agency?.logo ? (
                 <div>
-                  <img src={agency.logo} alt="לוגו הסוכנות" className="mx-auto max-h-20 mb-4" />
+                  <img 
+                    src={`/api/logo/${agency.id}/${agency.logo.split('/').pop()}`} 
+                    alt="לוגו הסוכנות" 
+                    className="mx-auto max-h-20 mb-4"
+                    onError={(e) => {
+                      // Fallback to original URL if proxy fails
+                      const img = e.target as HTMLImageElement;
+                      if (!img.src.includes('storage.googleapis.com')) {
+                        img.src = agency.logo;
+                      }
+                    }}
+                  />
                   <Button variant="outline" onClick={() => document.getElementById('logo-upload')?.click()}>
                     החלפת לוגו
                   </Button>

@@ -11,7 +11,6 @@ import {
   Search, 
   Eye, 
   Mail, 
-  Download,
   FileText,
   Clock,
   CheckCircle,
@@ -228,9 +227,6 @@ export default function QuotesPage() {
                             <Mail className="h-3 w-3" />
                           </Button>
                         )}
-                        <Button variant="outline" size="sm">
-                          <Download className="h-3 w-3" />
-                        </Button>
                       </div>
                     </td>
                   </tr>

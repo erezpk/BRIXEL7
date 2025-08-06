@@ -2103,41 +2103,10 @@ ${quote.notes || ''}
 
       console.log(`Sending email to: ${recipient.email} with sender: ${senderEmail} (reply-to: ${senderEmail})`);
       
-      // Generate PDF attachment with improved HTML generator
-      console.log('Generating PDF for quote...');
-      let pdfBuffer: Buffer | null = null;
-      try {
-        const { generateQuotePDFHtml } = await import('./pdf-generator-html');
-        
-        // Convert quote data to the format expected by the HTML generator
-        const formattedQuote = {
-          id: quote.id,
-          quoteNumber: quote.quoteNumber || 'Q-' + quote.id.slice(0, 6),
-          title: quote.title,
-          description: quote.description || undefined,
-          validUntil: quote.validUntil ? new Date(quote.validUntil).toISOString() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          subtotal: quote.subtotal || 0,
-          vatAmount: quote.vatAmount || 0,
-          totalAmount: quote.totalAmount || 0,
-          items: quote.items?.map((item: any) => ({
-            name: item.name,
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: item.total
-          })) || [],
-          notes: quote.notes || undefined,
-          createdAt: quote.createdAt ? new Date(quote.createdAt).toISOString() : new Date().toISOString()
-        };
+      // No PDF generation - send only link
+      console.log('Sending email with quote link only (no PDF attachment)...');
 
-        pdfBuffer = await generateQuotePDFHtml(formattedQuote, recipient, agency);
-        console.log('PDF generated successfully');
-      } catch (error) {
-        console.error('Error generating PDF:', error);
-        // Continue without PDF if generation fails
-      }
-
-      // Send email with PDF attachment - FIXED TO SEND TO CLIENT
+      // Send email with quote link only - NO PDF attachment
       const emailOptions: any = {
         to: recipient.email, // Send to CLIENT, not sender
         subject: `הצעת מחיר - ${quote.title} מאת ${senderName || agency.name}`,
@@ -2146,16 +2115,7 @@ ${quote.notes || ''}
         replyTo: senderEmail // Set sender as reply-to address
       };
 
-      // Add PDF attachment if available
-      if (pdfBuffer) {
-        emailOptions.attachments = [
-          {
-            filename: `הצעת-מחיר-${quote.quoteNumber || quote.id.slice(0, 6)}.pdf`,
-            content: pdfBuffer,
-            contentType: 'application/pdf'
-          }
-        ];
-      }
+      // No PDF attachments - only the approval link
 
       const success = await emailService.sendEmail(emailOptions);
 
@@ -2318,21 +2278,29 @@ ${quote.notes || ''}
         return res.status(404).json({ message: 'לוגו לא נמצא' });
       }
 
+      console.log(`Serving logo for agency ${agencyId}, logo URL: ${agency.logo}`);
+      
       // If logo is stored in object storage, serve it directly
       if (agency.logo.startsWith('https://storage.googleapis.com/')) {
+        console.log('Fetching logo from object storage...');
         const response = await fetch(agency.logo);
         if (!response.ok) {
+          console.error('Failed to fetch logo from object storage:', response.status);
           return res.status(404).json({ message: 'לוגו לא נמצא' });
         }
 
         const contentType = response.headers.get('content-type') || 'image/png';
+        console.log('Logo content type:', contentType);
+        
         res.set('Content-Type', contentType);
         res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
         
         const buffer = await response.arrayBuffer();
+        console.log('Logo buffer size:', buffer.byteLength);
         res.send(Buffer.from(buffer));
       } else {
         // Handle other logo types if needed
+        console.log('Logo URL does not match expected format');
         res.status(404).json({ message: 'לוגו לא נמצא' });
       }
     } catch (error) {
