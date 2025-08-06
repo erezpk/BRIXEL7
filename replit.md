@@ -1,205 +1,61 @@
 # AgencyCRM - Hebrew SaaS CRM System
 
 ## Overview
-
-AgencyCRM is a comprehensive SaaS CRM system designed specifically for digital marketing agencies, website builders, and video editors operating in the Hebrew/Israeli market. The system features full right-to-left (RTL) language support and provides a modern, responsive interface for managing clients, projects, tasks, and digital assets. Built as a multi-tenant platform, it supports different user roles including Super Admin, Agency Admin, Team Members, and Clients, each with appropriate access levels and functionality.
+AgencyCRM is a comprehensive SaaS CRM system for digital marketing agencies, website builders, and video editors in the Hebrew/Israeli market. It features full right-to-left (RTL) language support, a modern, responsive interface, and manages clients, projects, tasks, and digital assets. As a multi-tenant platform, it supports roles like Super Admin, Agency Admin, Team Members, and Clients with appropriate access levels. The system aims to streamline operations and enhance productivity for agencies.
 
 ## User Preferences
-
 Preferred communication style: Simple, everyday language.
-
-## Recent Changes & Current Status
-
-### Navigation Restructuring - Sales & Financial Sections (January 6, 2025)
-- **Sales Section Created**: Restructured navigation to include dedicated "מכירות" (Sales) section
-  - Quotes management moved from Financial to Sales section
-  - New quote creation now under Sales navigation
-  - Product management integrated into Sales section
-- **Financial Section Reorganized**: Created focused "ניהול פיננסי" (Financial Management) section
-  - Documents management: Template creation and management system for contracts, agreements, and appendices
-  - Transactions management: Full transaction tracking with invoice generation capabilities
-  - Invoices management: Complete invoicing system with status tracking and payment management
-- **Navigation Structure**: Clean separation between sales operations and financial management
-  - Sales: /dashboard/sales/quotes, /dashboard/sales/quotes/new, /dashboard/products
-  - Financial: /dashboard/financial/documents, /dashboard/financial/transactions, /dashboard/financial/invoices
-- **Data Integration Fixed**: Resolved issues with quotes not displaying in client cards and new leads not appearing
-
-### Agency Settings Integration & Navigation Cleanup (January 6, 2025)
-- **Dedicated Agency Settings Page**: Created comprehensive agency settings management
-  - New route: /dashboard/settings/agency with full agency information management
-  - Consolidated logo upload, agency name, description, contact details, and website
-  - Removed logo upload from PDF settings page to avoid duplication
-- **Navigation Organization**: Cleaned up menu structure for better user experience
-  - Created dedicated "הגדרות" (Settings) group in sidebar navigation
-  - Removed duplicate settings entry from header dropdown menu
-  - Organized settings into logical groupings: Agency Settings and PDF Settings
-- **Object Storage Ready**: Storage system fully configured and operational
-  - Default bucket: replit-objstore-a0d5110a-57eb-4aab-9311-28c05ce87568
-  - Public directories for assets, private directories for user uploads
-  - Authentication integrated for secure file management
-
-### Navigation Cleanup & Settings Consolidation (January 6, 2025)
-- **Quote Email System Simplified**: Removed sender name and email fields from quote creation form
-  - Email information now automatically sourced from agency settings
-  - Only custom email message field remains for personalization
-  - Streamlined quote creation process with fewer manual inputs
-- **Settings Menu Consolidation**: Unified all settings under sidebar navigation
-  - Added missing settings options to sidebar: General Settings, Profile, Email Settings
-  - Removed duplicate "Settings" from header dropdown menu to avoid confusion
-  - All settings now accessible through organized sidebar menu structure
-- **PDF Settings Cleanup**: Removed logo upload functionality from PDF settings page
-  - Logo upload now exclusively handled in Agency Settings page
-  - Eliminated duplicate functionality and potential user confusion
-  - Cleaner separation of concerns between PDF templates and agency branding
-
-### Enhanced Quote System with PDF & Dynamic Email (January 6, 2025)
-- **Database Schema Fixes**: Resolved missing columns in quotes and agencies tables
-  - Added missing columns: rejected_at, rejection_reason, view_count, viewed_at, terms
-  - Added missing logo column to agencies table to fix quote email sending
-- **Quote Form UX Improvements**: Fixed duplicate email fields issue
-  - Removed duplicate sender email and name fields from quote creation form
-  - Unified email settings into single sidebar section with clear labels
-  - Pre-populated sender information with agency defaults
-- **Dynamic Email System**: Users can now send from their own email addresses
-  - Fixed email system to use user's email as sender display name and reply-to
-  - Recipients see emails from the user's address, not techpikado@gmail.com
-  - Proper email routing with reply-to functionality
-- **PDF Attachment System**: Quote emails now include structured attachments
-  - Implemented quote document generation with Hebrew formatting
-  - Fixed Puppeteer compatibility issues in Replit environment
-  - Quotes sent with detailed text-based attachments including all quote data
-- **Email Functionality**: Complete quote email system operational
-  - Quote creation and email sending fully integrated
-  - Gmail SMTP connection verified and working properly
-  - Quotes properly marked as 'sent' after successful email delivery
-  - Hebrew email templates with proper RTL formatting
-
-### Gmail SMTP Email Service Integration (January 5, 2025)
-- **Email Service Migration**: Successfully replaced Sendgrid with Gmail SMTP using Nodemailer
-  - Implemented secure Gmail SMTP authentication with app passwords
-  - Added comprehensive email service initialization with connection verification
-  - Created Hebrew email templates for welcome messages, lead notifications, and project updates
-- **Email Management Interface**: 
-  - Built dedicated email setup page (/dashboard/email-setup) with connection testing
-  - Added email settings integration in main settings page
-  - Implemented test email functionality with Hebrew RTL support
-  - Added API endpoints for connection testing and email sending
-- **Production Ready**: Email service fully operational with techpikado@gmail.com
-  - Gmail SMTP verified and working (✅ logged on startup)
-  - Environment variables properly configured (GMAIL_USER, GMAIL_APP_PASSWORD)
-  - All email features available: welcome emails, lead notifications, password reset, client credentials
-
-### Complete System Implementation (January 5, 2025)
-- **Authentication System**: Fully functional dual authentication with email/password and Google OAuth
-  - Fixed Firebase initialization and environment variable configuration
-  - Resolved user agency association issues - users now properly linked to agencies
-  - Frontend error handling improved with proper Hebrew error messages
-- **Navigation & UI Updates**: 
-  - Removed Assets page from main menu (now integrated into client cards)
-  - Removed Templates page from main menu entirely
-  - Updated sidebar navigation to focus on core business functions
-- **Reports Dashboard**: Comprehensive business analytics page implemented
-  - KPI cards with live business metrics (clients, projects, tasks, revenue)
-  - Interactive charts for trends and performance analysis
-  - Team performance analytics with efficiency tracking
-  - Filtering capabilities by date range and category types
-  - Export functionality for business intelligence
-- **Bug Fixes**: 
-  - Fixed task creation API calls (corrected apiRequest format)
-  - Fixed client creation API calls (corrected apiRequest format)
-  - Resolved agency association for existing users
-  - All CRUD operations now working properly (200 status codes)
 
 ## System Architecture
 
 ### Frontend Architecture
-The frontend is built using **React 18** with **TypeScript** and utilizes **Vite** as the build tool. The UI is constructed with **shadcn/ui** components built on top of **Radix UI** primitives, providing a consistent and accessible component library. **Tailwind CSS** handles styling with full RTL support configured through custom CSS variables and Hebrew fonts (Assistant, Rubik).
-
-**State Management**: The application uses **TanStack Query (React Query)** for server state management, caching, and synchronization. Local component state is managed with React's built-in useState and useContext hooks.
-
-**Routing**: Client-side routing is handled by **wouter**, a lightweight alternative to React Router, providing declarative route definitions and navigation.
-
-**Authentication**: Session-based authentication is implemented with **Passport.js** using local strategy, with session data stored securely and user context managed through React Query.
+The frontend uses **React 18** with **TypeScript** and **Vite**. UI components are built with **shadcn/ui** (based on **Radix UI**) and styled with **Tailwind CSS**, including full RTL support and Hebrew fonts (Assistant, Rubik). State management utilizes **TanStack Query** for server state and React's built-in hooks for local state. **wouter** handles client-side routing, and **Passport.js** manages session-based authentication.
 
 ### Backend Architecture
-The backend is built on **Node.js** with **Express.js** as the web framework. The server follows RESTful API conventions with clear separation of concerns:
-
-**Database Layer**: **Drizzle ORM** provides type-safe database operations with **PostgreSQL** as the primary database. **Neon Database** (serverless Postgres) is used as the database provider.
-
-**Authentication & Authorization**: **Passport.js** handles authentication with **bcrypt** for password hashing. Session management uses **express-session** with **connect-pg-simple** for PostgreSQL session storage.
-
-**API Structure**: Routes are organized by resource type (clients, projects, tasks, assets) with proper HTTP methods and status codes. Middleware handles authentication, authorization, and error processing.
+The backend is built on **Node.js** with **Express.js**, following RESTful API conventions. **Drizzle ORM** provides type-safe database operations with **PostgreSQL** (hosted on **Neon Database**). Authentication and authorization are handled by **Passport.js** (with **bcrypt** for hashing) and **express-session** for session management. Routes are organized by resource type, enforcing authentication, authorization, and error handling via middleware.
 
 ### Database Design
-The database schema supports multi-tenancy through agency-based data isolation:
-
-**Core Entities**:
-- **Agencies**: Top-level tenant entities with settings and configuration
-- **Users**: Support multiple roles (super_admin, agency_admin, team_member, client) with agency association
-- **Clients**: Customer records with custom fields support and status tracking
-- **Projects**: Work containers linked to clients with status and progress tracking
-- **Tasks**: Granular work items with assignments, priorities, and completion tracking
-- **Digital Assets**: Domain and hosting management with renewal tracking
-- **Task Comments**: Threaded communication on tasks
-- **Activity Log**: System-wide audit trail for user actions
-
-**Data Relationships**: Foreign key relationships ensure data integrity while supporting the multi-tenant architecture. JSON fields store flexible custom data and settings.
+The database schema supports multi-tenancy with agency-based data isolation. Core entities include Agencies, Users (with various roles), Clients, Projects, Tasks, Digital Assets, Task Comments, and Activity Log. Data relationships enforce integrity, and JSON fields are used for flexible custom data.
 
 ### Multi-Tenant Architecture
-The system implements tenant isolation at the agency level:
-- All data queries are scoped by agency ID
-- User sessions include agency context
-- API endpoints enforce agency-based access control
-- Database constraints prevent cross-agency data access
+Tenant isolation is implemented at the agency level. All data queries are scoped by agency ID, user sessions include agency context, API endpoints enforce agency-based access control, and database constraints prevent cross-agency data access.
 
 ### RTL and Internationalization
-The system is built with Hebrew as the primary language:
-- HTML document direction set to RTL
-- Tailwind CSS configured with RTL-specific utilities
-- Custom RTL class mapping utility for directional styling
-- Hebrew fonts (Assistant, Rubik) loaded and configured
-- All UI text in Hebrew with appropriate cultural considerations
+The system is built with Hebrew as the primary language, supporting RTL through HTML direction, Tailwind CSS configurations, custom RTL class mapping, and dedicated Hebrew fonts (Assistant, Rubik).
 
 ### Real-time Features
-The architecture supports real-time updates through:
-- React Query's background synchronization
-- Optimistic updates for immediate UI feedback
-- Automatic cache invalidation on mutations
-- WebSocket preparation for future real-time messaging
+The architecture supports real-time updates via React Query's background synchronization, optimistic updates, and automatic cache invalidation. WebSocket preparation is in place for future real-time functionalities.
 
 ## External Dependencies
 
 ### Database Services
-- **Neon Database**: Serverless PostgreSQL hosting with connection pooling
-- **Drizzle ORM**: Type-safe database operations and migrations
+- **Neon Database**: Serverless PostgreSQL hosting
+- **Drizzle ORM**: Type-safe database operations
 - **@neondatabase/serverless**: WebSocket-enabled database client
 
 ### UI and Styling
-- **Radix UI**: Accessible, unstyled UI primitives for complex components
+- **Radix UI**: Accessible, unstyled UI primitives
 - **Tailwind CSS**: Utility-first CSS framework with RTL configuration
-- **Lucide React**: Icon library with comprehensive icon set
-- **shadcn/ui**: Pre-built component library built on Radix UI
+- **Lucide React**: Icon library
+- **shadcn/ui**: Pre-built component library
 
 ### Authentication and Security
-- **Passport.js**: Authentication middleware with local strategy
-- **bcrypt**: Password hashing and verification
-- **express-session**: Session management middleware
+- **Passport.js**: Authentication middleware
+- **bcrypt**: Password hashing
+- **express-session**: Session management
 - **connect-pg-simple**: PostgreSQL session store
 
 ### Development and Build Tools
-- **Vite**: Fast build tool and development server with HMR
-- **TypeScript**: Static type checking and enhanced development experience
-- **ESBuild**: Fast JavaScript bundler for production builds
-- **@replit/vite-plugin-runtime-error-modal**: Development error handling
+- **Vite**: Fast build tool and development server
+- **TypeScript**: Static type checking
+- **ESBuild**: Fast JavaScript bundler
 
 ### Data Management
-- **TanStack Query**: Server state management, caching, and synchronization
+- **TanStack Query**: Server state management
 - **React Hook Form**: Form handling with validation
 - **@hookform/resolvers**: Form validation resolvers
-- **Zod**: Schema validation and type safety
-- **date-fns**: Date manipulation and formatting with Hebrew locale
+- **Zod**: Schema validation
+- **date-fns**: Date manipulation and formatting
 
 ### Font Services
-- **Google Fonts**: Hebrew fonts (Assistant, Rubik) for RTL text rendering
-
-The system is designed to be scalable, maintainable, and provides a solid foundation for a multi-tenant SaaS CRM specifically tailored for Hebrew-speaking digital agencies.
+- **Google Fonts**: Hebrew fonts (Assistant, Rubik)
