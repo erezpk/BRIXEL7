@@ -355,7 +355,6 @@ export const leads = pgTable("leads", {
   email: text("email"),
   phone: text("phone"),
   source: text("source").notNull(), // facebook_ads, google_ads, manual, website, referral
-  sourceId: text("source_id"), // external lead ID from Facebook/Google
   campaignId: text("campaign_id"), // campaign ID from ads platform
   campaignName: text("campaign_name"), // campaign name
   adSetId: text("ad_set_id"), // ad set ID (Facebook) or ad group ID (Google)
@@ -813,7 +812,7 @@ export type Task = typeof tasks.$inferSelect;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 
 export type Lead = typeof leads.$inferSelect;
-export type InsertLead = z.infer<typeof insertLeadSchema>;
+export type InsertLead = typeof leads.$inferInsert;
 
 export type TaskComment = typeof taskComments.$inferSelect;
 export type InsertTaskComment = z.infer<typeof insertTaskCommentSchema>;
