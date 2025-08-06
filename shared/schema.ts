@@ -424,6 +424,38 @@ export const clientPaymentMethods = pgTable("client_payment_methods", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Free lead collection forms table - אלטרנטיבה חינמית לאיסוף לידים
+export const leadCollectionForms = pgTable("lead_collection_forms", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  name: text("name").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  fields: json("fields").notNull(), // Form field configuration
+  styling: json("styling"), // Form appearance settings
+  isActive: boolean("is_active").default(true),
+  embedCode: text("embed_code"),
+  publicUrl: text("public_url"),
+  redirectUrl: text("redirect_url"),
+  submissionCount: integer("submission_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Form submissions table
+export const formSubmissions = pgTable("form_submissions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  formId: uuid("form_id").notNull().references(() => leadCollectionForms.id),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  submissionData: json("submission_data").notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  referrer: text("referrer"),
+  isProcessed: boolean("is_processed").default(false),
+  createdLead: uuid("created_lead").references(() => leads.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Retainers - Recurring payment agreements
 export const retainers = pgTable("retainers", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),

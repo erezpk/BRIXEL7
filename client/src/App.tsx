@@ -49,6 +49,7 @@ import PDFSettingsPage from "@/pages/dashboard/settings/pdf-settings";
 import PDFSettingsMainPage from "@/pages/dashboard/pdf-settings";
 import AgencySettingsPage from "@/pages/dashboard/settings/agency-settings";
 import PaymentsPage from "@/pages/dashboard/payments";
+import FreeLeadFormsPage from "@/pages/dashboard/free-lead-forms";
 import SubscriptionLanding from "@/pages/subscription/landing";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -321,6 +322,15 @@ export default function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <PaymentsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          {/* Free Lead Forms Route */}
+          <Route path="/dashboard/free-lead-forms">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <FreeLeadFormsPage />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
