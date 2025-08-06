@@ -169,13 +169,15 @@ export default function NewQuotePage() {
 
   const handleSendAndEmail = async (data: QuoteFormData) => {
     try {
+      console.log('Creating quote with data:', data);
       const quote = await createMutation.mutateAsync(data);
       if (quote?.id) {
         // Get sender info from form or use default
         const senderData = {
           senderName: data.senderName || 'צוות הסוכנות',
-          senderEmail: data.senderEmail || 'info@agency.com'
+          senderEmail: data.senderEmail || 'techpikado@gmail.com'
         };
+        console.log('Sending email with sender data:', senderData);
         await sendEmailMutation.mutateAsync({ quoteId: quote.id, senderData });
       }
     } catch (error) {
@@ -289,10 +291,10 @@ export default function NewQuotePage() {
                                       </SelectItem>
                                     ))
                                   )}
-                                  <SelectItem value="add_new">
-                                    <div className="flex items-center gap-2 text-blue-600 font-medium">
+                                  <SelectItem value="demo_client">
+                                    <div className="flex items-center gap-2 text-green-600 font-medium">
                                       <Plus className="h-4 w-4" />
-                                      הוסף {form.watch('clientType') === 'lead' ? 'ליד' : 'לקוח'} חדש
+                                      לקוח דמו לבדיקה (errz190@gmail.com)
                                     </div>
                                   </SelectItem>
                                 </SelectContent>

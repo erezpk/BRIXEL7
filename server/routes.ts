@@ -1998,10 +1998,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: user.id,
         quoteNumber
       };
+      
+      console.log('Creating quote with data:', JSON.stringify(quoteData, null, 2));
       const quote = await storage.createQuote(quoteData);
       res.json(quote);
     } catch (error) {
-      res.status(500).json({ message: 'שגיאה ביצירת הצעת מחיר' });
+      console.error('Error creating quote:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת הצעת מחיר', error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
