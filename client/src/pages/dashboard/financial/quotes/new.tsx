@@ -32,8 +32,6 @@ const quoteSchema = z.object({
     total: z.number(),
   })).min(1, 'נדרש לפחות פריט אחד'),
   notes: z.string().optional(),
-  senderName: z.string().optional(),
-  senderEmail: z.string().email('כתובת מייל לא תקינה').optional(),
   emailMessage: z.string().optional(),
 });
 
@@ -76,8 +74,6 @@ export default function NewQuotePage() {
       validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
       items: [{ productId: '', name: '', description: '', quantity: 1, unitPrice: 0, priceType: 'fixed' as const, total: 0 }],
       notes: '',
-      senderName: 'צוות HORIZON-X',
-      senderEmail: 'techpikado@gmail.com',
       emailMessage: '',
     },
   });
@@ -152,7 +148,7 @@ export default function NewQuotePage() {
   };
 
   const sendEmailMutation = useMutation({
-    mutationFn: async ({ quoteId, senderData }: { quoteId: string, senderData: { senderName: string, senderEmail: string } }) => {
+    mutationFn: async ({ quoteId, senderData }: { quoteId: string, senderData: { emailMessage: string } }) => {
       const response = await apiRequest(`/api/quotes/${quoteId}/send-email`, 'POST', senderData);
       return response.json();
     },
@@ -179,8 +175,7 @@ export default function NewQuotePage() {
       if (quote?.id) {
         // Get sender info from form or use default
         const senderData = {
-          senderName: data.senderName || 'צוות HORIZON-X',
-          senderEmail: data.senderEmail || 'techpikado@gmail.com'
+          emailMessage: data.emailMessage || ''
         };
         console.log('Sending email with sender data:', senderData);
         await sendEmailMutation.mutateAsync({ quoteId: quote.id, senderData });
@@ -400,54 +395,26 @@ export default function NewQuotePage() {
 
               {/* Sidebar - Email & Summary */}
               <div className="space-y-6">
-                {/* Email Settings */}
+                {/* Email Message */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Mail className="h-5 w-5" />
-                      שליחת במייל
+                      הודעה למייל
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="senderName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>שם השולח</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="צוות HORIZON-X" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="senderEmail"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>כתובת השולח</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="email" placeholder="techpikado@gmail.com" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
+                  <CardContent>
                     <FormField
                       control={form.control}
                       name="emailMessage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>הודעה למייל (אופציונלי)</FormLabel>
+                          <FormLabel>הודעה אישית למייל (אופציונלי)</FormLabel>
                           <FormControl>
                             <Textarea 
                               {...field} 
-                              rows={3} 
-                              placeholder="הודעה אישית נוספת..."
+                              rows={4} 
+                              placeholder="הודעה אישית שתישלח עם הצעת המחיר למייל הלקוח..."
                             />
                           </FormControl>
                           <FormMessage />

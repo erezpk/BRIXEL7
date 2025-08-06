@@ -22,7 +22,8 @@ import {
   ChevronLeft,
   Menu,
   Settings,
-  Building2
+  Building2,
+  Mail
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -72,6 +73,9 @@ const navigation = [
     subItems: [
       { name: "הגדרות סוכנות", href: "/dashboard/settings/agency", icon: Building2 },
       { name: "הגדרות PDF", href: "/dashboard/settings/pdf", icon: FileText },
+      { name: "הגדרות כלליות", href: "/dashboard/settings", icon: Settings },
+      { name: "פרופיל", href: "/dashboard/profile", icon: Users },
+      { name: "הגדרות אימייל", href: "/dashboard/email-setup", icon: Mail },
     ]
   },
 ];

@@ -24,6 +24,20 @@ Preferred communication style: Simple, everyday language.
   - Public directories for assets, private directories for user uploads
   - Authentication integrated for secure file management
 
+### Navigation Cleanup & Settings Consolidation (January 6, 2025)
+- **Quote Email System Simplified**: Removed sender name and email fields from quote creation form
+  - Email information now automatically sourced from agency settings
+  - Only custom email message field remains for personalization
+  - Streamlined quote creation process with fewer manual inputs
+- **Settings Menu Consolidation**: Unified all settings under sidebar navigation
+  - Added missing settings options to sidebar: General Settings, Profile, Email Settings
+  - Removed duplicate "Settings" from header dropdown menu to avoid confusion
+  - All settings now accessible through organized sidebar menu structure
+- **PDF Settings Cleanup**: Removed logo upload functionality from PDF settings page
+  - Logo upload now exclusively handled in Agency Settings page
+  - Eliminated duplicate functionality and potential user confusion
+  - Cleaner separation of concerns between PDF templates and agency branding
+
 ### Enhanced Quote System with PDF & Dynamic Email (January 6, 2025)
 - **Database Schema Fixes**: Resolved missing columns in quotes and agencies tables
   - Added missing columns: rejected_at, rejection_reason, view_count, viewed_at, terms

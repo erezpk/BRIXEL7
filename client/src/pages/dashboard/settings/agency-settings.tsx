@@ -104,14 +104,14 @@ export default function AgencySettingsPage() {
       console.log('File uploaded successfully, updating agency...');
 
       // Update agency with logo URL
-      const updateResponse = await fetch('/api/agencies/current/logo', {
-        method: 'PUT',
+      const updateResponse = await fetch('/api/agencies/current', {
+        method: 'PATCH',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          logoURL: uploadURL.split('?')[0], // Remove query parameters
+          logo: uploadURL.split('?')[0], // Remove query parameters
         }),
       });
 
