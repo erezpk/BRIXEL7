@@ -24,7 +24,8 @@ import {
   Settings,
   Building2,
   Mail,
-  CreditCard
+  CreditCard,
+  Calendar
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -73,8 +74,9 @@ const navigation = [
       { name: "חשבוניות", href: "/dashboard/financial/invoices", icon: FileText },
     ]
   },
-  { name: "תבניות לקוח", href: "/dashboard/client-templates", icon: Layout },
+
   { name: "תשלומים", href: "/dashboard/payments", icon: CreditCard },
+  { name: "יומן", href: "/dashboard/calendar", icon: Calendar },
   { name: "צוות", href: "/dashboard/team", icon: UserCheck },
   { name: "דוחות", href: "/dashboard/reports", icon: BarChart3 },
   { 

@@ -31,7 +31,7 @@ import ClientDashboard from "@/pages/client-portal/client-dashboard";
 import Profile from "@/pages/dashboard/profile";
 import Settings from "@/pages/dashboard/settings";
 import EmailSetup from "@/pages/dashboard/email-setup";
-import ClientTemplates from "@/pages/dashboard/client-templates";
+// Removed client templates - was confusing for users
 import Assets from "@/pages/dashboard/assets";
 import Financial from "@/pages/dashboard/financial";
 import ProductsPage from "@/pages/dashboard/products";
@@ -51,6 +51,7 @@ import AgencySettingsPage from "@/pages/dashboard/settings/agency-settings";
 import PaymentsPage from "@/pages/dashboard/payments";
 import FreeLeadFormsPage from "@/pages/dashboard/free-lead-forms";
 import SubscriptionLanding from "@/pages/subscription/landing";
+import CalendarPage from "@/pages/dashboard/calendar";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -194,14 +195,7 @@ export default function App() {
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
-          <Route path="/dashboard/client-templates">
-            <ProtectedRoute>
-              <DashboardLayout>
-                <ClientTemplates />
-              </DashboardLayout>
-            </ProtectedRoute>
-          </Route>
-
+          
           <Route path="/dashboard/email-settings">
             <ProtectedRoute>
               <DashboardLayout>
@@ -258,7 +252,7 @@ export default function App() {
           <Route path="/dashboard/client-templates">
             <ProtectedRoute>
               <DashboardLayout>
-                <ClientTemplates />
+                <NotFound />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
@@ -322,6 +316,14 @@ export default function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <PaymentsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+          
+          <Route path="/dashboard/calendar">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <CalendarPage />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>

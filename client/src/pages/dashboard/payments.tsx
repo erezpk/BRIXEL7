@@ -74,6 +74,8 @@ export default function PaymentsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("settings");
+  const [isRetainerDialogOpen, setIsRetainerDialogOpen] = useState(false);
+  const [isPaymentSettingsOpen, setIsPaymentSettingsOpen] = useState(false);
 
   // Queries
   const { data: paymentSettings, isLoading: settingsLoading } = useQuery({
@@ -270,6 +272,8 @@ export default function PaymentsPage() {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="meshulam">משולם</SelectItem>
+                              <SelectItem value="greeninvoice">חשבונית ירוקה</SelectItem>
+                              <SelectItem value="manual">ללא סליקה (ניהול ידני)</SelectItem>
                               <SelectItem value="tranzila">טרנזילה</SelectItem>
                               <SelectItem value="cardcom">קארדקום</SelectItem>
                             </SelectContent>
