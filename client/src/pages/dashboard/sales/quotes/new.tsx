@@ -114,7 +114,7 @@ export default function NewQuotePage() {
           total: Math.round(item.total * 100), // Convert to agorot
         })),
       });
-      
+
       return response.json();
     },
     onSuccess: (quote) => {
@@ -457,7 +457,7 @@ export default function NewQuotePage() {
                       >
                         {createMutation.isPending ? 'שומר...' : 'שמור הצעת מחיר'}
                       </Button>
-                      
+
                       <Button
                         type="button"
                         variant="outline"
@@ -468,7 +468,7 @@ export default function NewQuotePage() {
                         <Send className="h-4 w-4" />
                         {sendEmailMutation.isPending ? 'שולח...' : 'שמור ושלח במייל'}
                       </Button>
-                      
+
                       <Button
                         type="button"
                         variant="outline"

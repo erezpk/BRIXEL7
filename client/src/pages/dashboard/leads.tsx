@@ -256,7 +256,7 @@ export default function Leads() {
           <h1 className="text-3xl font-bold">ניהול לידים</h1>
           <p className="text-muted-foreground">נהל והמר לידים ללקוחות</p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {/* View Mode Toggle */}
           <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'kanban' | 'table')}>
@@ -323,6 +323,7 @@ export default function Leads() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="select_source">בחר מקור</SelectItem>
                       {sourceOptions.map(source => (
                         <SelectItem key={source.value} value={source.value}>
                           {source.label}
@@ -542,21 +543,21 @@ export default function Leads() {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
-                      
+
                       {lead.email && (
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Mail className="h-3 w-3" />
                           {lead.email}
                         </div>
                       )}
-                      
+
                       {lead.phone && (
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Phone className="h-3 w-3" />
                           {lead.phone}
                         </div>
                       )}
-                      
+
                       <div className="flex items-center justify-between">
                         <Badge variant="outline" className="text-xs">
                           {getSourceLabel(lead.source)}
@@ -565,14 +566,14 @@ export default function Leads() {
                           {priorityOptions.find(p => p.value === lead.priority)?.label}
                         </span>
                       </div>
-                      
+
                       {lead.value && lead.value > 0 && (
                         <div className="flex items-center gap-1 text-xs text-green-600">
                           <DollarSign className="h-3 w-3" />
                           ₪{lead.value.toLocaleString()}
                         </div>
                       )}
-                      
+
                       {lead.assignedTo && (
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <User className="h-3 w-3" />
