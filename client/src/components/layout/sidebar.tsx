@@ -284,9 +284,10 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
                       isCollapsed ? "justify-center p-0" : "justify-start"
                     )}
                     title={isCollapsed ? item.name : undefined}
+                    dir="rtl"
                   >
                     <Icon className="h-4 w-4" />
-                    {!isCollapsed && <span className="mr-3">{item.name}</span>}
+                    {!isCollapsed && <span className="ml-3">{item.name}</span>}
                   </Button>
                 </Link>
               );
