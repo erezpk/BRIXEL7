@@ -33,6 +33,7 @@ import Settings from "@/pages/dashboard/settings";
 import EmailSetup from "@/pages/dashboard/email-setup";
 import ClientTemplates from "@/pages/dashboard/client-templates";
 import Assets from "@/pages/dashboard/assets";
+import TeamMemberDashboard from "@/pages/team-member-portal/team-member-dashboard";
 import NotFound from "@/pages/not-found";
 import HelpCenter from "@/pages/help-center";
 
@@ -254,6 +255,13 @@ export default function App() {
         }} />
           {/* ADDED CLIENT SETTINGS ROUTE */}
           <Route path="/client-settings" component={lazy(() => import("./pages/client-portal/client-settings"))} />
+
+          {/* TEAM MEMBER DASHBOARD */}
+          <Route path="/team-member-dashboard">
+            <ProtectedRoute>
+              <TeamMemberDashboard />
+            </ProtectedRoute>
+          </Route>
 
           {/* ADDED HELP CENTER ROUTE */}
           <Route path="/help" component={HelpCenter} />
