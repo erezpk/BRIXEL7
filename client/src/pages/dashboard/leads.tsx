@@ -78,8 +78,10 @@ export default function Leads() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: leads = [], isLoading } = useQuery<Lead[]>({
+  const { data: leads = [], isLoading, error } = useQuery<Lead[]>({
     queryKey: ['/api/leads'],
+    retry: 3,
+    retryDelay: 1000,
   });
 
   const { data: users = [] } = useQuery<any[]>({
@@ -246,6 +248,17 @@ export default function Leads() {
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-64">טוען...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">שגיאה בטעינת לידים</p>
+          <Button onClick={() => window.location.reload()}>נסה שוב</Button>
+        </div>
+      </div>
+    );
   }
 
   return (

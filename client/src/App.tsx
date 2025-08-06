@@ -366,6 +366,9 @@ export default function App() {
           {/* ADDED HELP CENTER ROUTE */}
           <Route path="/help" component={HelpCenter} />
 
+          {/* Original leads route */}
+          <Route path="/leads" element={<Leads />} />
+          <Route path="/dashboard/leads" element={<Leads />} />
           <Route component={NotFound} />
         </Switch>
       </TooltipProvider>

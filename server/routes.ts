@@ -925,8 +925,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Main Leads routes
   router.get('/api/leads', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
-      const leads = await storage.getLeadsByAgency(req.user!.agencyId!);
-      console.log('Fetching leads for agency:', req.user!.agencyId);
+      const user = req.user!;
+      console.log('User accessing leads:', user.id, 'Agency:', user.agencyId, 'Role:', user.role);
+      
+      if (!user.agencyId) {
+        return res.status(403).json({ message: 'משתמש לא משויך לסוכנות' });
+      }
+      
+      const leads = await storage.getLeadsByAgency(user.agencyId);
+      console.log('Fetching leads for agency:', user.agencyId);
       console.log('Found leads:', leads.length);
       res.json(leads);
     } catch (error) {
