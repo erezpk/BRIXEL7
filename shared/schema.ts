@@ -350,7 +350,7 @@ export const clientCardTemplates = pgTable("client_card_templates", {
 export const leads = pgTable("leads", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   agencyId: uuid("agency_id").notNull().references(() => agencies.id),
-  clientId: uuid("client_id").references(() => clients.id),
+  clientId: uuid("client_id"),
   name: text("name").notNull(),
   email: text("email"),
   phone: text("phone"),
