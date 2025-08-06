@@ -58,10 +58,10 @@ export default function Leads() {
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
   const [filters, setFilters] = useState({
-    status: "",
-    source: "",
-    priority: "",
-    assignedTo: "",
+    status: "all",
+    source: "all",
+    priority: "all",
+    assignedTo: "all",
   });
   const [leadForm, setLeadForm] = useState({
     name: "",
@@ -213,10 +213,10 @@ export default function Leads() {
 
   const filteredLeads = leads.filter((lead: Lead) => {
     return (
-      (!filters.status || lead.status === filters.status) &&
-      (!filters.source || lead.source === filters.source) &&
-      (!filters.priority || lead.priority === filters.priority) &&
-      (!filters.assignedTo || lead.assignedTo === filters.assignedTo)
+      (!filters.status || filters.status === "all" || lead.status === filters.status) &&
+      (!filters.source || filters.source === "all" || lead.source === filters.source) &&
+      (!filters.priority || filters.priority === "all" || lead.priority === filters.priority) &&
+      (!filters.assignedTo || filters.assignedTo === "all" || (filters.assignedTo === "unassigned" ? !lead.assignedTo : lead.assignedTo === filters.assignedTo))
     );
   });
 
@@ -396,7 +396,7 @@ export default function Leads() {
                       <SelectValue placeholder="בחר משתמש" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">לא משויך</SelectItem>
+                      <SelectItem value="unassigned">לא משויך</SelectItem>
                       {users.map((user: any) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.firstName} {user.lastName}
@@ -448,7 +448,7 @@ export default function Leads() {
                   <SelectValue placeholder="כל הסטטוסים" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">כל הסטטוסים</SelectItem>
+                  <SelectItem value="all">כל הסטטוסים</SelectItem>
                   {statusOptions.map(status => (
                     <SelectItem key={status.value} value={status.value}>
                       {status.label}
@@ -465,7 +465,7 @@ export default function Leads() {
                   <SelectValue placeholder="כל המקורות" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">כל המקורות</SelectItem>
+                  <SelectItem value="all">כל המקורות</SelectItem>
                   {sourceOptions.map(source => (
                     <SelectItem key={source.value} value={source.value}>
                       {source.label}
@@ -482,7 +482,7 @@ export default function Leads() {
                   <SelectValue placeholder="כל העדיפויות" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">כל העדיפויות</SelectItem>
+                  <SelectItem value="all">כל העדיפויות</SelectItem>
                   {priorityOptions.map(priority => (
                     <SelectItem key={priority.value} value={priority.value}>
                       {priority.label}
@@ -499,7 +499,7 @@ export default function Leads() {
                   <SelectValue placeholder="כולם" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">כולם</SelectItem>
+                  <SelectItem value="all">כולם</SelectItem>
                   {users.map((user: any) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.firstName} {user.lastName}

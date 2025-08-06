@@ -801,7 +801,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(contracts.createdAt));
   }
 
-  async getContractsByClient(clientId: string): Promise<Contract[] {
+  async getContractsByClient(clientId: string): Promise<Contract[]> {
     return await this.db.select().from(contracts)
       .where(eq(contracts.clientId, clientId))
       .orderBy(desc(contracts.createdAt));
