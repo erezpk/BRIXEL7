@@ -80,7 +80,7 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
   // במובייל - הצגה כמו מודל מלא מסך
   if (isMobile) {
     if (!isOpen) return null;
-    
+
     return (
       <>
         <div 
@@ -95,17 +95,17 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
               <X className="h-5 w-5" />
             </Button>
           </div>
-          
+
           {/* תוכן התפריט */}
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-1">
               {navigation.map((item) => {
                 const Icon = item.icon;
-                
+
                 if ('subItems' in item && item.subItems) {
                   const isGroupOpen = openGroups[item.name];
                   const hasActiveChild = item.subItems.some(subItem => location === subItem.href);
-                  
+
                   return (
                     <div key={item.name} className="space-y-1">
                       <Button
@@ -117,15 +117,15 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
                           <Icon className="h-5 w-5" />
                           <span>{item.name}</span>
                         </div>
-                        {isGroupOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                        {isGroupOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                       </Button>
-                      
+
                       {isGroupOpen && (
                         <div className="mr-8 space-y-1">
                           {item.subItems.map((subItem) => {
                             const SubIcon = subItem.icon;
                             const isActive = location === subItem.href;
-                            
+
                             return (
                               <Link key={subItem.name} href={subItem.href}>
                                 <Button
@@ -133,7 +133,7 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
                                   className="w-full justify-start h-10"
                                   onClick={onToggle}
                                 >
-                                  <SubIcon className="h-4 w-4 ml-2" />
+                                  <SubIcon className="h-4 w-4 mr-2" />
                                   {subItem.name}
                                 </Button>
                               </Link>
@@ -145,7 +145,7 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
                   );
                 } else {
                   const isActive = location === item.href;
-                  
+
                   return (
                     <Link key={item.name} href={item.href}>
                       <Button
@@ -193,7 +193,7 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
         <nav className={cn("p-2 space-y-1", isCollapsed && "p-1")}>
           {navigation.map((item) => {
             const Icon = item.icon;
-            
+
             if ('subItems' in item && item.subItems) {
               if (isCollapsed) {
                 // במצב מצומצם - הצגה כטולטיפ פשוט
@@ -220,7 +220,7 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
                               size="sm"
                               className="w-full justify-start text-sm h-8"
                             >
-                              <SubIcon className="h-3 w-3 ml-2" />
+                              <SubIcon className="h-3 w-3 mr-2" />
                               {subItem.name}
                             </Button>
                           </Link>
@@ -233,7 +233,7 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
                 // במצב מורחב - תפריט רגיל
                 const isGroupOpen = openGroups[item.name];
                 const hasActiveChild = item.subItems.some(subItem => location === subItem.href);
-                
+
                 return (
                   <Collapsible key={item.name} open={isGroupOpen} onOpenChange={() => toggleGroup(item.name)}>
                     <CollapsibleTrigger asChild>
@@ -245,14 +245,14 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
                           <Icon className="h-4 w-4" />
                           <span>{item.name}</span>
                         </div>
-                        {isGroupOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                        {isGroupOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                       </Button>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="space-y-1 mt-1 mr-6">
                       {item.subItems.map((subItem) => {
                         const SubIcon = subItem.icon;
                         const isActive = location === subItem.href;
-                        
+
                         return (
                           <Link key={subItem.name} href={subItem.href}>
                             <Button
@@ -260,7 +260,7 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
                               size="sm"
                               className="w-full justify-start text-sm h-8"
                             >
-                              <SubIcon className="h-3 w-3 ml-2" />
+                              <SubIcon className="h-3 w-3 mr-2" />
                               {subItem.name}
                             </Button>
                           </Link>
@@ -272,7 +272,7 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
               }
             } else {
               const isActive = location === item.href;
-              
+
               return (
                 <Link key={item.name} href={item.href}>
                   <Button
