@@ -219,8 +219,9 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
                               variant={isActive ? "secondary" : "ghost"}
                               size="sm"
                               className="w-full justify-start text-sm h-8"
+                              dir="rtl"
                             >
-                              <SubIcon className="h-3 w-3 mr-2" />
+                              <SubIcon className="h-3 w-3 ml-2" />
                               {subItem.name}
                             </Button>
                           </Link>
@@ -259,8 +260,9 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
                               variant={isActive ? "secondary" : "ghost"}
                               size="sm"
                               className="w-full justify-start text-sm h-8"
+                              dir="rtl"
                             >
-                              <SubIcon className="h-3 w-3 mr-2" />
+                              <SubIcon className="h-3 w-3 ml-2" />
                               {subItem.name}
                             </Button>
                           </Link>
