@@ -129,66 +129,44 @@ export default function ClientCard({
         </div>
       </div>
 
-      {/* Statistics Section */}
+      {/* Contact Details */}
       <CardContent className="p-6">
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="text-center p-4 bg-green-50 rounded-lg border border-green-100">
-            <div className="text-2xl font-bold text-green-600 font-rubik">₪0.00</div>
-            <div className="text-sm text-gray-600">הכנסות חודש זה</div>
-          </div>
-          <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <div className="text-2xl font-bold text-blue-600 font-rubik">₪0.00</div>
-            <div className="text-sm text-gray-600">סה״כ הכנסות</div>
-          </div>
-        </div>
-
-        {/* Contact Details */}
-        <div className="space-y-3 mb-6">
+        <div className="space-y-2 mb-4">
           {client.contactName && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">איש קשר:</span>
-              <span className="text-gray-900 font-medium" data-testid="client-contact">
+              <span className="text-gray-900" data-testid="client-contact">
                 {client.contactName}
+              </span>
+            </div>
+          )}
+          {client.email && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">אימייל:</span>
+              <span className="text-gray-900" data-testid="client-email">
+                {client.email}
               </span>
             </div>
           )}
           {client.phone && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">טלפון:</span>
-              <span className="text-gray-900 font-medium" data-testid="client-phone">
+              <span className="text-gray-900" data-testid="client-phone">
                 {client.phone}
               </span>
             </div>
           )}
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">תאריך הצטרפות:</span>
-            <span className="text-gray-900 font-medium">
-              {new Date(client.createdAt).toLocaleDateString('he-IL')}
-            </span>
-          </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-3">
+        <div className="flex space-x-reverse space-x-2">
           <Button 
             variant="outline" 
             size="sm" 
             onClick={() => onView(client)}
-            className="flex-1 text-sm hover:bg-gray-50"
+            className="flex-1"
             data-testid="client-view-details"
           >
-            <Eye className="h-4 w-4 ml-1" />
             צפה בפרטים
-          </Button>
-          <Button 
-            variant="default" 
-            size="sm" 
-            onClick={() => onEdit(client)}
-            className="flex-1 text-sm bg-blue-600 hover:bg-blue-700 text-white"
-            data-testid="client-edit-btn"
-          >
-            <Edit className="h-4 w-4 ml-1" />
-            ערוך
           </Button>
         </div>
       </CardContent>

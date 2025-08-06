@@ -5,11 +5,39 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import ClientCard from "@/components/clients/client-card";
 import NewClientModal from "@/components/modals/new-client-modal";
-import { Plus, Search, Users } from "lucide-react";
+import { Plus, Search, Users, Grid, List, Eye, Edit, MoreHorizontal } from "lucide-react";
 import { type Client } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'active':
+      return 'bg-green-100 text-green-800';
+    case 'inactive':
+      return 'bg-gray-100 text-gray-800';
+    case 'pending':
+      return 'bg-yellow-100 text-yellow-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+const getStatusText = (status: string) => {
+  switch (status) {
+    case 'active':
+      return 'פעיל';
+    case 'inactive':
+      return 'לא פעיל';
+    case 'pending':
+      return 'ממתין';
+    default:
+      return status;
+  }
+};
 
 export default function Clients() {
   const [showNewClientModal, setShowNewClientModal] = useState(false);
@@ -17,6 +45,7 @@ export default function Clients() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -175,6 +204,26 @@ export default function Clients() {
             <SelectItem value="inactive">לא פעיל</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* View Toggle */}
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          <Button
+            variant={viewMode === "grid" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("grid")}
+            className="px-3"
+          >
+            <Grid className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === "table" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("table")}
+            className="px-3"
+          >
+            <List className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Clients Grid */}
@@ -222,7 +271,7 @@ export default function Clients() {
             </Button>
           )}
         </div>
-      ) : (
+      ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredClients.map((client) => (
             <ClientCard
@@ -235,6 +284,62 @@ export default function Clients() {
               onViewDashboard={() => handleViewClientDashboard(client.id)}
             />
           ))}
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-right">שם הלקוח</TableHead>
+                <TableHead className="text-right">איש קשר</TableHead>
+                <TableHead className="text-right">אימייל</TableHead>
+                <TableHead className="text-right">טלפון</TableHead>
+                <TableHead className="text-right">תחום</TableHead>
+                <TableHead className="text-right">סטטוס</TableHead>
+                <TableHead className="text-right">תאריך הצטרפות</TableHead>
+                <TableHead className="text-right">פעולות</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredClients.map((client) => (
+                <TableRow key={client.id} className="hover:bg-gray-50">
+                  <TableCell className="font-medium text-right">{client.name}</TableCell>
+                  <TableCell className="text-right">{client.contactName || '-'}</TableCell>
+                  <TableCell className="text-right">{client.email || '-'}</TableCell>
+                  <TableCell className="text-right">{client.phone || '-'}</TableCell>
+                  <TableCell className="text-right">{client.industry || '-'}</TableCell>
+                  <TableCell className="text-right">
+                    <Badge className={getStatusColor(client.status)}>
+                      {getStatusText(client.status)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {new Date(client.createdAt).toLocaleDateString('he-IL')}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewClient(client)}
+                        data-testid={`view-client-${client.id}`}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditClient(client)}
+                        data-testid={`edit-client-${client.id}`}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 
