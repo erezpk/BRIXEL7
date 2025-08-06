@@ -1083,11 +1083,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   router.get('/api/team-member/stats', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
-      
+
       // Get tasks assigned to this team member
       const tasks = await storage.getTasksByUser(user.id);
       const projects = await storage.getProjectsByAssignedUser(user.id);
-      
+
       // Calculate statistics
       const totalTasks = tasks.length;
       const completedTasks = tasks.filter((task: any) => task.status === 'completed').length;
@@ -1098,7 +1098,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const dueDate = new Date(task.dueDate);
         return dueDate < today && task.status !== 'completed';
       }).length;
-      
+
       res.json({
         totalTasks,
         completedTasks,
@@ -1134,24 +1134,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   router.get('/api/team-member/my-activity', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
-      const limit = parseInt(req.query.limit as string) || 10;
-      
-      // Get activity related to user's tasks and projects
-      const activity = await storage.getActivityLogByUser(user.id, limit);
-      res.json(activity);
+
+      // Get activity logs for this team member
+      const activities = await storage.getActivityByUser(user.id);
+
+      res.json(activities);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בטעינת פעילות חבר צוות' });
     }
   });
 
+  router.get('/api/team-member/my-clients', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+
+      // Get clients related to projects assigned to this team member
+      const projects = await storage.getProjectsByAssignedUser(user.id);
+      const clientIds = [...new Set(projects.map((project: any) => project.clientId).filter(Boolean))];
+
+      const clients = [];
+      for (const clientId of clientIds) {
+        const client = await storage.getClientById(clientId);
+        if (client) {
+          clients.push(client);
+        }
+      }
+
+      res.json(clients);
+    } catch (error) {
+      res.status(500).json({ message: 'שגיאה בטעינת לקוחות חבר צוות' });
+    }
+  });
+
+
   // Legacy team member stats (for backwards compatibility)
   router.get('/api/team/stats', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
-      
+
       // Get projects where user is assigned
       const projects = await storage.getProjectsByAssignedUser(user.id);
-      
+
       res.json({
         projectsCount: projects.length,
       });
@@ -1164,7 +1187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user!;
       const limit = parseInt(req.query.limit as string) || 10;
-      
+
       // Get activity related to user's tasks and projects
       const activity = await storage.getActivityLogByUser(user.id, limit);
       res.json(activity);
@@ -1219,11 +1242,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (emailService.isConfigured()) {
         try {
           const loginUrl = `${req.protocol}://${req.get('host')}/login`;
-          
+
           // Determine dashboard URL based on role
           let dashboardUrl = `${req.protocol}://${req.get('host')}/dashboard`;
           let dashboardType = 'דאשבורד מנהל';
-          
+
           if (newUser.role === 'team_member') {
             dashboardUrl = `${req.protocol}://${req.get('host')}/team-member-dashboard`;
             dashboardType = 'דאשבורד חבר צוות';
@@ -1231,7 +1254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             dashboardUrl = `${req.protocol}://${req.get('host')}/client-dashboard`;
             dashboardType = 'דאשבורד לקוח';
           }
-          
+
           emailSent = await emailService.sendEmail({
             to: newUser.email,
             subject: `הזמנה להצטרף ל-${agency.name}`,
@@ -1240,20 +1263,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 <h2>🎉 הזמנה להצטרף כחבר צוות</h2>
                 <p>שלום ${newUser.fullName},</p>
                 <p>הוזמנת להצטרף כ<strong>${newUser.role === 'team_member' ? 'חבר צוות' : newUser.role === 'agency_admin' ? 'מנהל סוכנות' : 'לקוח'}</strong> ב-${agency.name}.</p>
-                
+
                 <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-right: 4px solid #007bff;">
                   <p><strong>🔑 פרטי ההתחברות:</strong></p>
                   <p><strong>📧 אימייל:</strong> ${newUser.email}</p>
                   <p><strong>🔐 סיסמה זמנית:</strong> ${userData.password}</p>
                   <p><strong>🌐 קישור להתחברות:</strong> <a href="${loginUrl}" style="color: #007bff; text-decoration: none;">${loginUrl}</a></p>
                 </div>
-                
+
                 <div style="background-color: #e8f5e8; padding: 15px; border-radius: 8px; margin: 20px 0; border-right: 4px solid #28a745;">
                   <p><strong>📊 ${dashboardType} שלך:</strong></p>
                   <p>לאחר ההתחברות, תועבר אוטומטית ל${dashboardType} שלך:</p>
                   <p><a href="${dashboardUrl}" style="color: #28a745; text-decoration: none; font-weight: bold;">${dashboardUrl}</a></p>
                 </div>
-                
+
                 <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-right: 4px solid #ffc107;">
                   <p><strong>⚠️ הנחיות חשובות:</strong></p>
                   <ul style="margin: 10px 0; padding-right: 20px;">
@@ -1262,12 +1285,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     <li>במקרה של בעיה, פנה למנהל הסוכנות</li>
                   </ul>
                 </div>
-                
+
                 <p style="margin-top: 30px;">ברוך הבא למשפחת ${agency.name}! אנחנו מצפים לעבוד איתך.</p>
                 <p>בברכה,<br><strong>צוות ${agency.name}</strong></p>
               </div>
             `,
-            text: `שלום ${newUser.fullName}, הוזמנת להצטרף כ${newUser.role === 'team_member' ? 'חבר צוות' : 'מנהל'} ב-${agency.name}. פרטי התחברות: ${newUser.email} / ${userData.password}. קישור התחברות: ${loginUrl}. ${dashboardType}: ${dashboardUrl}`
+            text: `שלום ${newUser.fullName}, הוזמנת להצטרף כ${newUser.role === 'team_member' ? 'חבר צוות' : newUser.role === 'agency_admin' ? 'מנהל סוכנות' : 'לקוח'} ב-${agency.name}. פרטי התחברות: ${newUser.email} / ${userData.password}. קישור התחברות: ${loginUrl}. ${dashboardType}: ${dashboardUrl}`
           });
 
           console.log(`Team invitation email sent to ${newUser.email}: ${emailSent ? 'Success' : 'Failed'}`);
@@ -1421,11 +1444,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send reminder/invitation email
       if (emailService.isConfigured()) {
         const loginUrl = `${req.protocol}://${req.get('host')}/login`;
-        
+
         // Determine dashboard URL based on role
         let dashboardUrl = `${req.protocol}://${req.get('host')}/dashboard`;
         let dashboardType = 'דאשבורד מנהל';
-        
+
         if (member.role === 'team_member') {
           dashboardUrl = `${req.protocol}://${req.get('host')}/team-member-dashboard`;
           dashboardType = 'דאשבורד חבר צוות';
@@ -1433,7 +1456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dashboardUrl = `${req.protocol}://${req.get('host')}/client-dashboard`;
           dashboardType = 'דאשבורד לקוח';
         }
-        
+
         const emailSent = await emailService.sendEmail({
           to: member.email,
           subject: `תזכורת - גישה למערכת ${agency.name}`,
@@ -1442,24 +1465,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               <h2>🔔 תזכורת - גישה למערכת</h2>
               <p>שלום ${member.fullName},</p>
               <p>זוהי תזכורת לגישה שלך למערכת ${agency.name} כ<strong>${member.role === 'team_member' ? 'חבר צוות' : member.role === 'agency_admin' ? 'מנהל סוכנות' : 'לקוח'}</strong>.</p>
-              
+
               <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-right: 4px solid #007bff;">
                 <p><strong>🔑 פרטי ההתחברות:</strong></p>
                 <p><strong>📧 אימייל:</strong> ${member.email}</p>
                 <p><strong>🌐 קישור להתחברות:</strong> <a href="${loginUrl}" style="color: #007bff; text-decoration: none;">${loginUrl}</a></p>
               </div>
-              
+
               <div style="background-color: #e8f5e8; padding: 15px; border-radius: 8px; margin: 20px 0; border-right: 4px solid #28a745;">
                 <p><strong>📊 ${dashboardType} שלך:</strong></p>
                 <p>לאחר ההתחברות, גש ישירות ל${dashboardType} שלך:</p>
                 <p><a href="${dashboardUrl}" style="color: #28a745; text-decoration: none; font-weight: bold;">${dashboardUrl}</a></p>
               </div>
-              
+
               <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-right: 4px solid #ffc107;">
                 <p><strong>🔐 שכחת את הסיסמה?</strong></p>
                 <p>ניתן לאפס אותה דרך הקישור "שכחתי סיסמה" בעמוד ההתחברות, או לפנות למנהל הסוכנות.</p>
               </div>
-              
+
               <p style="margin-top: 30px;">אנחנו מחכים לראותך במערכת!</p>
               <p>בברכה,<br><strong>צוות ${agency.name}</strong></p>
             </div>
@@ -1624,7 +1647,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { to, subject, message } = req.body;
       const user = req.user!;
-      
+
       if (!emailService.isConfigured()) {
         return res.status(400).json({ 
           message: 'שירות האימייל לא מוגדר. אנא הגדר את פרטי ה-SMTP במשתני הסביבה.' 
@@ -1702,7 +1725,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { to, subject, body } = req.body;
-      
+
       if (!to || !subject || !body) {
         return res.status(400).json({ success: false, message: 'Missing required fields' });
       }
@@ -1742,7 +1765,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agencyId: req.user!.agencyId!,
         createdBy: req.user!.id,
       });
-      
+
       const template = await storage.createClientCardTemplate(templateData);
       res.json(template);
     } catch (error) {
@@ -1755,7 +1778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const updateData = req.body;
-      
+
       const template = await storage.updateClientCardTemplate(id, updateData);
       res.json(template);
     } catch (error) {

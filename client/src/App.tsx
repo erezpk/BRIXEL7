@@ -15,7 +15,7 @@ import ResetPassword from "@/pages/auth/reset-password";
 
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import Dashboard from "@/pages/dashboard/dashboard";
-import TeamDashboard from "@/pages/dashboard/team-dashboard"; // Imported TeamDashboard
+import TeamDashboard from "@/pages/team-member-portal/team-member-dashboard"; // Corrected import path
 import Clients from "@/pages/dashboard/clients";
 import ClientDetails from "@/pages/dashboard/client-details";
 import Leads from "@/pages/dashboard/leads";
@@ -64,7 +64,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function DashboardRouteContent() {
   const { user } = useAuth();
-  
+
   return (
     <DashboardLayout>
       {user?.role === 'client' ? <ClientDashboard /> :
