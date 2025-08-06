@@ -20,7 +20,9 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronLeft,
-  Menu
+  Menu,
+  Settings,
+  Building2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -58,13 +60,20 @@ const navigation = [
       { name: "ניהול פיננסי", href: "/dashboard/financial", icon: FileText },
       { name: "הצעות מחיר", href: "/dashboard/financial/quotes", icon: FileText },
       { name: "הצעת מחיר חדשה", href: "/dashboard/financial/quotes/new", icon: Plus },
-      { name: "הגדרות PDF", href: "/dashboard/settings/pdf", icon: FileText },
     ]
   },
   { name: "מוצרים ושירותים", href: "/dashboard/products", icon: Package },
   { name: "תבניות לקוח", href: "/dashboard/client-templates", icon: Layout },
   { name: "צוות", href: "/dashboard/team", icon: UserCheck },
   { name: "דוחות", href: "/dashboard/reports", icon: BarChart3 },
+  { 
+    name: "הגדרות", 
+    icon: Settings, 
+    subItems: [
+      { name: "הגדרות סוכנות", href: "/dashboard/settings/agency", icon: Building2 },
+      { name: "הגדרות PDF", href: "/dashboard/settings/pdf", icon: FileText },
+    ]
+  },
 ];
 
 export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = false, onToggleCollapse }: SidebarProps) {

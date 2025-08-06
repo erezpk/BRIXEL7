@@ -307,56 +307,7 @@ export default function PDFSettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Logo Upload */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Upload className="ml-2 h-5 w-5" />
-              לוגו הסוכנות
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Label htmlFor="logo-upload">העלאת לוגו:</Label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              {agency?.logo ? (
-                <div>
-                  <div className="mb-2">
-                    <div className="text-sm text-gray-600 mb-2">תצוגה מקדימה:</div>
-                    <img 
-                      src={`/api/logo/${agency.id}/${agency.logo.split('/').pop()}`} 
-                      alt="לוגו הסוכנות" 
-                      className="mx-auto max-h-20 mb-4 border rounded-lg p-2 bg-white shadow-sm"
-                      onLoad={() => console.log('Logo loaded successfully')}
-                      onError={(e) => {
-                        console.error('Logo preview failed to load');
-                        const img = e.target as HTMLImageElement;
-                        img.style.display = 'none';
-                      }}
-                    />
-                  </div>
-                  <Button variant="outline" onClick={() => document.getElementById('logo-upload')?.click()}>
-                    החלפת לוגו
-                  </Button>
-                </div>
-              ) : (
-                <div>
-                  <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <Button variant="outline" onClick={() => document.getElementById('logo-upload')?.click()}>
-                    העלאת לוגו
-                  </Button>
-                  <p className="text-sm text-muted-foreground mt-2">PNG, JPG עד 2MB</p>
-                </div>
-              )}
-              <input
-                id="logo-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleLogoUpload}
-                className="hidden"
-              />
-            </div>
-          </CardContent>
-        </Card>
+
 
         {/* Current Settings Display */}
         <Card>

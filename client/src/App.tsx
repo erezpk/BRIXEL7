@@ -44,6 +44,7 @@ import NotFound from "@/pages/not-found";
 import HelpCenter from "@/pages/help-center";
 import PDFSettingsPage from "@/pages/dashboard/settings/pdf-settings";
 import PDFSettingsMainPage from "@/pages/dashboard/pdf-settings";
+import AgencySettingsPage from "@/pages/dashboard/settings/agency-settings";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -229,6 +230,13 @@ export default function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <PDFSettingsMainPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/dashboard/settings/agency">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <AgencySettingsPage />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
