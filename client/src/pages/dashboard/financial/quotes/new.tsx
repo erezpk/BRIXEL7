@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { Plus, Trash2, ArrowRight, Send, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { QuoteItemAutocomplete } from '@/components/quote-item-autocomplete';
+import { SimpleQuoteItem } from '@/components/simple-quote-item';
 
 const quoteSchema = z.object({
   title: z.string().min(1, 'כותרת נדרשת'),
@@ -123,9 +123,12 @@ export default function NewQuotePage() {
 
   const addProductToQuote = (product: Product) => {
     append({
-      description: product.name + (product.description ? ` - ${product.description}` : ''),
+      productId: product.id,
+      name: product.name,
+      description: product.description || product.name,
       quantity: 1,
       unitPrice: product.price / 100, // Convert from agorot
+      priceType: 'fixed' as const,
       total: product.price / 100,
     });
   };
@@ -265,7 +268,7 @@ export default function NewQuotePage() {
                   <CardContent>
                     <div className="space-y-4">
                       {fields.map((field, index) => (
-                        <QuoteItemAutocomplete
+                        <SimpleQuoteItem
                           key={field.id}
                           index={index}
                           form={form}
