@@ -2606,8 +2606,7 @@ ${quote.notes || ''}
       const publicPaths = objectStorageService.getPublicObjectSearchPaths();
       const publicPath = publicPaths[0]; // Use first public path
       
-      const { randomUUID } = require('crypto');
-      const logoId = randomUUID();
+      const logoId = crypto.randomUUID();
       const fullPath = `${publicPath}/logos/${logoId}`;
       
       // Parse the path to get bucket and object name

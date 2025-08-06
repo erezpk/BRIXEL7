@@ -10,6 +10,20 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes & Current Status
 
+### Agency Settings Integration & Navigation Cleanup (January 6, 2025)
+- **Dedicated Agency Settings Page**: Created comprehensive agency settings management
+  - New route: /dashboard/settings/agency with full agency information management
+  - Consolidated logo upload, agency name, description, contact details, and website
+  - Removed logo upload from PDF settings page to avoid duplication
+- **Navigation Organization**: Cleaned up menu structure for better user experience
+  - Created dedicated "הגדרות" (Settings) group in sidebar navigation
+  - Removed duplicate settings entry from header dropdown menu
+  - Organized settings into logical groupings: Agency Settings and PDF Settings
+- **Object Storage Ready**: Storage system fully configured and operational
+  - Default bucket: replit-objstore-a0d5110a-57eb-4aab-9311-28c05ce87568
+  - Public directories for assets, private directories for user uploads
+  - Authentication integrated for secure file management
+
 ### Enhanced Quote System with PDF & Dynamic Email (January 6, 2025)
 - **Database Schema Fixes**: Resolved missing columns in quotes and agencies tables
   - Added missing columns: rejected_at, rejection_reason, view_count, viewed_at, terms

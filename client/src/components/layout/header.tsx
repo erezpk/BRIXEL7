@@ -126,11 +126,11 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                   data-testid="notifications-button"
                 >
                   <Bell className="h-5 w-5" />
-                  {notifications && Array.isArray(notifications) && notifications.length > 0 && (
+                  {notifications && Array.isArray(notifications) && notifications.length > 0 ? (
                     <span className="absolute -top-1 -left-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                      {notifications.length > 9 ? '9+' : notifications.length}
+                      {notifications.length > 9 ? '9+' : notifications.length.toString()}
                     </span>
-                  )}
+                  ) : null}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-80 p-0" align="end" data-testid="notifications-panel">
@@ -209,13 +209,13 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                     </div>
                   )}
                 </div>
-                {notifications && Array.isArray(notifications) && notifications.length > 10 && (
+                {notifications && Array.isArray(notifications) && notifications.length > 10 ? (
                   <div className="p-3 border-t text-center">
                     <Button variant="ghost" size="sm" className="text-xs">
                       הצג עוד התראות
                     </Button>
                   </div>
-                )}
+                ) : null}
               </PopoverContent>
             </Popover>
 
@@ -252,14 +252,6 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                 >
                   <User className="ml-2 h-4 w-4" />
                   <span>פרופיל</span>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem 
-                  onClick={() => window.location.href = '/dashboard/settings'}
-                  data-testid="menu-settings"
-                >
-                  <Settings className="ml-2 h-4 w-4" />
-                  <span>הגדרות</span>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
