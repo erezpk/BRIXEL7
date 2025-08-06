@@ -52,11 +52,7 @@ export function useAuth() {
   const loginMutation = useMutation({
     mutationFn: async (data: LoginData) => {
       try {
-        const response = await apiRequest({
-          method: 'POST',
-          url: '/api/auth/login',
-          body: data
-        });
+        const response = await apiRequest('/api/auth/login', 'POST', data);
         
         // apiRequest already handles error responses, so if we get here, it's successful
         const result = await response.json();
@@ -77,11 +73,7 @@ export function useAuth() {
   const signupMutation = useMutation({
     mutationFn: async (data: SignupData) => {
       try {
-        const response = await apiRequest({
-          method: 'POST',
-          url: '/api/auth/signup',
-          body: data
-        });
+        const response = await apiRequest('/api/auth/signup', 'POST', data);
         
         // apiRequest already handles error responses, so if we get here, it's successful
         const result = await response.json();
@@ -110,10 +102,7 @@ export function useAuth() {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest({
-        method: 'POST',
-        url: '/api/auth/logout'
-      });
+      await apiRequest('/api/auth/logout', 'POST');
     },
     onSuccess: () => {
       queryClient.setQueryData(['/api/auth/me'], null);
