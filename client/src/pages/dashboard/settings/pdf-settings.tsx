@@ -111,13 +111,79 @@ export default function PDFSettingsPage() {
     generateTestPDFMutation.mutate();
   };
 
-  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      // Handle logo upload - would integrate with object storage
+    if (!file) return;
+
+    try {
+      // Get upload URL from server
+      console.log('Getting upload URL for logo...');
+      
+      const uploadResponse = await fetch('/api/agencies/current/upload-logo', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.text();
+        console.error('Upload URL error:', uploadResponse.status, errorData);
+        throw new Error(`Failed to get upload URL: ${uploadResponse.status}`);
+      }
+
+      const { uploadURL } = await uploadResponse.json();
+      console.log('Got upload URL, uploading file...');
+
+      // Upload file to Object Storage
+      const uploadFileResponse = await fetch(uploadURL, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      if (!uploadFileResponse.ok) {
+        throw new Error(`File upload failed: ${uploadFileResponse.status}`);
+      }
+
+      console.log('File uploaded successfully, updating agency...');
+
+      // Update agency with logo URL
+      const updateResponse = await fetch('/api/agencies/current/logo', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          logoURL: uploadURL.split('?')[0], // Remove query parameters
+        }),
+      });
+
+      if (!updateResponse.ok) {
+        throw new Error('Failed to update agency logo');
+      }
+
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/agencies/current'] });
+
       toast({
-        title: 'העלאת לוגו',
-        description: 'תכונה זו תהיה זמינה בקרוב',
+        title: 'לוגו הועלה בהצלחה',
+        description: 'הלוגו יופיע בהצעות מחיר החדשות',
+      });
+
+      // Clear the input
+      event.target.value = '';
+
+    } catch (error) {
+      console.error('Logo upload error:', error);
+      toast({
+        title: 'שגיאה בהעלאת לוגו',
+        description: error instanceof Error ? error.message : 'נסה שוב',
+        variant: 'destructive',
       });
     }
   };
