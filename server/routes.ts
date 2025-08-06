@@ -2165,6 +2165,18 @@ ${quote.notes || ''}
           status: 'sent'
         });
         console.log('Quote marked as sent');
+
+        // If recipient is a lead, update status to 'proposal'
+        if (quote.clientType === 'lead') {
+          try {
+            await storage.updateLead(quote.clientId, {
+              status: 'proposal'
+            });
+            console.log(`Updated lead ${quote.clientId} status to 'proposal'`);
+          } catch (error) {
+            console.error('Error updating lead status:', error);
+          }
+        }
       }
 
       if (success) {

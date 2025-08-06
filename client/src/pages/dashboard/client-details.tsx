@@ -19,7 +19,9 @@ import {
   X,
   Send,
   Eye,
-  ExternalLink
+  ExternalLink,
+  Receipt,
+  Download
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -47,6 +49,12 @@ export default function ClientDetails() {
   const { data: projects, isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
     select: (data) => data?.filter(p => p.clientId === clientId) || [],
+  });
+
+  // Fetch quotes for this client
+  const { data: quotes, isLoading: quotesLoading } = useQuery({
+    queryKey: ['/api/quotes', { clientId }],
+    enabled: !!clientId,
   });
 
   const updateClientMutation = useMutation({
@@ -394,8 +402,9 @@ export default function ClientDetails() {
 
       {/* Tabs */}
       <Tabs defaultValue="projects" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="projects">פרויקטים</TabsTrigger>
+          <TabsTrigger value="quotes">הצעות מחיר</TabsTrigger>
           <TabsTrigger value="notes">הערות</TabsTrigger>
           <TabsTrigger value="history">היסטוריה</TabsTrigger>
         </TabsList>
@@ -459,6 +468,92 @@ export default function ClientDetails() {
                         >
                           צפה בפרויקט
                         </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="quotes" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-reverse space-x-2">
+                <Receipt className="h-5 w-5" />
+                <span>הצעות מחיר</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {quotesLoading ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="animate-pulse flex items-center space-x-reverse space-x-4 p-4 border rounded-lg">
+                      <div className="h-12 w-12 bg-gray-200 rounded-lg"></div>
+                      <div className="flex-1">
+                        <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : !quotes || (quotes as any[]).length === 0 ? (
+                <div className="text-center py-8">
+                  <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">אין הצעות מחיר</h3>
+                  <p className="text-gray-600 mb-4">טרם נשלחו הצעות מחיר ללקוח זה</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {(quotes as any[]).map((quote: any) => (
+                    <div 
+                      key={quote.id} 
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                    >
+                      <div className="flex items-center space-x-reverse space-x-4">
+                        <div className={`p-2 rounded-lg ${
+                          quote.status === 'approved' ? 'bg-green-100' :
+                          quote.status === 'sent' ? 'bg-blue-100' :
+                          quote.status === 'viewed' ? 'bg-yellow-100' :
+                          'bg-gray-100'
+                        }`}>
+                          <Receipt className={`h-5 w-5 ${
+                            quote.status === 'approved' ? 'text-green-600' :
+                            quote.status === 'sent' ? 'text-blue-600' :
+                            quote.status === 'viewed' ? 'text-yellow-600' :
+                            'text-gray-600'
+                          }`} />
+                        </div>
+                        <div className="text-right">
+                          <h4 className="font-semibold">{quote.title}</h4>
+                          <p className="text-sm text-gray-600">
+                            סכום: ₪{(quote.totalAmount / 100)?.toLocaleString()} | 
+                            נשלח: {quote.sentAt ? new Date(quote.sentAt).toLocaleDateString('he-IL') : 'טרם נשלח'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-reverse space-x-2">
+                        <Badge variant={
+                          quote.status === 'approved' ? 'default' :
+                          quote.status === 'sent' ? 'secondary' :
+                          quote.status === 'viewed' ? 'outline' :
+                          'outline'
+                        }>
+                          {quote.status === 'approved' ? 'אושר' :
+                           quote.status === 'sent' ? 'נשלח' :
+                           quote.status === 'viewed' ? 'נצפה' :
+                           'טיוטה'}
+                        </Badge>
+                        {quote.status === 'sent' && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => window.open(`/quote-approval/${quote.id}`, '_blank')}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}

@@ -60,6 +60,11 @@ export default function Leads() {
     queryKey: ['/api/leads', { status: filterStatus, source: filterSource, priority: filterPriority }],
   }) as { data: Lead[], isLoading: boolean };
 
+  // Fetch quotes for leads
+  const { data: quotes = [] } = useQuery({
+    queryKey: ['/api/quotes'],
+  });
+
   // Create/Update lead mutation
   const leadMutation = useMutation({
     mutationFn: async (data: typeof leadForm) => {
@@ -157,7 +162,7 @@ export default function Leads() {
       new: { label: "חדש", variant: "default" as const, color: "bg-blue-100 text-blue-800" },
       contacted: { label: "נוצר קשר", variant: "secondary" as const, color: "bg-yellow-100 text-yellow-800" },
       qualified: { label: "מוכשר", variant: "default" as const, color: "bg-green-100 text-green-800" },
-      proposal: { label: "הצעה", variant: "outline" as const, color: "bg-purple-100 text-purple-800" },
+      proposal: { label: "נשלח הצעת מחיר", variant: "outline" as const, color: "bg-purple-100 text-purple-800" },
       won: { label: "נסגר", variant: "default" as const, color: "bg-green-500 text-white" },
       lost: { label: "אבד", variant: "destructive" as const, color: "bg-red-100 text-red-800" }
     };
@@ -194,8 +199,10 @@ export default function Leads() {
       lead.email.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesTab = activeTab === "all" || lead.status === activeTab;
+    const matchesSource = filterSource === "" || filterSource === "all" || lead.source === filterSource;
+    const matchesPriority = filterPriority === "" || filterPriority === "all" || lead.priority === filterPriority;
     
-    return matchesSearch && matchesTab;
+    return matchesSearch && matchesTab && matchesSource && matchesPriority;
   });
 
   const leadStats = {
@@ -299,7 +306,7 @@ export default function Leads() {
                   <SelectValue placeholder="כל המקורות" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">כל המקורות</SelectItem>
+                  <SelectItem value="all">כל המקורות</SelectItem>
                   <SelectItem value="facebook">Facebook</SelectItem>
                   <SelectItem value="google">Google</SelectItem>
                   <SelectItem value="website">אתר</SelectItem>
@@ -414,6 +421,15 @@ export default function Leads() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center gap-2">
+                            {/* Show quotes count for this lead */}
+                            {(() => {
+                              const leadQuotes = (quotes as any[])?.filter((q: any) => q.clientId === lead.id && q.clientType === 'lead') || [];
+                              return leadQuotes.length > 0 ? (
+                                <div className="text-xs text-muted-foreground bg-blue-100 px-2 py-1 rounded">
+                                  {leadQuotes.length} הצעות
+                                </div>
+                              ) : null;
+                            })()}
                             <Button
                               variant="ghost"
                               size="sm"

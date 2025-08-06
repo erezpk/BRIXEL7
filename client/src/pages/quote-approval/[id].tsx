@@ -235,8 +235,27 @@ export default function QuoteApprovalPage() {
     },
     onSuccess: () => {
       setIsSubmitting(false);
-      // Show success message and redirect
-      alert('הצעת המחיר אושרה בהצלחה! תודה רבה.');
+      // Show success popup
+      const popup = document.createElement('div');
+      popup.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+      popup.innerHTML = `
+        <div class="bg-white rounded-lg p-8 max-w-md mx-4 text-center" dir="rtl">
+          <div class="text-green-500 text-6xl mb-4">✓</div>
+          <h2 class="text-2xl font-bold mb-4 text-gray-900">המסמך נחתם בהצלחה!</h2>
+          <p class="text-gray-600 mb-6">הצעת המחיר אושרה ונשלחה לעסק</p>
+          <button onclick="this.closest('.fixed').remove()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-medium">
+            סגור
+          </button>
+        </div>
+      `;
+      document.body.appendChild(popup);
+      
+      // Auto close after 3 seconds
+      setTimeout(() => {
+        if (popup.parentNode) {
+          popup.parentNode.removeChild(popup);
+        }
+      }, 3000);
     },
     onError: () => {
       setIsSubmitting(false);
