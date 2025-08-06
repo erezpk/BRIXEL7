@@ -58,6 +58,7 @@ const navigation = [
       { name: "ניהול פיננסי", href: "/dashboard/financial", icon: FileText },
       { name: "הצעות מחיר", href: "/dashboard/financial/quotes", icon: FileText },
       { name: "הצעת מחיר חדשה", href: "/dashboard/financial/quotes/new", icon: Plus },
+      { name: "הגדרות PDF", href: "/dashboard/settings/pdf", icon: FileText },
     ]
   },
   { name: "מוצרים ושירותים", href: "/dashboard/products", icon: Package },

@@ -43,6 +43,7 @@ import TeamMemberDashboard from "@/pages/team-member-portal/team-member-dashboar
 import NotFound from "@/pages/not-found";
 import HelpCenter from "@/pages/help-center";
 import PDFSettingsPage from "@/pages/dashboard/settings/pdf-settings";
+import PDFSettingsMainPage from "@/pages/dashboard/pdf-settings";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -221,6 +222,13 @@ export default function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <Settings />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/dashboard/settings/pdf">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <PDFSettingsMainPage />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>

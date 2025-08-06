@@ -2440,7 +2440,8 @@ ${quote.notes || ''}
       const { logoURL } = req.body;
       const agencyId = req.params.id;
       
-      if (agencyId !== req.user!.agencyId) {
+      const user = req.user!;
+      if (agencyId !== user.agencyId) {
         return res.status(403).json({ message: 'אין הרשאה לעדכן סוכנות אחרת' });
       }
 
