@@ -3,7 +3,7 @@ import { z } from "zod";
 import { storage } from "../storage";
 import { createInsertSchema } from "drizzle-zod";
 import { paymentSettings, retainers, oneTimePayments, clientPaymentMethods } from "@shared/schema";
-import { MeshulamService } from "../meshulam-service";
+import { createPaymentProvider } from "../payment-providers/factory";
 
 // Simple auth middleware
 const requireAuth = (req: any, res: any, next: any) => {
@@ -242,7 +242,7 @@ router.post("/one-time-payments", requireAuth, requireRoles(["admin", "super_adm
 });
 
 // Meshulam Integration Routes
-router.post("/meshulam/payment-link", requireAuth, requireRoles(["admin", "super_admin", "team_member"]), async (req, res) => {
+router.post("/payment-link", requireAuth, requireRoles(["admin", "super_admin", "team_member"]), async (req, res) => {
   try {
     const agencyId = req.user.agencyId;
     const paymentSettings = await storage.getPaymentSettings(agencyId);
@@ -251,36 +251,34 @@ router.post("/meshulam/payment-link", requireAuth, requireRoles(["admin", "super
       return res.status(400).json({ message: "מערכת התשלומים לא מופעלת" });
     }
 
-    if (paymentSettings.provider !== "meshulam") {
-      return res.status(400).json({ message: "ספק התשלומים לא נתמך" });
-    }
-
-    const meshulam = new MeshulamService({
-      userId: paymentSettings.apiKey,
-      apiKey: paymentSettings.secretKey,
-      pageCode: paymentSettings.pageCode || "default",
-      testMode: paymentSettings.testMode,
-    });
-
     const { amount, description, clientId } = req.body;
     
     if (!amount || amount <= 0) {
       return res.status(400).json({ message: "סכום לא תקין" });
     }
 
-    const result = await meshulam.createPaymentLink({
-      sum: amount,
-      currency: paymentSettings.currency || "ILS",
-      description: description || paymentSettings.defaultDescription || "תשלום",
+    // Create payment provider instance
+    const provider = createPaymentProvider(paymentSettings.provider, {
+      apiKey: paymentSettings.apiKey,
+      secretKey: paymentSettings.secretKey,
+      testMode: paymentSettings.settings?.testMode || false,
+      currency: paymentSettings.settings?.currency || "ILS",
+      ...paymentSettings.settings
+    });
+
+    const result = await provider.createPaymentLink({
+      amount,
+      currency: paymentSettings.settings?.currency || "ILS",
+      description: description || paymentSettings.settings?.defaultDescription || "תשלום",
       clientId,
       successUrl: `${req.protocol}://${req.get('host')}/payment-success`,
       cancelUrl: `${req.protocol}://${req.get('host')}/payment-cancel`,
-      callbackUrl: `${req.protocol}://${req.get('host')}/api/payments/meshulam/callback`,
+      callbackUrl: `${req.protocol}://${req.get('host')}/api/payments/callback`,
     });
 
     res.json(result);
   } catch (error) {
-    console.error("Error creating Meshulam payment link:", error);
+    console.error("Error creating payment link:", error);
     res.status(500).json({ message: "שגיאה ביצירת קישור התשלום" });
   }
 });
@@ -347,22 +345,20 @@ router.post("/meshulam/charge-token", requireAuth, requireRoles(["admin", "super
   }
 });
 
-router.post("/meshulam/callback", async (req, res) => {
+router.post("/callback", async (req, res) => {
   try {
-    // TODO: Verify callback signature
-    // const paymentSettings = await storage.getPaymentSettings(req.body.agencyId);
-    // const meshulam = new MeshulamService(...);
-    // const isValid = meshulam.verifyCallback(req.body);
-    
     const callbackData = req.body;
-    console.log("Meshulam callback received:", callbackData);
+    console.log("Payment callback received:", callbackData);
     
-    // Process the callback and update payment status
-    // const result = meshulam.parseCallback(callbackData);
+    // TODO: Process the callback and update payment status
+    // 1. Verify callback signature
+    // 2. Parse callback data
+    // 3. Update payment/retainer status in database
+    // 4. Send confirmation emails if needed
     
     res.status(200).send("OK");
   } catch (error) {
-    console.error("Error processing Meshulam callback:", error);
+    console.error("Error processing payment callback:", error);
     res.status(500).json({ message: "שגיאה בעיבוד ה-callback" });
   }
 });

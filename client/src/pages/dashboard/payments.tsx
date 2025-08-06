@@ -18,6 +18,31 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { PaymentSettings, ClientPaymentMethod, Retainer, OneTimePayment } from "@shared/schema";
 
+// Payment provider options
+const PAYMENT_PROVIDERS = [
+  { 
+    value: "meshulam", 
+    label: "משולם",
+    description: "ספק תשלומים ישראלי מוביל",
+    fees: "2.9% + ₪1.5",
+    features: ["כרטיסי אשראי", "תשלומי טוקן", "תשלומים חוזרים"]
+  },
+  { 
+    value: "greeninvoice", 
+    label: "חשבונית ירוקה",
+    description: "פלטפורמת חשבוניות וחיוב ישראלית",
+    fees: "2.5% + ₪1.2",
+    features: ["כרטיסי אשראי", "PayPal", "BlueSnap", "Payoneer"]
+  },
+  { 
+    value: "stripe", 
+    label: "Stripe",
+    description: "פלטפורמת תשלומים גלובלית",
+    fees: "2.9% + $0.30",
+    features: ["כרטיסי אשראי", "Apple Pay", "Google Pay"]
+  },
+];
+
 // Schemas for forms
 const paymentSettingsSchema = z.object({
   provider: z.string().min(1, "יש לבחור ספק תשלומים"),
@@ -25,10 +50,12 @@ const paymentSettingsSchema = z.object({
   apiKey: z.string().min(1, "מפתח API נדרש"),
   secretKey: z.string().min(1, "מפתח סודי נדרש"),
   webhookSecret: z.string().optional(),
-  currency: z.string().default("ILS"),
-  testMode: z.boolean().default(true),
-  autoCapture: z.boolean().default(true),
-  defaultDescription: z.string().optional(),
+  settings: z.object({
+    currency: z.string().default("ILS"),
+    testMode: z.boolean().default(true),
+    autoCapture: z.boolean().default(true),
+    defaultDescription: z.string().optional(),
+  }),
 });
 
 const retainerSchema = z.object({
@@ -50,7 +77,7 @@ export default function PaymentsPage() {
 
   // Queries
   const { data: paymentSettings, isLoading: settingsLoading } = useQuery({
-    queryKey: ["/api/payment-settings"],
+    queryKey: ["/api/payments/payment-settings"],
   });
 
   const { data: clients } = useQuery({
@@ -58,25 +85,25 @@ export default function PaymentsPage() {
   });
 
   const { data: retainers, isLoading: retainersLoading } = useQuery({
-    queryKey: ["/api/retainers"],
+    queryKey: ["/api/payments/retainers"],
   });
 
   const { data: oneTimePayments, isLoading: paymentsLoading } = useQuery({
-    queryKey: ["/api/one-time-payments"],
+    queryKey: ["/api/payments/one-time-payments"],
   });
 
   // Mutations
   const saveSettingsMutation = useMutation({
     mutationFn: async (data: any) => {
       const method = paymentSettings ? "PUT" : "POST";
-      return apiRequest(method, "/api/payment-settings", data);
+      return apiRequest(method, "/api/payments/payment-settings", data);
     },
     onSuccess: () => {
       toast({
         title: "הצלחה",
         description: "הגדרות התשלומים נשמרו בהצלחה",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/payment-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/payments/payment-settings"] });
     },
     onError: (error: any) => {
       toast({
@@ -89,19 +116,47 @@ export default function PaymentsPage() {
 
   const createRetainerMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("POST", "/api/retainers", data);
+      return apiRequest("POST", "/api/payments/retainers", {
+        ...data,
+        amount: Math.round(data.amount * 100), // Convert to agorot
+      });
     },
     onSuccess: () => {
       toast({
-        title: "הצלחה",
-        description: "הרייטנר נוצר בהצלחה",
+        title: "רייטנר נוצר בהצלחה",
+        description: "הרייטנר החדש נוסף למערכת",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/retainers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/payments/retainers"] });
     },
     onError: (error: any) => {
       toast({
         title: "שגיאה",
         description: error.message || "שגיאה ביצירת הרייטנר",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const createPaymentLinkMutation = useMutation({
+    mutationFn: async (data: { amount: number; description: string; clientId?: string }) => {
+      return apiRequest("POST", "/api/payments/payment-link", {
+        ...data,
+        amount: Math.round(data.amount * 100), // Convert to agorot
+      });
+    },
+    onSuccess: (data) => {
+      if (data.success && data.paymentUrl) {
+        window.open(data.paymentUrl, '_blank');
+        toast({
+          title: "קישור תשלום נוצר",
+          description: "הקישור נפתח בחלון חדש",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "שגיאה",
+        description: error.message || "שגיאה ביצירת קישור התשלום",
         variant: "destructive",
       });
     },

@@ -49,6 +49,7 @@ import PDFSettingsPage from "@/pages/dashboard/settings/pdf-settings";
 import PDFSettingsMainPage from "@/pages/dashboard/pdf-settings";
 import AgencySettingsPage from "@/pages/dashboard/settings/agency-settings";
 import PaymentsPage from "@/pages/dashboard/payments";
+import SubscriptionLanding from "@/pages/subscription/landing";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -375,6 +376,9 @@ export default function App() {
 
           {/* ADDED HELP CENTER ROUTE */}
           <Route path="/help" component={HelpCenter} />
+
+          {/* Public Subscription Landing */}
+          <Route path="/subscription" component={SubscriptionLanding} />
 
           {/* Original leads route */}
           <Route path="/leads" component={() => <Leads />} />

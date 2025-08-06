@@ -2945,6 +2945,14 @@ ${quote.notes || ''}
     console.warn('Payment routes not available:', error);
   }
 
+  // Import and mount subscription routes
+  try {
+    const subscriptionsModule = await import('./routes/subscriptions');
+    app.use('/api/subscriptions', subscriptionsModule.default);
+  } catch (error) {
+    console.warn('Subscription routes not available:', error);
+  }
+
   // Mount the router to the app
   app.use('/', router);
 

@@ -387,7 +387,7 @@ export const activityLog = pgTable("activity_log", {
 export const paymentSettings = pgTable("payment_settings", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   agencyId: uuid("agency_id").notNull().references(() => agencies.id).unique(),
-  provider: text("provider").notNull(), // meshulam, stripe, paypal, etc.
+  provider: text("provider").notNull(), // meshulam, stripe, paypal, bluesnap, payoneer, greeninvoice, etc.
   isEnabled: boolean("is_enabled").default(false).notNull(),
   apiKey: text("api_key"), // Encrypted API key
   secretKey: text("secret_key"), // Encrypted secret key
