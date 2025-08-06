@@ -2108,6 +2108,15 @@ ${quote.notes || ''}
       });
 
       console.log(`Email send result: ${success}`);
+      
+      if (success) {
+        // Update quote as sent
+        await storage.updateQuote(quoteId, { 
+          sentAt: new Date().toISOString(),
+          status: 'sent'
+        });
+        console.log('Quote marked as sent');
+      }
 
       if (success) {
         // Update quote status to indicate it was sent

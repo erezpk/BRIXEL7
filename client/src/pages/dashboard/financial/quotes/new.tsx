@@ -395,15 +395,29 @@ export default function NewQuotePage() {
 
               {/* Sidebar - Email & Summary */}
               <div className="space-y-6">
-                {/* Email Configuration */}
+                {/* Email Settings */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Mail className="h-5 w-5" />
-                      הגדרות מייל
+                      שליחת במייל
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="senderName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>שם השולח</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="צוות HORIZON-X" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
                     <FormField
                       control={form.control}
                       name="senderEmail"
@@ -411,7 +425,7 @@ export default function NewQuotePage() {
                         <FormItem>
                           <FormLabel>כתובת השולח</FormLabel>
                           <FormControl>
-                            <Input {...field} type="email" placeholder="לדוגמה: info@company.com" />
+                            <Input {...field} type="email" placeholder="techpikado@gmail.com" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -423,12 +437,12 @@ export default function NewQuotePage() {
                       name="emailMessage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>הודעת מייל</FormLabel>
+                          <FormLabel>הודעה למייל (אופציונלי)</FormLabel>
                           <FormControl>
                             <Textarea 
                               {...field} 
                               rows={3} 
-                              placeholder="הודעה אישית שתישלח עם הצעת המחיר..."
+                              placeholder="הודעה אישית נוספת..."
                             />
                           </FormControl>
                           <FormMessage />
@@ -472,52 +486,16 @@ export default function NewQuotePage() {
                         {createMutation.isPending ? 'שומר...' : 'שמור הצעת מחיר'}
                       </Button>
                       
-                      <div className="space-y-4">
-                        {/* Sender Details for Email */}
-                        <div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
-                          <h4 className="font-medium text-blue-800 mb-3">פרטי השולח למייל</h4>
-                          <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                              control={form.control}
-                              name="senderName"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>שם השולח</FormLabel>
-                                  <FormControl>
-                                    <Input {...field} placeholder="צוות הסוכנות" />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            <FormField
-                              control={form.control}
-                              name="senderEmail"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>כתובת מייל השולח</FormLabel>
-                                  <FormControl>
-                                    <Input {...field} placeholder="info@agency.com" />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                        </div>
-
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full gap-2 bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                          onClick={form.handleSubmit(handleSendAndEmail)}
-                          disabled={createMutation.isPending || sendEmailMutation.isPending}
-                        >
-                          <Send className="h-4 w-4" />
-                          {sendEmailMutation.isPending ? 'שולח...' : 'שמור ושלח במייל'}
-                        </Button>
-                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full gap-2 bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                        onClick={form.handleSubmit(handleSendAndEmail)}
+                        disabled={createMutation.isPending || sendEmailMutation.isPending}
+                      >
+                        <Send className="h-4 w-4" />
+                        {sendEmailMutation.isPending ? 'שולח...' : 'שמור ושלח במייל'}
+                      </Button>
                       
                       <Button
                         type="button"

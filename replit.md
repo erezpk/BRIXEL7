@@ -10,6 +10,20 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes & Current Status
 
+### Quote Email System Fix (January 6, 2025)
+- **Database Schema Fixes**: Resolved missing columns in quotes and agencies tables
+  - Added missing columns: rejected_at, rejection_reason, view_count, viewed_at, terms
+  - Added missing logo column to agencies table to fix quote email sending
+- **Quote Form UX Improvements**: Fixed duplicate email fields issue
+  - Removed duplicate sender email and name fields from quote creation form
+  - Unified email settings into single sidebar section with clear labels
+  - Pre-populated sender information with agency defaults
+- **Email Functionality**: Quote email system fully operational
+  - Fixed quote creation and email sending integration
+  - Gmail SMTP connection verified and working properly
+  - Quotes now properly marked as 'sent' after successful email delivery
+  - Hebrew email templates with proper RTL formatting
+
 ### Gmail SMTP Email Service Integration (January 5, 2025)
 - **Email Service Migration**: Successfully replaced Sendgrid with Gmail SMTP using Nodemailer
   - Implemented secure Gmail SMTP authentication with app passwords
