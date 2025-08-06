@@ -1134,38 +1134,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   router.get('/api/team-member/my-activity', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
+      const limit = parseInt(req.query.limit as string) || 10;
 
-      // Get activity logs for this team member
-      const activities = await storage.getActivityByUser(user.id);
-
-      res.json(activities);
+      // Get activity related to user's tasks and projects
+      const activity = await storage.getActivityLogByUser(user.id, limit);
+      res.json(activity);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה בטעינת פעילות חבר צוות' });
     }
   });
-
-  router.get('/api/team-member/my-clients', requireAuth, requireUserWithAgency, async (req, res) => {
-    try {
-      const user = req.user!;
-
-      // Get clients related to projects assigned to this team member
-      const projects = await storage.getProjectsByAssignedUser(user.id);
-      const clientIds = [...new Set(projects.map((project: any) => project.clientId).filter(Boolean))];
-
-      const clients = [];
-      for (const clientId of clientIds) {
-        const client = await storage.getClientById(clientId);
-        if (client) {
-          clients.push(client);
-        }
-      }
-
-      res.json(clients);
-    } catch (error) {
-      res.status(500).json({ message: 'שגיאה בטעינת לקוחות חבר צוות' });
-    }
-  });
-
 
   // Legacy team member stats (for backwards compatibility)
   router.get('/api/team/stats', requireAuth, requireUserWithAgency, async (req, res) => {
@@ -1290,7 +1267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 <p>בברכה,<br><strong>צוות ${agency.name}</strong></p>
               </div>
             `,
-            text: `שלום ${newUser.fullName}, הוזמנת להצטרף כ${newUser.role === 'team_member' ? 'חבר צוות' : newUser.role === 'agency_admin' ? 'מנהל סוכנות' : 'לקוח'} ב-${agency.name}. פרטי התחברות: ${newUser.email} / ${userData.password}. קישור התחברות: ${loginUrl}. ${dashboardType}: ${dashboardUrl}`
+            text: `שלום ${newUser.fullName}, הוזמנת להצטרף כ${newUser.role === 'team_member' ? 'חבר צוות' : 'מנהל'} ב-${agency.name}. פרטי התחברות: ${newUser.email} / ${userData.password}. קישור התחברות: ${loginUrl}. ${dashboardType}: ${dashboardUrl}`
           });
 
           console.log(`Team invitation email sent to ${newUser.email}: ${emailSent ? 'Success' : 'Failed'}`);

@@ -39,7 +39,6 @@ export interface IStorage {
   // Clients
   getClient(id: string): Promise<Client | undefined>;
   getClientsByAgency(agencyId: string): Promise<Client[]>;
-  getClientById(clientId: string): Promise<Client | undefined>;
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: string, client: Partial<InsertClient>): Promise<Client>;
   deleteClient(id: string): Promise<void>;
@@ -225,11 +224,6 @@ export class DatabaseStorage implements IStorage {
     return this.db.select().from(clients).where(eq(clients.agencyId, agencyId)).orderBy(asc(clients.name));
   }
 
-  async getClientById(clientId: string): Promise<Client | undefined> {
-    const [client] = await this.db.select().from(clients).where(eq(clients.id, clientId));
-    return client || undefined;
-  }
-
   async createClient(insertClient: InsertClient): Promise<Client> {
     const [client] = await this.db
       .insert(clients)
@@ -264,12 +258,25 @@ export class DatabaseStorage implements IStorage {
     return this.db.select().from(projects).where(eq(projects.clientId, clientId)).orderBy(desc(projects.createdAt));
   }
 
+  // Get projects by assigned user
   async getProjectsByAssignedUser(userId: string): Promise<Project[]> {
     const result = await this.db
       .select()
       .from(projects)
-      .where(eq(projects.assignedTo, userId)) // This line needs to be adjusted if `assignedTo` is a single user ID
+      .where(eq(projects.assignedTo, userId))
       .orderBy(desc(projects.createdAt));
+
+    return result;
+  }
+
+  // Get activity log by user
+  async getActivityLogByUser(userId: string, limit: number = 20): Promise<ActivityLog[]> {
+    const result = await this.db
+      .select()
+      .from(activityLog)
+      .where(eq(activityLog.userId, userId))
+      .orderBy(desc(activityLog.createdAt))
+      .limit(limit);
 
     return result;
   }
@@ -466,17 +473,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(activityLog.agencyId, agencyId))
       .orderBy(desc(activityLog.createdAt))
       .limit(limit);
-  }
-
-  async getActivityLogByUser(userId: string, limit: number = 20): Promise<ActivityLog[]> {
-    const result = await this.db
-      .select()
-      .from(activityLog)
-      .where(eq(activityLog.userId, userId))
-      .orderBy(desc(activityLog.createdAt))
-      .limit(limit);
-
-    return result;
   }
 
   async getDashboardStats(agencyId: string): Promise<{
