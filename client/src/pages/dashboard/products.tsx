@@ -88,6 +88,7 @@ export default function ProductsPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
+      console.log('Creating product with data:', data);
       return await apiRequest('/api/products', 'POST', {
         ...data,
         price: Math.round(data.price * 100), // Convert to agorot
@@ -100,7 +101,8 @@ export default function ProductsPage() {
       form.reset();
       setActiveTab('basic');
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Error creating product:', error);
       toast({ title: 'שגיאה ביצירת מוצר/שירות', variant: 'destructive' });
     },
   });
@@ -160,6 +162,9 @@ export default function ProductsPage() {
   };
 
   const onSubmit = (data: ProductFormData) => {
+    console.log('Form submitted with data:', data);
+    console.log('Form errors:', form.formState.errors);
+    
     if (editingProduct) {
       updateMutation.mutate({ id: editingProduct.id, data });
     } else {
