@@ -152,6 +152,26 @@ export default function Leads() {
     resetForm();
     setIsLeadDialogOpen(true);
   };
+  
+  const deleteLead = useMutation({
+    mutationFn: async (leadId: string) => {
+      return await apiRequest(`/api/leads/${leadId}`, 'DELETE');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+      toast({
+        title: "ליד נמחק",
+        description: "הליד נמחק בהצלחה"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "שגיאה",
+        description: "לא ניתן למחוק את הליד",
+        variant: "destructive"
+      });
+    }
+  });
 
   const handleSubmit = () => {
     leadMutation.mutate(leadForm);

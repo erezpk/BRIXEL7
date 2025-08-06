@@ -922,6 +922,158 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Main Leads routes
+  router.get('/api/leads', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const leads = await storage.getLeadsByAgency(req.user!.agencyId!);
+      console.log('Fetching leads for agency:', req.user!.agencyId);
+      console.log('Found leads:', leads.length);
+      res.json(leads);
+    } catch (error) {
+      console.error('Error fetching leads:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת לידים' });
+    }
+  });
+
+  router.post('/api/leads', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const leadData = {
+        ...req.body,
+        agencyId: user.agencyId!,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      console.log('Creating lead with data:', leadData);
+      const lead = await storage.createLead(leadData);
+      
+      await storage.logActivity({
+        agencyId: user.agencyId!,
+        userId: user.id,
+        action: 'created',
+        entityType: 'lead',
+        entityId: lead.id,
+        details: { leadName: lead.name, source: lead.source },
+      });
+
+      res.json(lead);
+    } catch (error) {
+      console.error('Error creating lead:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת הליד' });
+    }
+  });
+
+  router.put('/api/leads/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const leadId = req.params.id;
+      const user = req.user!;
+      
+      // Check if lead belongs to user's agency
+      const existingLead = await storage.getLead(leadId);
+      if (!existingLead || existingLead.agencyId !== user.agencyId) {
+        return res.status(403).json({ message: 'אין הרשאה' });
+      }
+
+      const leadData = {
+        ...req.body,
+        updatedAt: new Date().toISOString()
+      };
+
+      const updatedLead = await storage.updateLead(leadId, leadData);
+      
+      await storage.logActivity({
+        agencyId: user.agencyId!,
+        userId: user.id,
+        action: 'updated',
+        entityType: 'lead',
+        entityId: leadId,
+        details: { leadName: updatedLead.name },
+      });
+
+      res.json(updatedLead);
+    } catch (error) {
+      console.error('Error updating lead:', error);
+      res.status(500).json({ message: 'שגיאה בעדכון הליד' });
+    }
+  });
+
+  router.delete('/api/leads/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const leadId = req.params.id;
+      const user = req.user!;
+      
+      // Check if lead belongs to user's agency
+      const existingLead = await storage.getLead(leadId);
+      if (!existingLead || existingLead.agencyId !== user.agencyId) {
+        return res.status(403).json({ message: 'אין הרשאה' });
+      }
+
+      await storage.deleteLead(leadId);
+      
+      await storage.logActivity({
+        agencyId: user.agencyId!,
+        userId: user.id,
+        action: 'deleted',
+        entityType: 'lead',
+        entityId: leadId,
+        details: { leadName: existingLead.name },
+      });
+
+      res.json({ message: 'הליד נמחק בהצלחה' });
+    } catch (error) {
+      console.error('Error deleting lead:', error);
+      res.status(500).json({ message: 'שגיאה במחיקת הליד' });
+    }
+  });
+
+  router.post('/api/leads/:id/convert', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const leadId = req.params.id;
+      const user = req.user!;
+      
+      // Check if lead belongs to user's agency
+      const existingLead = await storage.getLead(leadId);
+      if (!existingLead || existingLead.agencyId !== user.agencyId) {
+        return res.status(403).json({ message: 'אין הרשאה' });
+      }
+
+      // Create client from lead data
+      const clientData = {
+        name: existingLead.name,
+        email: existingLead.email,
+        phone: existingLead.phone,
+        agencyId: user.agencyId!,
+        status: 'active' as const,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      const client = await storage.createClient(clientData);
+      
+      // Update lead status to converted
+      await storage.updateLead(leadId, { 
+        status: 'won',
+        clientId: client.id,
+        updatedAt: new Date().toISOString()
+      });
+      
+      await storage.logActivity({
+        agencyId: user.agencyId!,
+        userId: user.id,
+        action: 'converted',
+        entityType: 'lead',
+        entityId: leadId,
+        details: { leadName: existingLead.name, clientId: client.id },
+      });
+
+      res.json({ message: 'הליד הומר ללקוח בהצלחה', client });
+    } catch (error) {
+      console.error('Error converting lead:', error);
+      res.status(500).json({ message: 'שגיאה בהמרת הליד' });
+    }
+  });
+
   // Leads routes
   router.get('/api/client/leads/:clientId', requireAuth, async (req, res) => {
     try {
