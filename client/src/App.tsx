@@ -42,6 +42,7 @@ import QuoteApprovalPage from "@/pages/quote-approval/[id]";
 import TeamMemberDashboard from "@/pages/team-member-portal/team-member-dashboard";
 import NotFound from "@/pages/not-found";
 import HelpCenter from "@/pages/help-center";
+import PDFSettingsPage from "@/pages/dashboard/settings/pdf-settings";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -301,6 +302,23 @@ export default function App() {
             return <ClientDashboard />;
           }
         }} />
+          {/* SETTINGS SUB-ROUTES */}
+          <Route path="/dashboard/settings/email">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <EmailSetup />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          <Route path="/dashboard/settings/pdf">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <PDFSettingsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
           {/* ADDED CLIENT SETTINGS ROUTE */}
           <Route path="/client-settings" component={lazy(() => import("./pages/client-portal/client-settings"))} />
 

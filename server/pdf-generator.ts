@@ -1,4 +1,4 @@
-// Using a simpler PDF generation approach for Replit compatibility
+import PDFDocument from 'pdfkit';
 
 interface QuoteData {
   id: string;
@@ -33,6 +33,8 @@ interface AgencyData {
   phone?: string;
   address?: string;
   logo?: string;
+  pdfTemplate?: string;
+  pdfColor?: string;
 }
 
 export async function generateQuotePDF(
@@ -349,37 +351,275 @@ export async function generateQuotePDF(
     timeout: 30000
   };
 
-  try {
-    // For now, create a simple HTML-based PDF representation
-    // This will be enhanced with proper PDF generation later
-    const htmlBuffer = Buffer.from(html, 'utf8');
+  return new Promise<Buffer>((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50,
+        bufferPages: true
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', chunk => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+
+      const template = agency.pdfTemplate || 'modern';
+      const primaryColor = agency.pdfColor || '#0066cc';
+
+      // Generate PDF based on template
+      switch (template) {
+        case 'modern':
+          generateModernTemplate(doc, quote, client, agency, senderName, primaryColor);
+          break;
+        case 'classic':
+          generateClassicTemplate(doc, quote, client, agency, senderName, primaryColor);
+          break;
+        case 'minimal':
+          generateMinimalTemplate(doc, quote, client, agency, senderName, primaryColor);
+          break;
+        default:
+          generateModernTemplate(doc, quote, client, agency, senderName, primaryColor);
+      }
+
+      doc.end();
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      reject(new Error('Failed to generate PDF'));
+    }
+  });
+}
+
+function generateModernTemplate(
+  doc: PDFDocument,
+  quote: QuoteData,
+  client: ClientData,
+  agency: AgencyData,
+  senderName?: string,
+  primaryColor: string = '#0066cc'
+) {
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('he-IL', {
+      style: 'currency',
+      currency: 'ILS'
+    }).format(amount / 100);
+  };
+
+  // Header with agency info
+  doc.fontSize(24).fillColor(primaryColor).text(agency.name, 50, 50, { align: 'right' });
+  doc.fontSize(12).fillColor('#666666');
+  if (agency.email) doc.text(`אימייל: ${agency.email}`, 50, 85, { align: 'right' });
+  if (agency.phone) doc.text(`טלפון: ${agency.phone}`, 50, 105, { align: 'right' });
+
+  // Quote number and date
+  doc.fontSize(18).fillColor(primaryColor).text(`הצעת מחיר #${quote.quoteNumber}`, 50, 150, { align: 'left' });
+  doc.fontSize(12).fillColor('#000000').text(`תאריך: ${new Date(quote.createdAt).toLocaleDateString('he-IL')}`, 50, 175, { align: 'left' });
+
+  // Title
+  doc.fontSize(20).fillColor('#000000').text(quote.title, 50, 210, { align: 'right' });
+
+  // Client info box
+  doc.rect(50, 250, 500, 80).strokeColor(primaryColor).stroke();
+  doc.fontSize(14).fillColor(primaryColor).text('פרטי הלקוח:', 60, 260, { align: 'right' });
+  doc.fontSize(12).fillColor('#000000');
+  doc.text(`שם: ${client.name}`, 60, 285, { align: 'right' });
+  doc.text(`אימייל: ${client.email}`, 60, 305, { align: 'right' });
+  if (client.phone) doc.text(`טלפון: ${client.phone}`, 300, 285, { align: 'right' });
+  if (client.company) doc.text(`חברה: ${client.company}`, 300, 305, { align: 'right' });
+
+  // Items table
+  let yPosition = 370;
+  doc.fontSize(14).fillColor(primaryColor).text('פירוט השירותים:', 50, yPosition, { align: 'right' });
+  yPosition += 30;
+
+  quote.items.forEach((item, index) => {
+    if (yPosition > 700) {
+      doc.addPage();
+      yPosition = 50;
+    }
     
-    // Create a simple text-based PDF content for attachment
-    const pdfContent = `
-מספר הצעה: ${quote.quoteNumber}
-כותרת: ${quote.title}
-לקוח: ${client.name}
-אימייל לקוח: ${client.email}
+    doc.rect(50, yPosition, 500, 40).strokeColor('#cccccc').stroke();
+    doc.fontSize(12).fillColor('#000000');
+    doc.text(item.name, 60, yPosition + 8, { align: 'right', width: 200 });
+    doc.text(`כמות: ${item.quantity}`, 280, yPosition + 8, { align: 'right' });
+    doc.text(formatCurrency(item.total), 400, yPosition + 8, { align: 'right' });
+    if (item.description) {
+      doc.fontSize(10).fillColor('#666666').text(item.description, 60, yPosition + 25, { align: 'right', width: 200 });
+    }
+    yPosition += 50;
+  });
 
-פריטים:
-${quote.items.map(item => `- ${item.name}: ${item.description || ''} | כמות: ${item.quantity} | מחיר: ${(item.unitPrice / 100).toLocaleString('he-IL')} ₪`).join('\n')}
+  // Summary
+  yPosition += 20;
+  doc.rect(350, yPosition, 200, 100).fillColor('#f8f9fa').fill();
+  doc.rect(350, yPosition, 200, 100).strokeColor(primaryColor).stroke();
+  
+  doc.fontSize(12).fillColor('#000000');
+  doc.text(`סכום חלקי: ${formatCurrency(quote.subtotal)}`, 360, yPosition + 15, { align: 'right' });
+  doc.text(`מע״מ: ${formatCurrency(quote.vatAmount)}`, 360, yPosition + 35, { align: 'right' });
+  doc.fontSize(14).fillColor(primaryColor);
+  doc.text(`סה״כ: ${formatCurrency(quote.totalAmount)}`, 360, yPosition + 60, { align: 'right' });
 
-סכום חלקי: ${(quote.subtotal / 100).toLocaleString('he-IL')} ₪
-מע"מ: ${(quote.vatAmount / 100).toLocaleString('he-IL')} ₪
-סה"כ: ${(quote.totalAmount / 100).toLocaleString('he-IL')} ₪
+  // Valid until
+  yPosition += 120;
+  doc.fontSize(12).fillColor('#d9534f').text(`תקף עד: ${new Date(quote.validUntil).toLocaleDateString('he-IL')}`, 50, yPosition, { align: 'center' });
 
-תאריך יצירה: ${new Date(quote.createdAt).toLocaleDateString('he-IL')}
-תקף עד: ${new Date(quote.validUntil).toLocaleDateString('he-IL')}
-
-${quote.notes ? `הערות: ${quote.notes}` : ''}
-
-בברכה,
-${agency.name}
-`;
-    
-    return Buffer.from(pdfContent, 'utf8');
-  } catch (error) {
-    console.error('Error generating PDF:', error);
-    throw new Error('Failed to generate PDF');
+  // Notes
+  if (quote.notes) {
+    yPosition += 30;
+    doc.fontSize(12).fillColor('#000000').text('הערות:', 50, yPosition, { align: 'right' });
+    doc.text(quote.notes, 50, yPosition + 20, { align: 'right', width: 500 });
   }
+}
+
+function generateClassicTemplate(
+  doc: PDFDocument,
+  quote: QuoteData,
+  client: ClientData,
+  agency: AgencyData,
+  senderName?: string,
+  primaryColor: string = '#0066cc'
+) {
+  // Classic template with formal layout
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('he-IL', {
+      style: 'currency',
+      currency: 'ILS'
+    }).format(amount / 100);
+  };
+
+  // Header line
+  doc.rect(50, 50, 500, 3).fillColor(primaryColor).fill();
+  
+  // Agency name
+  doc.fontSize(28).fillColor('#000000').text(agency.name, 50, 70, { align: 'center' });
+  
+  // Quote title
+  doc.fontSize(22).fillColor(primaryColor).text('הצעת מחיר', 50, 120, { align: 'center' });
+  
+  // Quote details in formal table
+  doc.rect(50, 160, 500, 120).strokeColor('#000000').stroke();
+  
+  // Table headers
+  doc.fontSize(12).fillColor('#000000');
+  doc.text('מספר הצעה:', 400, 180, { align: 'right' });
+  doc.text(quote.quoteNumber, 300, 180, { align: 'right' });
+  doc.text('תאריך:', 400, 200, { align: 'right' });
+  doc.text(new Date(quote.createdAt).toLocaleDateString('he-IL'), 300, 200, { align: 'right' });
+  doc.text('תקף עד:', 400, 220, { align: 'right' });
+  doc.text(new Date(quote.validUntil).toLocaleDateString('he-IL'), 300, 220, { align: 'right' });
+  doc.text('כותרת:', 400, 240, { align: 'right' });
+  doc.text(quote.title, 300, 240, { align: 'right' });
+
+  // Client details
+  doc.fontSize(16).fillColor(primaryColor).text('פרטי הלקוח', 50, 310, { align: 'right' });
+  doc.rect(50, 340, 500, 80).strokeColor('#cccccc').stroke();
+  
+  doc.fontSize(12).fillColor('#000000');
+  doc.text(`${client.name}`, 60, 355, { align: 'right' });
+  doc.text(`${client.email}`, 60, 375, { align: 'right' });
+  if (client.phone) doc.text(`${client.phone}`, 60, 395, { align: 'right' });
+
+  // Items with formal table
+  let yPos = 450;
+  doc.fontSize(16).fillColor(primaryColor).text('פירוט הצעת המחיר', 50, yPos, { align: 'right' });
+  yPos += 40;
+  
+  // Table header
+  doc.rect(50, yPos, 500, 25).fillColor('#f0f0f0').fill().strokeColor('#000000').stroke();
+  doc.fontSize(12).fillColor('#000000');
+  doc.text('שירות', 450, yPos + 8, { align: 'right' });
+  doc.text('כמות', 350, yPos + 8, { align: 'center' });
+  doc.text('מחיר יחידה', 250, yPos + 8, { align: 'center' });
+  doc.text('סה״כ', 150, yPos + 8, { align: 'center' });
+  
+  yPos += 25;
+  
+  quote.items.forEach((item) => {
+    doc.rect(50, yPos, 500, 30).strokeColor('#cccccc').stroke();
+    doc.fontSize(11).fillColor('#000000');
+    doc.text(item.name, 450, yPos + 8, { align: 'right', width: 150 });
+    doc.text(item.quantity.toString(), 350, yPos + 8, { align: 'center' });
+    doc.text(formatCurrency(item.unitPrice), 250, yPos + 8, { align: 'center' });
+    doc.text(formatCurrency(item.total), 150, yPos + 8, { align: 'center' });
+    yPos += 30;
+  });
+
+  // Summary table
+  yPos += 20;
+  doc.rect(300, yPos, 250, 80).strokeColor('#000000').stroke();
+  doc.rect(300, yPos, 250, 20).fillColor('#f0f0f0').fill().strokeColor('#000000').stroke();
+  doc.fontSize(12).fillColor('#000000').text('סיכום', 420, yPos + 5, { align: 'center' });
+  
+  yPos += 20;
+  doc.text(`סכום חלקי: ${formatCurrency(quote.subtotal)}`, 500, yPos + 8, { align: 'right' });
+  yPos += 20;
+  doc.text(`מע״מ (18%): ${formatCurrency(quote.vatAmount)}`, 500, yPos + 8, { align: 'right' });
+  yPos += 20;
+  doc.fontSize(14).fillColor(primaryColor);
+  doc.text(`סה״כ לתשלום: ${formatCurrency(quote.totalAmount)}`, 500, yPos + 8, { align: 'right' });
+}
+
+function generateMinimalTemplate(
+  doc: PDFDocument,
+  quote: QuoteData,
+  client: ClientData,
+  agency: AgencyData,
+  senderName?: string,
+  primaryColor: string = '#0066cc'
+) {
+  // Minimal clean template
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('he-IL', {
+      style: 'currency',
+      currency: 'ILS'
+    }).format(amount / 100);
+  };
+
+  // Simple header
+  doc.fontSize(32).fillColor(primaryColor).text(agency.name, 50, 50, { align: 'right' });
+  doc.fontSize(18).fillColor('#666666').text('הצעת מחיר', 50, 90, { align: 'right' });
+  
+  // Minimal quote info
+  doc.fontSize(14).fillColor('#000000');
+  doc.text(`#${quote.quoteNumber}`, 50, 130, { align: 'left' });
+  doc.text(new Date(quote.createdAt).toLocaleDateString('he-IL'), 450, 130, { align: 'right' });
+  
+  // Title
+  doc.fontSize(20).text(quote.title, 50, 170, { align: 'right' });
+  
+  // Client - minimal
+  doc.fontSize(12).fillColor('#666666').text('ללקוח:', 50, 210, { align: 'right' });
+  doc.fontSize(14).fillColor('#000000').text(client.name, 50, 230, { align: 'right' });
+  doc.fontSize(12).text(client.email, 50, 250, { align: 'right' });
+
+  // Clean items list
+  let y = 300;
+  doc.fontSize(16).fillColor(primaryColor).text('שירותים:', 50, y, { align: 'right' });
+  y += 40;
+  
+  quote.items.forEach((item, index) => {
+    doc.fontSize(14).fillColor('#000000');
+    doc.text(item.name, 50, y, { align: 'right' });
+    doc.text(formatCurrency(item.total), 450, y, { align: 'left' });
+    y += 25;
+    
+    if (item.description) {
+      doc.fontSize(11).fillColor('#666666');
+      doc.text(item.description, 50, y, { align: 'right', width: 350 });
+      y += 20;
+    }
+    y += 10;
+  });
+
+  // Simple total
+  y += 20;
+  doc.moveTo(350, y).lineTo(550, y).strokeColor(primaryColor).stroke();
+  y += 15;
+  doc.fontSize(18).fillColor(primaryColor);
+  doc.text(`סה״כ: ${formatCurrency(quote.totalAmount)}`, 450, y, { align: 'left' });
+  
+  // Valid until
+  y += 50;
+  doc.fontSize(12).fillColor('#666666');
+  doc.text(`תקף עד ${new Date(quote.validUntil).toLocaleDateString('he-IL')}`, 50, y, { align: 'center' });
 }

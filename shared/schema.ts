@@ -15,6 +15,8 @@ export const agencies = pgTable("agencies", {
     language?: string;
     currency?: string;
   }>().default({}),
+  pdfTemplate: text("pdf_template").default("modern"), // PDF template choice
+  pdfColor: text("pdf_color").default("#0066cc"), // Primary color for PDF
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

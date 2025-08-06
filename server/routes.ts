@@ -2496,6 +2496,110 @@ ${quote.notes || ''}
     }
   });
 
+  // Update agency PDF settings (handle both PDF settings and regular agency updates)
+  app.patch("/api/agencies/current", requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const updateData: any = {};
+      
+      // Handle PDF settings
+      if (req.body.pdfTemplate) updateData.pdfTemplate = req.body.pdfTemplate;
+      if (req.body.pdfColor) updateData.pdfColor = req.body.pdfColor;
+      
+      // Handle other agency settings
+      if (req.body.name) updateData.name = req.body.name;
+      if (req.body.email) updateData.email = req.body.email;
+      if (req.body.phone) updateData.phone = req.body.phone;
+      if (req.body.address) updateData.address = req.body.address;
+      if (req.body.logo) updateData.logo = req.body.logo;
+
+      const agency = await storage.updateAgency(user.agencyId!, updateData);
+
+      res.json(agency);
+    } catch (error) {
+      console.error('Error updating agency settings:', error);
+      res.status(500).json({ message: 'שגיאה בעדכון הגדרות הסוכנות' });
+    }
+  });
+
+  // Test PDF generation endpoint
+  app.post("/api/pdf/test-quote", requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const { template, color } = req.body;
+
+      // Get agency data
+      const agency = await storage.getAgencyById(user.agencyId!);
+      if (!agency) {
+        return res.status(404).json({ error: "סוכנות לא נמצאה" });
+      }
+
+      // Mock test data
+      const testQuote = {
+        id: "test-quote",
+        quoteNumber: "Q-2025-001",
+        title: "הצעת מחיר לדוגמא",
+        status: "draft" as const,
+        subtotal: 500000,
+        vatAmount: 90000,
+        totalAmount: 590000,
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        notes: "זוהי הצעת מחיר לדוגמא להמחשת העיצוב",
+        createdAt: new Date(),
+        items: [
+          {
+            id: "1",
+            name: "פיתוח אתר אינטרנט",
+            description: "אתר תדמיתי מקצועי עם 5 עמודים",
+            quantity: 1,
+            unitPrice: 300000,
+            total: 300000
+          },
+          {
+            id: "2", 
+            name: "עיצוב לוגו",
+            description: "לוגו מקורי כולל וריאציות",
+            quantity: 1,
+            unitPrice: 200000,
+            total: 200000
+          }
+        ]
+      };
+
+      const testClient = {
+        name: "לקוח לדוגמא בע״מ",
+        email: "client@example.com",
+        phone: "050-123-4567",
+        company: "חברת הדוגמא"
+      };
+
+      const agencyWithTemplate = {
+        name: agency.name || 'שם הסוכנות',
+        email: 'info@agency.com',
+        phone: '050-123-4567',
+        address: 'כתובת הסוכנות',
+        logo: agency.logo,
+        pdfTemplate: template || 'modern',
+        pdfColor: color || '#0066cc'
+      };
+
+      const pdfBuffer = await generateQuotePDF(
+        testQuote,
+        testClient,
+        agencyWithTemplate,
+        user.fullName
+      );
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="test-quote-${template || 'modern'}.pdf"`);
+      res.send(pdfBuffer);
+
+    } catch (error) {
+      console.error("Error generating test PDF:", error);
+      res.status(500).json({ error: "שגיאה ביצירת PDF לדוגמא" });
+    }
+  });
+
   // Mount the router to the app
   app.use('/', router);
 

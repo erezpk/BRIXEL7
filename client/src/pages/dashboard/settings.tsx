@@ -593,11 +593,32 @@ export default function Settings() {
                 </div>
                 <Button 
                   variant="outline"
-                  onClick={() => setLocation('/dashboard/email-setup')}
+                  onClick={() => setLocation('/dashboard/settings/email')}
                   className="flex items-center gap-2"
                 >
                   <SettingsIcon className="h-4 w-4" />
                   הגדרות מתקדמות
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-8 w-8 text-primary" />
+                  <div>
+                    <h3 className="font-medium">הגדרות PDF</h3>
+                    <p className="text-sm text-muted-foreground">
+                      בחר תבניות, צבעים ולוגו להצעות מחיר
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  variant="outline"
+                  onClick={() => setLocation('/dashboard/settings/pdf')}
+                  className="flex items-center gap-2"
+                >
+                  <SettingsIcon className="h-4 w-4" />
+                  הגדרות PDF
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
               </div>
