@@ -279,6 +279,140 @@ export default function Leads() {
                 ליד חדש
               </Button>
             </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>{editingLead ? "ערוך ליד" : "ליד חדש"}</DialogTitle>
+              </DialogHeader>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="name">שם *</Label>
+                  <Input
+                    id="name"
+                    value={leadForm.name}
+                    onChange={(e) => setLeadForm({...leadForm, name: e.target.value})}
+                    placeholder="שם הליד"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="email">אימייל *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={leadForm.email}
+                    onChange={(e) => setLeadForm({...leadForm, email: e.target.value})}
+                    placeholder="example@domain.com"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="phone">טלפון</Label>
+                  <Input
+                    id="phone"
+                    value={leadForm.phone}
+                    onChange={(e) => setLeadForm({...leadForm, phone: e.target.value})}
+                    placeholder="050-123-4567"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="source">מקור</Label>
+                  <Select value={leadForm.source} onValueChange={(value) => setLeadForm({...leadForm, source: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sourceOptions.map(source => (
+                        <SelectItem key={source.value} value={source.value}>
+                          {source.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="status">סטטוס</Label>
+                  <Select value={leadForm.status} onValueChange={(value) => setLeadForm({...leadForm, status: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map(status => (
+                        <SelectItem key={status.value} value={status.value}>
+                          {status.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="priority">עדיפות</Label>
+                  <Select value={leadForm.priority} onValueChange={(value) => setLeadForm({...leadForm, priority: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {priorityOptions.map(priority => (
+                        <SelectItem key={priority.value} value={priority.value}>
+                          {priority.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="value">ערך פוטנציאלי (₪)</Label>
+                  <Input
+                    id="value"
+                    type="number"
+                    value={leadForm.value}
+                    onChange={(e) => setLeadForm({...leadForm, value: Number(e.target.value)})}
+                    placeholder="0"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="assignedTo">משויך ל</Label>
+                  <Select value={leadForm.assignedTo} onValueChange={(value) => setLeadForm({...leadForm, assignedTo: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="בחר משתמש" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">לא משויך</SelectItem>
+                      {users.map((user: any) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.firstName} {user.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="notes">הערות</Label>
+                <Textarea
+                  id="notes"
+                  value={leadForm.notes}
+                  onChange={(e) => setLeadForm({...leadForm, notes: e.target.value})}
+                  placeholder="הערות נוספות..."
+                  rows={3}
+                />
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsLeadDialogOpen(false)}>
+                  ביטול
+                </Button>
+                <Button onClick={handleSubmit} disabled={leadMutation.isPending || !leadForm.name || !leadForm.email}>
+                  {leadMutation.isPending ? "שומר..." : editingLead ? "עדכן ליד" : "הוסף ליד"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
           </Dialog>
         </div>
       </div>
@@ -525,141 +659,7 @@ export default function Leads() {
         </Card>
       )}
 
-      {/* Add/Edit Lead Dialog */}
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{editingLead ? "ערוך ליד" : "ליד חדש"}</DialogTitle>
-        </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="name">שם *</Label>
-            <Input
-              id="name"
-              value={leadForm.name}
-              onChange={(e) => setLeadForm({...leadForm, name: e.target.value})}
-              placeholder="שם הליד"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="email">אימייל *</Label>
-            <Input
-              id="email"
-              type="email"
-              value={leadForm.email}
-              onChange={(e) => setLeadForm({...leadForm, email: e.target.value})}
-              placeholder="example@domain.com"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="phone">טלפון</Label>
-            <Input
-              id="phone"
-              value={leadForm.phone}
-              onChange={(e) => setLeadForm({...leadForm, phone: e.target.value})}
-              placeholder="050-123-4567"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="source">מקור</Label>
-            <Select value={leadForm.source} onValueChange={(value) => setLeadForm({...leadForm, source: value})}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {sourceOptions.map(source => (
-                  <SelectItem key={source.value} value={source.value}>
-                    {source.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="status">סטטוס</Label>
-            <Select value={leadForm.status} onValueChange={(value) => setLeadForm({...leadForm, status: value})}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {statusOptions.map(status => (
-                  <SelectItem key={status.value} value={status.value}>
-                    {status.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="priority">עדיפות</Label>
-            <Select value={leadForm.priority} onValueChange={(value) => setLeadForm({...leadForm, priority: value})}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {priorityOptions.map(priority => (
-                  <SelectItem key={priority.value} value={priority.value}>
-                    {priority.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="value">ערך פוטנציאלי (₪)</Label>
-            <Input
-              id="value"
-              type="number"
-              value={leadForm.value}
-              onChange={(e) => setLeadForm({...leadForm, value: Number(e.target.value)})}
-              placeholder="0"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="assignedTo">משויך ל</Label>
-            <Select value={leadForm.assignedTo} onValueChange={(value) => setLeadForm({...leadForm, assignedTo: value})}>
-              <SelectTrigger>
-                <SelectValue placeholder="בחר משתמש" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">לא משויך</SelectItem>
-                {users.map((user: any) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.firstName} {user.lastName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div>
-          <Label htmlFor="notes">הערות</Label>
-          <Textarea
-            id="notes"
-            value={leadForm.notes}
-            onChange={(e) => setLeadForm({...leadForm, notes: e.target.value})}
-            placeholder="הערות נוספות..."
-            rows={3}
-          />
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setIsLeadDialogOpen(false)}>
-            ביטול
-          </Button>
-          <Button onClick={handleSubmit} disabled={leadMutation.isPending || !leadForm.name || !leadForm.email}>
-            {leadMutation.isPending ? "שומר..." : editingLead ? "עדכן ליד" : "הוסף ליד"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
     </div>
   );
 }
