@@ -241,10 +241,11 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
                       <Button
                         variant={hasActiveChild ? "secondary" : "ghost"}
                         className="w-full justify-between h-10"
+                        dir="rtl"
                       >
                         <div className="flex items-center gap-3">
                           <Icon className="h-4 w-4" />
-                          <span>{item.name}</span>
+                          <span className="ml-3">{item.name}</span>
                         </div>
                         {isGroupOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                       </Button>
