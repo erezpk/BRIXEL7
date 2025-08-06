@@ -249,18 +249,11 @@ export default function App() {
           </Route>
 
           {/* FINANCIAL MANAGEMENT ROUTES */}
-          <Route path="/dashboard/financial">
+          {/* More specific routes first */}
+          <Route path="/dashboard/financial/quotes/new">
             <ProtectedRoute>
               <DashboardLayout>
-                <Financial />
-              </DashboardLayout>
-            </ProtectedRoute>
-          </Route>
-
-          <Route path="/dashboard/financial/quotes">
-            <ProtectedRoute>
-              <DashboardLayout>
-                <QuotesPage />
+                <NewQuotePage />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
@@ -273,18 +266,26 @@ export default function App() {
             </ProtectedRoute>
           </Route>
 
-          <Route path="/dashboard/products">
+          <Route path="/dashboard/financial/quotes">
             <ProtectedRoute>
               <DashboardLayout>
-                <ProductsPage />
+                <QuotesPage />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
 
-          <Route path="/dashboard/financial/quotes/new">
+          <Route path="/dashboard/financial">
             <ProtectedRoute>
               <DashboardLayout>
-                <NewQuotePage />
+                <Financial />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          <Route path="/dashboard/products">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ProductsPage />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
