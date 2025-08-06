@@ -2111,7 +2111,7 @@ ${quote.notes || ''}
           id: quote.id,
           quoteNumber: quote.quoteNumber || 'Q-' + quote.id.slice(0, 6),
           title: quote.title,
-          description: quote.description,
+          description: quote.description || undefined,
           validUntil: quote.validUntil ? new Date(quote.validUntil).toISOString() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           subtotal: quote.subtotal || 0,
           vatAmount: quote.vatAmount || 0,
@@ -2123,7 +2123,7 @@ ${quote.notes || ''}
             unitPrice: item.unitPrice,
             total: item.total
           })) || [],
-          notes: quote.notes,
+          notes: quote.notes || undefined,
           createdAt: quote.createdAt ? new Date(quote.createdAt).toISOString() : new Date().toISOString()
         };
 
@@ -2604,7 +2604,7 @@ ${quote.notes || ''}
         email: 'info@agency.com',
         phone: '050-123-4567',
         address: 'כתובת הסוכנות',
-        logo: agency.logo,
+        logo: agency.logo || undefined,
         pdfTemplate: template || 'modern',
         pdfColor: color || '#0066cc'
       };

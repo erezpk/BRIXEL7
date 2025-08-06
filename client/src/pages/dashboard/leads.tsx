@@ -66,11 +66,7 @@ export default function Leads() {
       const url = editingLead ? `/api/leads/${editingLead.id}` : '/api/leads';
       const method = editingLead ? 'PUT' : 'POST';
       
-      return await apiRequest({
-        url,
-        method,
-        body: data,
-      });
+      return await apiRequest(url, method, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
@@ -93,14 +89,10 @@ export default function Leads() {
   // Convert lead to client mutation
   const convertMutation = useMutation({
     mutationFn: async (leadId: string) => {
-      return await apiRequest({
-        url: `/api/leads/${leadId}/convert`,
-        method: 'POST',
-        body: {
-          name: leads.find(l => l.id === leadId)?.name || "",
-          email: leads.find(l => l.id === leadId)?.email || "",
-          phone: leads.find(l => l.id === leadId)?.phone || ""
-        }
+      return await apiRequest(`/api/leads/${leadId}/convert`, 'POST', {
+        name: leads.find(l => l.id === leadId)?.name || "",
+        email: leads.find(l => l.id === leadId)?.email || "",
+        phone: leads.find(l => l.id === leadId)?.phone || ""
       });
     },
     onSuccess: () => {
@@ -215,7 +207,7 @@ export default function Leads() {
   };
 
   return (
-    <div className={cn("space-y-8", rtlClass())}>
+    <div className={cn("space-y-8", rtlClass())} dir="rtl">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">ניהול לידים</h1>
