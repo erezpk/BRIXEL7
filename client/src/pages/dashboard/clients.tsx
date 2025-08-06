@@ -7,9 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ClientCard from "@/components/clients/client-card";
 import NewClientModal from "@/components/modals/new-client-modal";
-import { Plus, Search, Users, Grid, List, Eye, Edit, MoreHorizontal } from "lucide-react";
+import { Plus, Search, Users, Grid, List, Eye, Edit, MoreHorizontal, Trash2, Send } from "lucide-react";
 import { type Client } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -46,6 +48,7 @@ export default function Clients() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -139,6 +142,34 @@ export default function Clients() {
     console.log('Delete client:', client);
   };
 
+  const toggleClientSelection = (clientId: string) => {
+    setSelectedClients(prev => 
+      prev.includes(clientId) 
+        ? prev.filter(id => id !== clientId)
+        : [...prev, clientId]
+    );
+  };
+
+  const toggleAllClients = () => {
+    if (selectedClients.length === filteredClients?.length) {
+      setSelectedClients([]);
+    } else {
+      setSelectedClients(filteredClients?.map(client => client.id) || []);
+    }
+  };
+
+  const handleBulkDelete = () => {
+    // TODO: Implement bulk delete
+    console.log('Bulk delete clients:', selectedClients);
+    setSelectedClients([]);
+  };
+
+  const handleBulkSendCredentials = () => {
+    // TODO: Implement bulk send credentials
+    console.log('Bulk send credentials to clients:', selectedClients);
+    setSelectedClients([]);
+  };
+
   const handleManageCredentials = (client: Client) => {
     setSelectedClient(client);
     setCredentialsForm({
@@ -210,7 +241,10 @@ export default function Clients() {
           <Button
             variant={viewMode === "grid" ? "default" : "ghost"}
             size="sm"
-            onClick={() => setViewMode("grid")}
+            onClick={() => {
+              setViewMode("grid");
+              setSelectedClients([]);
+            }}
             className="px-3"
           >
             <Grid className="h-4 w-4" />
@@ -218,7 +252,10 @@ export default function Clients() {
           <Button
             variant={viewMode === "table" ? "default" : "ghost"}
             size="sm"
-            onClick={() => setViewMode("table")}
+            onClick={() => {
+              setViewMode("table");
+              setSelectedClients([]);
+            }}
             className="px-3"
           >
             <List className="h-4 w-4" />
@@ -287,9 +324,57 @@ export default function Clients() {
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          {/* Bulk Actions Bar */}
+          {selectedClients.length > 0 && (
+            <div className="bg-blue-50 border-b border-blue-200 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-blue-900">
+                    נבחרו {selectedClients.length} לקוחות
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedClients([])}
+                    className="text-blue-700 border-blue-300"
+                  >
+                    בטל בחירה
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkSendCredentials}
+                    className="flex items-center gap-2"
+                  >
+                    <Send className="h-4 w-4" />
+                    שלח פרטי התחברות
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                    className="flex items-center gap-2 text-red-600 border-red-300 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    מחק לקוחות
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedClients.length === filteredClients?.length && filteredClients.length > 0}
+                    onCheckedChange={toggleAllClients}
+                    aria-label="בחר את כל הלקוחות"
+                  />
+                </TableHead>
                 <TableHead className="text-right">שם הלקוח</TableHead>
                 <TableHead className="text-right">איש קשר</TableHead>
                 <TableHead className="text-right">אימייל</TableHead>
@@ -302,7 +387,28 @@ export default function Clients() {
             </TableHeader>
             <TableBody>
               {filteredClients.map((client) => (
-                <TableRow key={client.id} className="hover:bg-gray-50">
+                <TableRow 
+                  key={client.id} 
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={(e) => {
+                    // Don't navigate if clicking on checkbox or action buttons
+                    if (e.target instanceof HTMLElement && 
+                        (e.target.closest('[role="checkbox"]') || 
+                         e.target.closest('button') ||
+                         e.target.closest('[role="button"]'))) {
+                      return;
+                    }
+                    handleViewClient(client);
+                  }}
+                >
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedClients.includes(client.id)}
+                      onCheckedChange={() => toggleClientSelection(client.id)}
+                      aria-label={`בחר את ${client.name}`}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium text-right">{client.name}</TableCell>
                   <TableCell className="text-right">{client.contactName || '-'}</TableCell>
                   <TableCell className="text-right">{client.email || '-'}</TableCell>
@@ -317,24 +423,39 @@ export default function Clients() {
                     {new Date(client.createdAt).toLocaleDateString('he-IL')}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex gap-2 justify-end">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewClient(client)}
-                        data-testid={`view-client-${client.id}`}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditClient(client)}
-                        data-testid={`edit-client-${client.id}`}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => e.stopPropagation()}
+                          data-testid={`client-actions-${client.id}`}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleViewClient(client)}>
+                          <Eye className="ml-2 h-4 w-4" />
+                          צפה בפרטים
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditClient(client)}>
+                          <Edit className="ml-2 h-4 w-4" />
+                          ערוך לקוח
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleSendCredentials(client)}>
+                          <Send className="ml-2 h-4 w-4" />
+                          שלח פרטי התחברות
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteClient(client)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="ml-2 h-4 w-4" />
+                          מחק לקוח
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
