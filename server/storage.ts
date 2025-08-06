@@ -749,44 +749,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getQuotesByAgency(agencyId: string): Promise<Quote[]> {
-    return await this.db.select({
-      id: quotes.id,
-      quoteNumber: quotes.quoteNumber,
-      title: quotes.title,
-      description: quotes.description,
-      clientId: quotes.clientId,
-      clientType: quotes.clientType,
-      agencyId: quotes.agencyId,
-      createdBy: quotes.createdBy,
-      status: quotes.status,
-      subtotal: quotes.subtotal,
-      vatAmount: quotes.vatAmount,
-      totalAmount: quotes.totalAmount,
-      validUntil: quotes.validUntil,
-      items: quotes.items,
-      notes: quotes.notes,
-      sentAt: quotes.sentAt,
-      viewedAt: quotes.viewedAt,
-      viewCount: quotes.viewCount,
-      approvedAt: quotes.approvedAt,
-      rejectedAt: quotes.rejectedAt,
-      rejectionReason: quotes.rejectionReason,
-      terms: quotes.terms,
-      createdAt: quotes.createdAt,
-      updatedAt: quotes.updatedAt,
-      // Join with client data
-      client: {
-        id: clients.id,
-        name: clients.name,
-        email: clients.email,
-        phone: clients.phone,
-        company: clients.company
-      }
-    })
-    .from(quotes)
-    .leftJoin(clients, eq(quotes.clientId, clients.id))
-    .where(eq(quotes.agencyId, agencyId))
-    .orderBy(desc(quotes.createdAt));
+    try {
+      const result = await this.db.select()
+        .from(quotes)
+        .where(eq(quotes.agencyId, agencyId))
+        .orderBy(desc(quotes.createdAt));
+      
+      return result;
+    } catch (error) {
+      console.error('Error in getQuotesByAgency:', error);
+      throw error;
+    }
   }
 
   async getQuotesByClient(clientId: string): Promise<Quote[]> {

@@ -1980,10 +1980,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   router.get('/api/quotes', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
+      console.log('Fetching quotes for agency:', user.agencyId);
       const quotes = await storage.getQuotesByAgency(user.agencyId!);
+      console.log('Found quotes:', quotes.length);
       res.json(quotes);
     } catch (error) {
-      res.status(500).json({ message: 'שגיאה בטעינת הצעות מחיר' });
+      console.error('Error fetching quotes:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת הצעות מחיר', error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
