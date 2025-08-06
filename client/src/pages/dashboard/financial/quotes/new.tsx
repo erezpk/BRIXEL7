@@ -124,10 +124,11 @@ export default function NewQuotePage() {
     onSuccess: (quote) => {
       queryClient.invalidateQueries({ queryKey: ['/api/quotes'] });
       toast({ title: 'הצעת מחיר נוצרה בהצלחה' });
-      navigate(`/dashboard/financial/quotes/${quote.id}`);
+      navigate('/dashboard/financial/quotes');
     },
-    onError: () => {
-      toast({ title: 'שגיאה ביצירת הצעת מחיר', variant: 'destructive' });
+    onError: (error: any) => {
+      console.error('Create quote error:', error);
+      toast({ title: 'שגיאה ביצירת הצעת מחיר', description: error?.message || 'נסה שוב מאוחר יותר', variant: 'destructive' });
     },
   });
 
@@ -156,10 +157,14 @@ export default function NewQuotePage() {
       return response.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/quotes'] });
       toast({ title: 'הצעת המחיר נשלחה בהצלחה למייל הלקוח!' });
+      // Navigate to quotes table after successful email send
+      navigate('/dashboard/financial/quotes');
     },
-    onError: () => {
-      toast({ title: 'שגיאה בשליחת המייל', variant: 'destructive' });
+    onError: (error: any) => {
+      console.error('Email send error:', error);
+      toast({ title: 'שגיאה בשליחת המייל', description: error?.message || 'נסה שוב מאוחר יותר', variant: 'destructive' });
     },
   });
 

@@ -420,7 +420,7 @@ ${quote.notes ? `הערות:\n${quote.notes}` : ''}
   });
   
   await browser.close();
-  return pdfBuffer;
+  return Buffer.from(pdfBuffer);
 }
 
 // Sample data for testing

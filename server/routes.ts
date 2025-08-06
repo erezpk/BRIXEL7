@@ -2100,33 +2100,56 @@ ${quote.notes || ''}
 
       console.log(`Sending email to: ${recipient.email} with sender: ${senderEmail} (reply-to: ${senderEmail})`);
       
-      // Generate PDF attachment
+      // Generate PDF attachment with improved HTML generator
       console.log('Generating PDF for quote...');
       let pdfBuffer: Buffer | null = null;
       try {
-        pdfBuffer = await generateQuotePDF(quote, recipient, agency, senderName);
+        const { generateQuotePDFHtml } = await import('./pdf-generator-html');
+        
+        // Convert quote data to the format expected by the HTML generator
+        const formattedQuote = {
+          id: quote.id,
+          quoteNumber: quote.quoteNumber || 'Q-' + quote.id.slice(0, 6),
+          title: quote.title,
+          description: quote.description,
+          validUntil: quote.validUntil ? new Date(quote.validUntil).toISOString() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          subtotal: quote.subtotal || 0,
+          vatAmount: quote.vatAmount || 0,
+          totalAmount: quote.totalAmount || 0,
+          items: quote.items?.map((item: any) => ({
+            name: item.name,
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.total
+          })) || [],
+          notes: quote.notes,
+          createdAt: quote.createdAt ? new Date(quote.createdAt).toISOString() : new Date().toISOString()
+        };
+
+        pdfBuffer = await generateQuotePDFHtml(formattedQuote, recipient, agency);
         console.log('PDF generated successfully');
       } catch (error) {
         console.error('Error generating PDF:', error);
         // Continue without PDF if generation fails
       }
 
-      // Send email with PDF attachment
+      // Send email with PDF attachment - FIXED TO SEND TO CLIENT
       const emailOptions: any = {
-        to: recipient.email,
+        to: recipient.email, // Send to CLIENT, not sender
         subject: `הצעת מחיר - ${quote.title} מאת ${senderName || agency.name}`,
         text: emailBody,
         html: emailBody.replace(/\n/g, '<br>'),
-        from: senderEmail // Always use the sender email from the form
+        replyTo: senderEmail // Set sender as reply-to address
       };
 
       // Add PDF attachment if available
       if (pdfBuffer) {
         emailOptions.attachments = [
           {
-            filename: `הצעת-מחיר-${quote.quoteNumber}.txt`,
+            filename: `הצעת-מחיר-${quote.quoteNumber || quote.id.slice(0, 6)}.pdf`,
             content: pdfBuffer,
-            contentType: 'text/plain; charset=utf-8'
+            contentType: 'application/pdf'
           }
         ];
       }
@@ -2588,9 +2611,30 @@ ${quote.notes || ''}
 
       const { generateQuotePDFHtml, sampleQuoteData } = await import('./pdf-generator-html');
 
+      // Use test data from endpoint instead of sample data for consistency
+      const formattedTestQuote = {
+        id: testQuote.id,
+        quoteNumber: testQuote.quoteNumber,
+        title: testQuote.title,
+        description: "הצעת מחיר מעוצבת לדוגמא עם כל הפרטים הנדרשים",
+        validUntil: testQuote.validUntil.toISOString(),
+        subtotal: testQuote.subtotal / 100, // Convert from agorot
+        vatAmount: testQuote.vatAmount / 100, // Convert from agorot  
+        totalAmount: testQuote.totalAmount / 100, // Convert from agorot
+        items: testQuote.items.map((item: any) => ({
+          name: item.name,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice / 100, // Convert from agorot
+          total: item.total / 100 // Convert from agorot
+        })),
+        notes: testQuote.notes,
+        createdAt: testQuote.createdAt.toISOString()
+      };
+
       const pdfBuffer = await generateQuotePDFHtml(
-        sampleQuoteData.quote,
-        sampleQuoteData.client,
+        formattedTestQuote,
+        testClient,
         agencyWithTemplate
       );
 

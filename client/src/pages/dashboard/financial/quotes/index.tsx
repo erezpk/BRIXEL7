@@ -211,11 +211,13 @@ export default function QuotesPage() {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
-                        <Link href={`/dashboard/financial/quotes/${quote.id}`}>
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                        </Link>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => window.open(`/quote-approval/${quote.id}`, '_blank')}
+                        >
+                          <Eye className="h-3 w-3" />
+                        </Button>
                         {quote.status === 'draft' && (
                           <Button
                             variant="outline"
