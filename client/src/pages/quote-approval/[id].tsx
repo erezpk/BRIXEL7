@@ -63,8 +63,9 @@ function SignaturePad({ onSave, onClear }: SignaturePadProps) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size
-    canvas.width = 400;
+    // Set canvas size - responsive
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.max(400, rect.width);
     canvas.height = 200;
     
     // Set drawing style
@@ -74,40 +75,62 @@ function SignaturePad({ onSave, onClear }: SignaturePadProps) {
     ctx.lineJoin = 'round';
   }, []);
 
-  const startDrawing = (e: React.MouseEvent) => {
+  const getCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) return null;
 
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    let x, y;
+
+    if (e.type.includes('touch')) {
+      const touchEvent = e as React.TouchEvent;
+      const touch = touchEvent.touches[0] || touchEvent.changedTouches[0];
+      x = touch.clientX - rect.left;
+      y = touch.clientY - rect.top;
+    } else {
+      const mouseEvent = e as React.MouseEvent;
+      x = mouseEvent.clientX - rect.left;
+      y = mouseEvent.clientY - rect.top;
+    }
+
+    return { x, y };
+  };
+
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    const coords = getCoordinates(e);
+    if (!coords) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     ctx.beginPath();
-    ctx.moveTo(x, y);
+    ctx.moveTo(coords.x, coords.y);
     setIsDrawing(true);
   };
 
-  const draw = (e: React.MouseEvent) => {
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isDrawing) return;
+    e.preventDefault();
+    
+    const coords = getCoordinates(e);
+    if (!coords) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.lineTo(x, y);
+    ctx.lineTo(coords.x, coords.y);
     ctx.stroke();
   };
 
-  const stopDrawing = () => {
+  const stopDrawing = (e?: React.MouseEvent | React.TouchEvent) => {
+    if (e) e.preventDefault();
     setIsDrawing(false);
   };
 
@@ -135,22 +158,30 @@ function SignaturePad({ onSave, onClear }: SignaturePadProps) {
       <div className="border border-gray-300 rounded-lg p-2 bg-white">
         <canvas
           ref={canvasRef}
-          className="border border-gray-200 rounded cursor-crosshair bg-white"
+          className="w-full border border-gray-200 rounded cursor-crosshair bg-white touch-none"
+          style={{ touchAction: 'none', maxWidth: '100%', height: '200px' }}
           onMouseDown={startDrawing}
           onMouseMove={draw}
           onMouseUp={stopDrawing}
           onMouseLeave={stopDrawing}
+          onTouchStart={startDrawing}
+          onTouchMove={draw}
+          onTouchEnd={stopDrawing}
+          onTouchCancel={stopDrawing}
         />
       </div>
-      <div className="flex gap-2">
-        <Button variant="outline" onClick={clearSignature} size="sm">
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Button variant="outline" onClick={clearSignature} size="sm" className="w-full sm:w-auto">
           נקה חתימה
         </Button>
-        <Button onClick={saveSignature} size="sm">
+        <Button onClick={saveSignature} size="sm" className="w-full sm:w-auto">
           <Pen className="h-4 w-4 ml-2" />
           שמור חתימה
         </Button>
       </div>
+      <p className="text-xs text-gray-500 text-center">
+        חתום באמצעות העכבר במחשב או באמצעות האצבע במכשיר נייד
+      </p>
     </div>
   );
 }
