@@ -9,6 +9,7 @@ export const agencies = pgTable("agencies", {
   name: text("name").notNull(),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
   industry: text("industry"), // marketing, design, video, therapy, etc.
+  logo: text("logo"), // URL to agency logo
   settings: json("settings").$type<{
     timezone?: string;
     language?: string;
@@ -126,6 +127,7 @@ export const products = pgTable("products", {
   description: text("description"),
   category: text("category"), // website, design, marketing, video, etc.
   price: integer("price").notNull(), // in agorot
+  priceType: text("price_type").default("fixed").notNull(), // fixed, hourly, monthly
   unit: text("unit").default("project").notNull(), // project, hour, month, etc.
   isActive: boolean("is_active").default(true).notNull(),
   predefinedTasks: json("predefined_tasks").$type<{
@@ -160,12 +162,16 @@ export const quotes = pgTable("quotes", {
     description?: string;
     quantity: number;
     unitPrice: number; // in agorot
+    priceType: 'fixed' | 'hourly' | 'monthly'; // סוג התמחור
     total: number; // in agorot
   }[]>().default([]),
   terms: text("terms"),
   notes: text("notes"),
   sentAt: timestamp("sent_at"),
   approvedAt: timestamp("approved_at"),
+  rejectedAt: timestamp("rejected_at"),
+  viewedAt: timestamp("viewed_at"),
+  viewCount: integer("view_count").default(0).notNull(),
   signedAt: timestamp("signed_at"),
   signatureData: json("signature_data").$type<{
     signature?: string; // base64 signature image
@@ -246,6 +252,7 @@ export const invoices = pgTable("invoices", {
     description: string;
     quantity: number;
     unitPrice: number; // in agorot
+    priceType: 'fixed' | 'hourly' | 'monthly'; // סוג התמחור
     total: number; // in agorot
   }[]>().default([]),
   paymentMethod: text("payment_method"), // bank_transfer, credit_card, check, cash

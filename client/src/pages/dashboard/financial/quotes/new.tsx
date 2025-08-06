@@ -11,9 +11,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Trash2, ArrowRight } from 'lucide-react';
+import { Plus, Trash2, ArrowRight, Send, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { QuoteItemAutocomplete } from '@/components/quote-item-autocomplete';
 
 const quoteSchema = z.object({
   title: z.string().min(1, 'כותרת נדרשת'),
@@ -21,12 +22,17 @@ const quoteSchema = z.object({
   description: z.string().optional(),
   validUntil: z.string().min(1, 'תאריך תוקף נדרש'),
   items: z.array(z.object({
+    productId: z.string().optional(),
+    name: z.string().min(1, 'שם פריט נדרש'),
     description: z.string().min(1, 'תיאור פריט נדרש'),
     quantity: z.number().min(1, 'כמות חייבת להיות גדולה מ-0'),
     unitPrice: z.number().min(0, 'מחיר יחידה לא יכול להיות שלילי'),
+    priceType: z.enum(['fixed', 'hourly', 'monthly']).default('fixed'),
     total: z.number(),
   })).min(1, 'נדרש לפחות פריט אחד'),
   notes: z.string().optional(),
+  senderEmail: z.string().email().optional(),
+  emailMessage: z.string().optional(),
 });
 
 type QuoteFormData = z.infer<typeof quoteSchema>;
@@ -57,8 +63,10 @@ export default function NewQuotePage() {
       clientId: '',
       description: '',
       validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
-      items: [{ description: '', quantity: 1, unitPrice: 0, total: 0 }],
+      items: [{ productId: '', name: '', description: '', quantity: 1, unitPrice: 0, priceType: 'fixed' as const, total: 0 }],
       notes: '',
+      senderEmail: '',
+      emailMessage: '',
     },
   });
 
@@ -257,97 +265,29 @@ export default function NewQuotePage() {
                   <CardContent>
                     <div className="space-y-4">
                       {fields.map((field, index) => (
-                        <div key={field.id} className="border rounded-lg p-4">
-                          <div className="flex justify-between items-start mb-4">
-                            <h4 className="font-medium">פריט {index + 1}</h4>
-                            {fields.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => remove(index)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <FormField
-                              control={form.control}
-                              name={`items.${index}.description`}
-                              render={({ field }) => (
-                                <FormItem className="md:col-span-2">
-                                  <FormLabel>תיאור</FormLabel>
-                                  <FormControl>
-                                    <Input {...field} placeholder="תיאור הפריט או השירות" />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            <FormField
-                              control={form.control}
-                              name={`items.${index}.quantity`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>כמות</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      type="number"
-                                      {...field}
-                                      onChange={(e) => {
-                                        field.onChange(parseInt(e.target.value) || 1);
-                                        setTimeout(() => calculateItemTotal(index), 0);
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            <FormField
-                              control={form.control}
-                              name={`items.${index}.unitPrice`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>מחיר יחידה (₪)</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      type="number"
-                                      step="0.01"
-                                      {...field}
-                                      onChange={(e) => {
-                                        field.onChange(parseFloat(e.target.value) || 0);
-                                        setTimeout(() => calculateItemTotal(index), 0);
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-
-                          <div className="mt-2 text-left">
-                            <span className="text-sm text-muted-foreground">סה"כ: </span>
-                            <span className="font-bold">
-                              {new Intl.NumberFormat('he-IL', {
-                                style: 'currency',
-                                currency: 'ILS'
-                              }).format(watchedItems[index]?.total || 0)}
-                            </span>
-                          </div>
-                        </div>
+                        <QuoteItemAutocomplete
+                          key={field.id}
+                          index={index}
+                          form={form}
+                          remove={remove}
+                          onItemChange={(idx, fieldName, value) => {
+                            form.setValue(`items.${idx}.${fieldName}` as any, value);
+                          }}
+                        />
                       ))}
 
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => append({ description: '', quantity: 1, unitPrice: 0, total: 0 })}
+                        onClick={() => append({ 
+                          productId: '', 
+                          name: '', 
+                          description: '', 
+                          quantity: 1, 
+                          unitPrice: 0, 
+                          priceType: 'fixed' as const, 
+                          total: 0 
+                        })}
                         className="w-full"
                       >
                         <Plus className="h-4 w-4 ml-2" />
@@ -379,12 +319,55 @@ export default function NewQuotePage() {
                 </Card>
               </div>
 
-              {/* Sidebar */}
+              {/* Sidebar - Email & Summary */}
               <div className="space-y-6">
+                {/* Email Configuration */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Mail className="h-5 w-5" />
+                      הגדרות מייל
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="senderEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>כתובת השולח</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="email" placeholder="לדוגמה: info@company.com" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="emailMessage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>הודעת מייל</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              {...field} 
+                              rows={3} 
+                              placeholder="הודעה אישית שתישלח עם הצעת המחיר..."
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+
                 {/* Summary */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>סיכום</CardTitle>
+                    <CardTitle>סיכום הצעת מחיר</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <div className="flex justify-between">
@@ -403,37 +386,6 @@ export default function NewQuotePage() {
                   </CardContent>
                 </Card>
 
-                {/* Quick Add Products */}
-                {products && products.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>מוצרים ושירותים</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {products.slice(0, 5).map((product) => (
-                          <div key={product.id} className="flex items-center justify-between text-sm border-b pb-2">
-                            <div>
-                              <p className="font-medium">{product.name}</p>
-                              <p className="text-muted-foreground">
-                                {new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS' }).format(product.price / 100)}
-                              </p>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => addProductToQuote(product)}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
                 {/* Actions */}
                 <Card>
                   <CardContent className="pt-6">
@@ -443,16 +395,20 @@ export default function NewQuotePage() {
                         className="w-full"
                         disabled={createMutation.isPending}
                       >
-                        צור הצעת מחיר
+                        {createMutation.isPending ? 'שומר...' : 'שמור הצעת מחיר'}
                       </Button>
+                      
                       <Button
                         type="button"
-                        className="w-full"
-                        disabled={createMutation.isPending || sendEmailMutation.isPending}
+                        variant="outline"
+                        className="w-full gap-2"
                         onClick={form.handleSubmit(handleSendAndEmail)}
+                        disabled={createMutation.isPending || sendEmailMutation.isPending}
                       >
-                        צור ושלח במייל
+                        <Send className="h-4 w-4" />
+                        {sendEmailMutation.isPending ? 'שולח...' : 'שמור ושלח במייל'}
                       </Button>
+                      
                       <Button
                         type="button"
                         variant="outline"
