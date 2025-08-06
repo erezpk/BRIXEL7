@@ -48,6 +48,7 @@ import HelpCenter from "@/pages/help-center";
 import PDFSettingsPage from "@/pages/dashboard/settings/pdf-settings";
 import PDFSettingsMainPage from "@/pages/dashboard/pdf-settings";
 import AgencySettingsPage from "@/pages/dashboard/settings/agency-settings";
+import PaymentsPage from "@/pages/dashboard/payments";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -314,6 +315,15 @@ export default function App() {
             </ProtectedRoute>
           </Route>
 
+          {/* Payments Route */}
+          <Route path="/dashboard/payments">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <PaymentsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
           <Route path="/dashboard/products">
             <ProtectedRoute>
               <DashboardLayout>
@@ -367,8 +377,8 @@ export default function App() {
           <Route path="/help" component={HelpCenter} />
 
           {/* Original leads route */}
-          <Route path="/leads" element={<Leads />} />
-          <Route path="/dashboard/leads" element={<Leads />} />
+          <Route path="/leads" component={() => <Leads />} />
+          <Route path="/dashboard/leads" component={() => <Leads />} />
           <Route component={NotFound} />
         </Switch>
       </TooltipProvider>

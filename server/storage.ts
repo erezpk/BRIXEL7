@@ -1,6 +1,7 @@
 import {
   agencies, users, clients, projects, tasks, leads, taskComments, digitalAssets, agencyTemplates, clientCardTemplates, activityLog, passwordResetTokens,
   clientSettings, products, quotes, contracts, invoices, payments,
+  paymentSettings, clientPaymentMethods, retainers, retainerTransactions, oneTimePayments,
   type Agency, type InsertAgency,
   type User, type InsertUser,
   type Client, type InsertClient,
@@ -10,6 +11,11 @@ import {
   type Contract, type InsertContract,
   type Invoice, type InsertInvoice,
   type Payment, type InsertPayment,
+  type PaymentSettings, type InsertPaymentSettings,
+  type ClientPaymentMethod, type InsertClientPaymentMethod,
+  type Retainer, type InsertRetainer,
+  type RetainerTransaction, type InsertRetainerTransaction,
+  type OneTimePayment, type InsertOneTimePayment,
   type Project, type InsertProject,
   type Task, type InsertTask,
   type Lead, type InsertLead,
@@ -176,6 +182,40 @@ export interface IStorage {
   createPayment(payment: InsertPayment): Promise<Payment>;
   updatePayment(id: string, payment: Partial<InsertPayment>): Promise<Payment>;
   deletePayment(id: string): Promise<void>;
+
+  // Payment Settings
+  getPaymentSettings(agencyId: string): Promise<PaymentSettings | undefined>;
+  createPaymentSettings(settings: InsertPaymentSettings): Promise<PaymentSettings>;
+  updatePaymentSettings(agencyId: string, settings: Partial<InsertPaymentSettings>): Promise<PaymentSettings>;
+
+  // Client Payment Methods
+  getClientPaymentMethods(clientId: string): Promise<ClientPaymentMethod[]>;
+  getClientPaymentMethod(id: string): Promise<ClientPaymentMethod | undefined>;
+  createClientPaymentMethod(method: InsertClientPaymentMethod): Promise<ClientPaymentMethod>;
+  updateClientPaymentMethod(id: string, method: Partial<InsertClientPaymentMethod>): Promise<ClientPaymentMethod>;
+  deleteClientPaymentMethod(id: string): Promise<void>;
+  setDefaultPaymentMethod(clientId: string, methodId: string): Promise<void>;
+
+  // Retainers
+  getRetainer(id: string): Promise<Retainer | undefined>;
+  getRetainersByClient(clientId: string): Promise<Retainer[]>;
+  getRetainersByAgency(agencyId: string): Promise<Retainer[]>;
+  createRetainer(retainer: InsertRetainer): Promise<Retainer>;
+  updateRetainer(id: string, retainer: Partial<InsertRetainer>): Promise<Retainer>;
+  deleteRetainer(id: string): Promise<void>;
+
+  // Retainer Transactions
+  getRetainerTransaction(id: string): Promise<RetainerTransaction | undefined>;
+  getRetainerTransactions(retainerId: string): Promise<RetainerTransaction[]>;
+  createRetainerTransaction(transaction: InsertRetainerTransaction): Promise<RetainerTransaction>;
+  updateRetainerTransaction(id: string, transaction: Partial<InsertRetainerTransaction>): Promise<RetainerTransaction>;
+
+  // One-time Payments
+  getOneTimePayment(id: string): Promise<OneTimePayment | undefined>;
+  getOneTimePaymentsByClient(clientId: string): Promise<OneTimePayment[]>;
+  getOneTimePaymentsByAgency(agencyId: string): Promise<OneTimePayment[]>;
+  createOneTimePayment(payment: InsertOneTimePayment): Promise<OneTimePayment>;
+  updateOneTimePayment(id: string, payment: Partial<InsertOneTimePayment>): Promise<OneTimePayment>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -910,6 +950,208 @@ export class DatabaseStorage implements IStorage {
 
   async deletePayment(id: string): Promise<void> {
     await this.db.delete(payments).where(eq(payments.id, id));
+  }
+
+  // Payment Settings
+  async getPaymentSettings(agencyId: string): Promise<PaymentSettings | undefined> {
+    const [settings] = await this.db
+      .select()
+      .from(paymentSettings)
+      .where(eq(paymentSettings.agencyId, agencyId));
+    return settings || undefined;
+  }
+
+  async createPaymentSettings(settings: InsertPaymentSettings): Promise<PaymentSettings> {
+    const [newSettings] = await this.db
+      .insert(paymentSettings)
+      .values(settings)
+      .returning();
+    return newSettings;
+  }
+
+  async updatePaymentSettings(agencyId: string, settings: Partial<InsertPaymentSettings>): Promise<PaymentSettings> {
+    const [updatedSettings] = await this.db
+      .update(paymentSettings)
+      .set({ ...settings, updatedAt: new Date() })
+      .where(eq(paymentSettings.agencyId, agencyId))
+      .returning();
+    return updatedSettings;
+  }
+
+  // Client Payment Methods
+  async getClientPaymentMethods(clientId: string): Promise<ClientPaymentMethod[]> {
+    return this.db
+      .select()
+      .from(clientPaymentMethods)
+      .where(eq(clientPaymentMethods.clientId, clientId))
+      .orderBy(desc(clientPaymentMethods.isDefault), asc(clientPaymentMethods.createdAt));
+  }
+
+  async getClientPaymentMethod(id: string): Promise<ClientPaymentMethod | undefined> {
+    const [method] = await this.db
+      .select()
+      .from(clientPaymentMethods)
+      .where(eq(clientPaymentMethods.id, id));
+    return method || undefined;
+  }
+
+  async createClientPaymentMethod(method: InsertClientPaymentMethod): Promise<ClientPaymentMethod> {
+    const [newMethod] = await this.db
+      .insert(clientPaymentMethods)
+      .values(method)
+      .returning();
+    return newMethod;
+  }
+
+  async updateClientPaymentMethod(id: string, method: Partial<InsertClientPaymentMethod>): Promise<ClientPaymentMethod> {
+    const [updatedMethod] = await this.db
+      .update(clientPaymentMethods)
+      .set({ ...method, updatedAt: new Date() })
+      .where(eq(clientPaymentMethods.id, id))
+      .returning();
+    return updatedMethod;
+  }
+
+  async deleteClientPaymentMethod(id: string): Promise<void> {
+    await this.db.delete(clientPaymentMethods).where(eq(clientPaymentMethods.id, id));
+  }
+
+  async setDefaultPaymentMethod(clientId: string, methodId: string): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      // Remove default from all methods for this client
+      await tx
+        .update(clientPaymentMethods)
+        .set({ isDefault: false })
+        .where(eq(clientPaymentMethods.clientId, clientId));
+
+      // Set the new default
+      await tx
+        .update(clientPaymentMethods)
+        .set({ isDefault: true })
+        .where(eq(clientPaymentMethods.id, methodId));
+    });
+  }
+
+  // Retainers
+  async getRetainer(id: string): Promise<Retainer | undefined> {
+    const [retainer] = await this.db
+      .select()
+      .from(retainers)
+      .where(eq(retainers.id, id));
+    return retainer || undefined;
+  }
+
+  async getRetainersByClient(clientId: string): Promise<Retainer[]> {
+    return this.db
+      .select()
+      .from(retainers)
+      .where(eq(retainers.clientId, clientId))
+      .orderBy(desc(retainers.createdAt));
+  }
+
+  async getRetainersByAgency(agencyId: string): Promise<Retainer[]> {
+    return this.db
+      .select()
+      .from(retainers)
+      .where(eq(retainers.agencyId, agencyId))
+      .orderBy(desc(retainers.createdAt));
+  }
+
+  async createRetainer(retainer: InsertRetainer): Promise<Retainer> {
+    const [newRetainer] = await this.db
+      .insert(retainers)
+      .values(retainer)
+      .returning();
+    return newRetainer;
+  }
+
+  async updateRetainer(id: string, retainer: Partial<InsertRetainer>): Promise<Retainer> {
+    const [updatedRetainer] = await this.db
+      .update(retainers)
+      .set({ ...retainer, updatedAt: new Date() })
+      .where(eq(retainers.id, id))
+      .returning();
+    return updatedRetainer;
+  }
+
+  async deleteRetainer(id: string): Promise<void> {
+    await this.db.delete(retainers).where(eq(retainers.id, id));
+  }
+
+  // Retainer Transactions
+  async getRetainerTransaction(id: string): Promise<RetainerTransaction | undefined> {
+    const [transaction] = await this.db
+      .select()
+      .from(retainerTransactions)
+      .where(eq(retainerTransactions.id, id));
+    return transaction || undefined;
+  }
+
+  async getRetainerTransactions(retainerId: string): Promise<RetainerTransaction[]> {
+    return this.db
+      .select()
+      .from(retainerTransactions)
+      .where(eq(retainerTransactions.retainerId, retainerId))
+      .orderBy(desc(retainerTransactions.createdAt));
+  }
+
+  async createRetainerTransaction(transaction: InsertRetainerTransaction): Promise<RetainerTransaction> {
+    const [newTransaction] = await this.db
+      .insert(retainerTransactions)
+      .values(transaction)
+      .returning();
+    return newTransaction;
+  }
+
+  async updateRetainerTransaction(id: string, transaction: Partial<InsertRetainerTransaction>): Promise<RetainerTransaction> {
+    const [updatedTransaction] = await this.db
+      .update(retainerTransactions)
+      .set({ ...transaction, updatedAt: new Date() })
+      .where(eq(retainerTransactions.id, id))
+      .returning();
+    return updatedTransaction;
+  }
+
+  // One-time Payments
+  async getOneTimePayment(id: string): Promise<OneTimePayment | undefined> {
+    const [payment] = await this.db
+      .select()
+      .from(oneTimePayments)
+      .where(eq(oneTimePayments.id, id));
+    return payment || undefined;
+  }
+
+  async getOneTimePaymentsByClient(clientId: string): Promise<OneTimePayment[]> {
+    return this.db
+      .select()
+      .from(oneTimePayments)
+      .where(eq(oneTimePayments.clientId, clientId))
+      .orderBy(desc(oneTimePayments.createdAt));
+  }
+
+  async getOneTimePaymentsByAgency(agencyId: string): Promise<OneTimePayment[]> {
+    return this.db
+      .select()
+      .from(oneTimePayments)
+      .where(eq(oneTimePayments.agencyId, agencyId))
+      .orderBy(desc(oneTimePayments.createdAt));
+  }
+
+  async createOneTimePayment(payment: InsertOneTimePayment): Promise<OneTimePayment> {
+    const [newPayment] = await this.db
+      .insert(oneTimePayments)
+      .values(payment)
+      .returning();
+    return newPayment;
+  }
+
+  async updateOneTimePayment(id: string, payment: Partial<InsertOneTimePayment>): Promise<OneTimePayment> {
+    const [updatedPayment] = await this.db
+      .update(oneTimePayments)
+      .set({ ...payment, updatedAt: new Date() })
+      .where(eq(oneTimePayments.id, id))
+      .returning();
+    return updatedPayment;
   }
 }
 

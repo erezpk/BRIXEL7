@@ -23,7 +23,8 @@ import {
   Menu,
   Settings,
   Building2,
-  Mail
+  Mail,
+  CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -73,6 +74,7 @@ const navigation = [
     ]
   },
   { name: "תבניות לקוח", href: "/dashboard/client-templates", icon: Layout },
+  { name: "תשלומים", href: "/dashboard/payments", icon: CreditCard },
   { name: "צוות", href: "/dashboard/team", icon: UserCheck },
   { name: "דוחות", href: "/dashboard/reports", icon: BarChart3 },
   { 

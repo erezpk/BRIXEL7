@@ -2937,6 +2937,14 @@ ${quote.notes || ''}
     }
   });
 
+  // Import and mount payment routes
+  try {
+    const paymentsModule = await import('./routes/payments');
+    app.use('/api/payments', paymentsModule.default);
+  } catch (error) {
+    console.warn('Payment routes not available:', error);
+  }
+
   // Mount the router to the app
   app.use('/', router);
 

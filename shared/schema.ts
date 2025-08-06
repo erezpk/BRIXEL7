@@ -383,6 +383,117 @@ export const activityLog = pgTable("activity_log", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Payment Settings - Agency-level payment configurations
+export const paymentSettings = pgTable("payment_settings", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id).unique(),
+  provider: text("provider").notNull(), // meshulam, stripe, paypal, etc.
+  isEnabled: boolean("is_enabled").default(false).notNull(),
+  apiKey: text("api_key"), // Encrypted API key
+  secretKey: text("secret_key"), // Encrypted secret key
+  webhookSecret: text("webhook_secret"), // Encrypted webhook secret
+  settings: json("settings").$type<{
+    currency?: string;
+    testMode?: boolean;
+    autoCapture?: boolean;
+    retentionDays?: number;
+    defaultDescription?: string;
+  }>().default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Client Payment Methods - Stored payment methods for clients
+export const clientPaymentMethods = pgTable("client_payment_methods", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: uuid("client_id").notNull().references(() => clients.id),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  provider: text("provider").notNull(), // meshulam, stripe, etc.
+  providerCustomerId: text("provider_customer_id"), // Customer ID in payment provider
+  providerPaymentMethodId: text("provider_payment_method_id"), // Payment method ID in provider
+  type: text("type").notNull(), // card, bank_transfer, etc.
+  cardBrand: text("card_brand"), // visa, mastercard, etc.
+  cardLastFour: text("card_last_four"), // Last 4 digits
+  cardExpMonth: integer("card_exp_month"),
+  cardExpYear: integer("card_exp_year"),
+  cardHolderName: text("card_holder_name"),
+  isDefault: boolean("is_default").default(false).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  metadata: json("metadata").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Retainers - Recurring payment agreements
+export const retainers = pgTable("retainers", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: uuid("client_id").notNull().references(() => clients.id),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  paymentMethodId: uuid("payment_method_id").references(() => clientPaymentMethods.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  amount: integer("amount").notNull(), // Amount in agorot
+  currency: text("currency").default("ILS").notNull(),
+  frequency: text("frequency").notNull(), // monthly, quarterly, yearly
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date"), // Optional end date
+  status: text("status").default("active").notNull(), // active, paused, cancelled, completed
+  nextChargeDate: date("next_charge_date"),
+  totalCharges: integer("total_charges").default(0).notNull(),
+  failedCharges: integer("failed_charges").default(0).notNull(),
+  lastChargeDate: date("last_charge_date"),
+  settings: json("settings").$type<{
+    autoRenew?: boolean;
+    gracePeriodDays?: number;
+    maxFailedAttempts?: number;
+    emailNotifications?: boolean;
+  }>().default({}),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Retainer Transactions - Individual charges for retainers
+export const retainerTransactions = pgTable("retainer_transactions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  retainerId: uuid("retainer_id").notNull().references(() => retainers.id),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  amount: integer("amount").notNull(),
+  currency: text("currency").default("ILS").notNull(),
+  status: text("status").notNull(), // pending, processing, completed, failed, refunded
+  providerTransactionId: text("provider_transaction_id"), // Transaction ID from payment provider
+  chargeDate: date("charge_date").notNull(),
+  completedAt: timestamp("completed_at"),
+  failureReason: text("failure_reason"),
+  metadata: json("metadata").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// One-time Payments - Individual payment transactions
+export const oneTimePayments = pgTable("one_time_payments", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: uuid("client_id").references(() => clients.id),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  invoiceId: uuid("invoice_id").references(() => invoices.id), // Optional link to invoice
+  quoteId: uuid("quote_id").references(() => quotes.id), // Optional link to quote
+  paymentMethodId: uuid("payment_method_id").references(() => clientPaymentMethods.id),
+  amount: integer("amount").notNull(),
+  currency: text("currency").default("ILS").notNull(),
+  description: text("description"),
+  status: text("status").notNull(), // pending, processing, completed, failed, refunded
+  providerTransactionId: text("provider_transaction_id"),
+  providerPaymentIntentId: text("provider_payment_intent_id"),
+  paymentDate: timestamp("payment_date"),
+  failureReason: text("failure_reason"),
+  refundAmount: integer("refund_amount").default(0),
+  refundDate: timestamp("refund_date"),
+  metadata: json("metadata").$type<Record<string, any>>().default({}),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Password Reset Tokens
 export const passwordResetTokens = pgTable("password_reset_tokens", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -795,6 +906,37 @@ export const insertPaymentSchema = createInsertSchema(payments).omit({
   updatedAt: true,
 });
 
+// Payment related schemas
+export const insertPaymentSettingsSchema = createInsertSchema(paymentSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertClientPaymentMethodSchema = createInsertSchema(clientPaymentMethods).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertRetainerSchema = createInsertSchema(retainers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertRetainerTransactionSchema = createInsertSchema(retainerTransactions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertOneTimePaymentSchema = createInsertSchema(oneTimePayments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type Agency = typeof agencies.$inferSelect;
 export type InsertAgency = z.infer<typeof insertAgencySchema>;
@@ -848,3 +990,19 @@ export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 
 export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+
+// Payment related types
+export type PaymentSettings = typeof paymentSettings.$inferSelect;
+export type InsertPaymentSettings = z.infer<typeof insertPaymentSettingsSchema>;
+
+export type ClientPaymentMethod = typeof clientPaymentMethods.$inferSelect;
+export type InsertClientPaymentMethod = z.infer<typeof insertClientPaymentMethodSchema>;
+
+export type Retainer = typeof retainers.$inferSelect;
+export type InsertRetainer = z.infer<typeof insertRetainerSchema>;
+
+export type RetainerTransaction = typeof retainerTransactions.$inferSelect;
+export type InsertRetainerTransaction = z.infer<typeof insertRetainerTransactionSchema>;
+
+export type OneTimePayment = typeof oneTimePayments.$inferSelect;
+export type InsertOneTimePayment = z.infer<typeof insertOneTimePaymentSchema>;
