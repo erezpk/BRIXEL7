@@ -2,6 +2,7 @@ import {
   agencies, users, clients, projects, tasks, leads, taskComments, digitalAssets, agencyTemplates, clientCardTemplates, activityLog, passwordResetTokens,
   clientSettings, products, quotes, contracts, invoices, payments,
   paymentSettings, clientPaymentMethods, retainers, retainerTransactions, oneTimePayments,
+  leadCollectionForms, formSubmissions,
   type Agency, type InsertAgency,
   type User, type InsertUser,
   type Client, type InsertClient,
@@ -16,6 +17,8 @@ import {
   type Retainer, type InsertRetainer,
   type RetainerTransaction, type InsertRetainerTransaction,
   type OneTimePayment, type InsertOneTimePayment,
+  type LeadCollectionForm, type InsertLeadCollectionForm,
+  type FormSubmission, type InsertFormSubmission,
   type Project, type InsertProject,
   type Task, type InsertTask,
   type Lead, type InsertLead,
@@ -1017,7 +1020,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async setDefaultPaymentMethod(clientId: string, methodId: string): Promise<void> {
-    await this.db.transaction(async (tx) => {
+    await this.db.transaction(async (tx: any) => {
       // Remove default from all methods for this client
       await tx
         .update(clientPaymentMethods)
@@ -1152,6 +1155,90 @@ export class DatabaseStorage implements IStorage {
       .where(eq(oneTimePayments.id, id))
       .returning();
     return updatedPayment;
+  }
+
+  // Lead Collection Forms
+  async getLeadForms(agencyId: string): Promise<LeadCollectionForm[]> {
+    return this.db
+      .select()
+      .from(leadCollectionForms)
+      .where(eq(leadCollectionForms.agencyId, agencyId))
+      .orderBy(desc(leadCollectionForms.createdAt));
+  }
+
+  async getLeadForm(id: string): Promise<LeadCollectionForm | undefined> {
+    const [form] = await this.db
+      .select()
+      .from(leadCollectionForms)
+      .where(eq(leadCollectionForms.id, id));
+    return form || undefined;
+  }
+
+  async getPublicLeadForm(id: string): Promise<LeadCollectionForm | undefined> {
+    const [form] = await this.db
+      .select()
+      .from(leadCollectionForms)
+      .where(and(
+        eq(leadCollectionForms.id, id),
+        eq(leadCollectionForms.isActive, true)
+      ));
+    return form || undefined;
+  }
+
+  async createLeadForm(form: InsertLeadCollectionForm): Promise<LeadCollectionForm> {
+    const [newForm] = await this.db
+      .insert(leadCollectionForms)
+      .values(form)
+      .returning();
+    return newForm;
+  }
+
+  async updateLeadForm(id: string, form: Partial<InsertLeadCollectionForm>): Promise<LeadCollectionForm> {
+    const [updatedForm] = await this.db
+      .update(leadCollectionForms)
+      .set({ ...form, updatedAt: new Date() })
+      .where(eq(leadCollectionForms.id, id))
+      .returning();
+    return updatedForm;
+  }
+
+  async deleteLeadForm(id: string): Promise<void> {
+    await this.db.delete(leadCollectionForms).where(eq(leadCollectionForms.id, id));
+  }
+
+  // Form Submissions
+  async getFormSubmissions(formId: string, agencyId: string): Promise<FormSubmission[]> {
+    return this.db
+      .select()
+      .from(formSubmissions)
+      .where(and(
+        eq(formSubmissions.formId, formId),
+        eq(formSubmissions.agencyId, agencyId)
+      ))
+      .orderBy(desc(formSubmissions.createdAt));
+  }
+
+  async getFormSubmission(id: string): Promise<FormSubmission | undefined> {
+    const [submission] = await this.db
+      .select()
+      .from(formSubmissions)
+      .where(eq(formSubmissions.id, id));
+    return submission || undefined;
+  }
+
+  async createFormSubmission(submission: InsertFormSubmission): Promise<FormSubmission> {
+    const [newSubmission] = await this.db
+      .insert(formSubmissions)
+      .values(submission)
+      .returning();
+    return newSubmission;
+  }
+
+  async linkSubmissionToLead(submissionId: string, leadId: string): Promise<void> {
+    await this.db
+      .update(formSubmissions)
+      .set({ createdLead: leadId, isProcessed: true })
+      .where(eq(formSubmissions.id, submissionId));
   }
 }
 

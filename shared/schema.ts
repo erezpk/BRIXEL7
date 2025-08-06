@@ -969,6 +969,18 @@ export const insertOneTimePaymentSchema = createInsertSchema(oneTimePayments).om
   updatedAt: true,
 });
 
+// Lead collection forms schemas
+export const insertLeadCollectionFormSchema = createInsertSchema(leadCollectionForms).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertFormSubmissionSchema = createInsertSchema(formSubmissions).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type Agency = typeof agencies.$inferSelect;
 export type InsertAgency = z.infer<typeof insertAgencySchema>;
@@ -1038,3 +1050,10 @@ export type InsertRetainerTransaction = z.infer<typeof insertRetainerTransaction
 
 export type OneTimePayment = typeof oneTimePayments.$inferSelect;
 export type InsertOneTimePayment = z.infer<typeof insertOneTimePaymentSchema>;
+
+// Lead forms types
+export type LeadCollectionForm = typeof leadCollectionForms.$inferSelect;
+export type InsertLeadCollectionForm = z.infer<typeof insertLeadCollectionFormSchema>;
+
+export type FormSubmission = typeof formSubmissions.$inferSelect;
+export type InsertFormSubmission = z.infer<typeof insertFormSubmissionSchema>;

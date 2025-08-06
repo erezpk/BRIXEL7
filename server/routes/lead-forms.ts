@@ -22,7 +22,11 @@ const createLeadFormSchema = z.object({
 // Get all lead forms for agency
 router.get("/", requireAuth, async (req, res) => {
   try {
-    const forms = await storage.getLeadForms(req.user!.agencyId);
+    const agencyId = req.user!.agencyId;
+    if (!agencyId) {
+      return res.status(400).json({ message: "Missing agency ID" });
+    }
+    const forms = await storage.getLeadForms(agencyId);
     res.json(forms);
   } catch (error) {
     console.error("Error fetching lead forms:", error);
@@ -34,10 +38,14 @@ router.get("/", requireAuth, async (req, res) => {
 router.post("/", requireAuth, async (req, res) => {
   try {
     const validatedData = createLeadFormSchema.parse(req.body);
+    const agencyId = req.user!.agencyId;
+    if (!agencyId) {
+      return res.status(400).json({ message: "Missing agency ID" });
+    }
     
     const formData = {
       ...validatedData,
-      agencyId: req.user!.agencyId,
+      agencyId,
       publicUrl: `/public/form/${Date.now()}`, // Generate unique URL
       embedCode: `<iframe src="${process.env.BASE_URL}/public/form/${Date.now()}" width="400" height="500"></iframe>`,
     };
@@ -56,7 +64,11 @@ router.post("/", requireAuth, async (req, res) => {
 // Get form submissions
 router.get("/:formId/submissions", requireAuth, async (req, res) => {
   try {
-    const submissions = await storage.getFormSubmissions(req.params.formId, req.user!.agencyId);
+    const agencyId = req.user!.agencyId;
+    if (!agencyId) {
+      return res.status(400).json({ message: "Missing agency ID" });
+    }
+    const submissions = await storage.getFormSubmissions(req.params.formId, agencyId);
     res.json(submissions);
   } catch (error) {
     console.error("Error fetching form submissions:", error);
