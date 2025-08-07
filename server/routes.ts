@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema, insertClientCardTemplateSchema, insertClientSettingsSchema, insertProductSchema, insertQuoteSchema, insertContractSchema, insertInvoiceSchema, insertPaymentSchema } from "@shared/schema";
 import { z } from "zod";
 import express from "express"; // Import express to use its Router
@@ -240,6 +241,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(401).json({ message: 'לא מחובר' });
     }
   });
+
+  // Google OAuth routes
+  router.get('/api/auth/google', passport.authenticate('google', {
+    scope: ['profile', 'email', 'https://www.googleapis.com/auth/calendar']
+  }));
+
+  router.get('/api/auth/google/callback', 
+    passport.authenticate('google', { failureRedirect: '/login' }),
+    (req, res) => {
+      // Successful authentication, redirect home
+      res.redirect('/dashboard');
+    }
+  );
 
   // Simple Google OAuth route (without Firebase)
   router.post('/api/auth/google-simple', async (req, res) => {
