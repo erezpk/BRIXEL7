@@ -108,9 +108,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('Google Client ID available:', !!process.env.GOOGLE_CLIENT_ID);
   console.log('Google Client Secret available:', !!process.env.GOOGLE_CLIENT_SECRET);
   
-  // Use the actual Replit domain
-  const publicDomain = process.env.REPLIT_DOMAINS || 'workspace.replit.app';
-  const callbackURL = `https://${publicDomain}/api/auth/google/callback`;
+  // Determine callback URL based on environment
+  let callbackURL: string;
+  
+  if (process.env.NODE_ENV === 'production') {
+    // Production domain
+    callbackURL = 'https://brixel-7.replit.app/api/auth/google/callback';
+  } else {
+    // Development domain
+    const devDomain = process.env.REPLIT_DOMAINS;
+    if (devDomain) {
+      callbackURL = `https://${devDomain}/api/auth/google/callback`;
+    } else {
+      callbackURL = 'http://localhost:5000/api/auth/google/callback';
+    }
+  }
+  
+  console.log('Environment:', process.env.NODE_ENV || 'development');
   console.log('Google OAuth Callback URL:', callbackURL);
   
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
