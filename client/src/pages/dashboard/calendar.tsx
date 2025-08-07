@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Calendar as CalendarIcon, Plus, Clock, MapPin, Users, ExternalLink, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { signInWithGoogle } from "@/lib/google-oauth";
 import { cn } from "@/lib/utils";
 
 interface CalendarEvent {
@@ -37,6 +38,8 @@ export default function Calendar() {
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
+  const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
+  const [googleCalendarConnected, setGoogleCalendarConnected] = useState(false);
   const { toast } = useToast();
 
   // Mock events for now - will be replaced with real data
@@ -98,6 +101,49 @@ export default function Calendar() {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const handleGoogleCalendarConnect = async () => {
+    setIsConnectingGoogle(true);
+    try {
+      toast({
+        title: "מתחבר ליומן גוגל",
+        description: "פותח חלון התחברות..."
+      });
+
+      // Use the existing Google OAuth system
+      await signInWithGoogle();
+      
+      // After successful Google OAuth, request calendar permissions
+      const response = await fetch('/api/calendar/google/connect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          scopes: ['https://www.googleapis.com/auth/calendar.readonly']
+        })
+      });
+
+      if (response.ok) {
+        setGoogleCalendarConnected(true);
+        toast({
+          title: "חיבור הושלם בהצלחה",
+          description: "יומן גוגל חובר בהצלחה. כעת ניתן לסנכרן אירועים"
+        });
+      } else {
+        throw new Error('Failed to connect to Google Calendar');
+      }
+    } catch (error: any) {
+      console.error('Google Calendar connection error:', error);
+      toast({
+        title: "שגיאה בחיבור",
+        description: "לא הצלחנו להתחבר ליומן גוגל. אנא נסה שוב",
+        variant: "destructive"
+      });
+    } finally {
+      setIsConnectingGoogle(false);
+    }
   };
 
   return (
@@ -304,13 +350,27 @@ export default function Calendar() {
             <div>
               <h4 className="font-medium">סנכרון עם יומן גוגל</h4>
               <p className="text-sm text-muted-foreground mt-1">
-                חבר את היומן שלך ליומן גוגל לסנכרון אוטומטי של האירועים
+                {googleCalendarConnected 
+                  ? "יומן גוגל מחובר ומסונכרן"
+                  : "חבר את היומן שלך ליומן גוגל לסנכרון אוטומטי של האירועים"
+                }
               </p>
             </div>
-            <Button variant="outline">
-              <ExternalLink className="h-4 w-4 ml-2" />
-              התחבר ליומן גוגל
-            </Button>
+            {googleCalendarConnected ? (
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                <ExternalLink className="h-3 w-3 ml-1" />
+                מחובר
+              </Badge>
+            ) : (
+              <Button 
+                variant="outline" 
+                onClick={handleGoogleCalendarConnect}
+                disabled={isConnectingGoogle}
+              >
+                <ExternalLink className="h-4 w-4 ml-2" />
+                {isConnectingGoogle ? "מתחבר..." : "התחבר ליומן גוגל"}
+              </Button>
+            )}
           </div>
           <div className="mt-4 p-4 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground">

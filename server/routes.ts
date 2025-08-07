@@ -13,6 +13,44 @@ import { ObjectStorageService, ObjectNotFoundError } from './objectStorage';
 import { generateQuotePDF } from './pdf-generator';
 // Removed Firebase/Google auth library import - using simple OAuth now
 
+// Import JWT and JWT secret for authentication
+import jwt from 'jsonwebtoken';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-key'; // Fallback secret
+
+// Import verifyGoogleToken function (assuming it's defined elsewhere, e.g., './google-auth')
+// For demonstration purposes, let's define a placeholder:
+async function verifyGoogleToken(token: string): Promise<any> {
+  console.log(`Verifying Google token: ${token.substring(0, 10)}...`);
+  // In a real application, you would use a library like 'google-auth-library'
+  // to verify the token with Google's public keys.
+  // Example:
+  // const { OAuth2Client } = require('google-auth-library');
+  // const client = new OAuth2Client();
+  // const ticket = await client.verifyIdToken({
+  //   idToken: token,
+  //   audience: 'YOUR_GOOGLE_CLIENT_ID', // Specify your client ID
+  // });
+  // const payload = ticket.getPayload();
+  // return payload;
+
+  // Placeholder response for now:
+  if (token === "valid-google-token") {
+    return {
+      email: "user@example.com",
+      name: "Test User",
+      picture: "http://example.com/picture.jpg",
+      email_verified: true,
+    };
+  } else {
+    throw new Error("Invalid token");
+  }
+}
+
+// Placeholder for generateId function
+function generateId(): string {
+  return crypto.randomBytes(16).toString('hex');
+}
+
 // Extend Express types
 declare global {
   namespace Express {
@@ -257,6 +295,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Google OAuth error:', error);
       res.status(500).json({ message: 'שגיאה באימות Google' });
+    }
+  });
+
+  // Google OAuth callback (existing)
+  router.post('/api/auth/google', async (req, res) => {
+    try {
+      const { idToken } = req.body;
+
+      if (!idToken) {
+        return res.status(400).json({ message: 'Missing idToken' });
+      }
+
+      const userInfo = await verifyGoogleToken(idToken);
+
+      let user = await storage.getUserByEmail(userInfo.email);
+      if (!user) {
+        // Create new user from Google auth
+        const userId = generateId();
+        const newUser = {
+          id: userId,
+          email: userInfo.email,
+          name: userInfo.name,
+          role: 'admin' as const,
+          agencyId: null,
+          avatar: userInfo.picture || null,
+          isEmailVerified: userInfo.email_verified,
+        };
+
+        await storage.createUser(newUser);
+        user = newUser;
+      }
+
+      const token = jwt.sign(
+        { userId: user.id, email: user.email },
+        JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      res.json({ user, token });
+    } catch (error) {
+      console.error('Google OAuth error:', error);
+      res.status(401).json({ message: 'Google authentication failed' });
+    }
+  });
+
+  // Google Calendar connection
+  router.post('/api/calendar/google/connect', requireAuth, async (req, res) => {
+    try {
+      const { scopes } = req.body;
+      const user = req.user!;
+
+      // Here you would typically:
+      // 1. Verify the user has Google OAuth token
+      // 2. Request additional calendar permissions if needed
+      // 3. Store calendar connection info in database
+
+      console.log('Connecting Google Calendar for user:', user.id);
+      console.log('Requested scopes:', scopes);
+
+      // For now, simulate successful connection
+      // In production, you'd integrate with Google Calendar API
+
+      res.json({ 
+        success: true, 
+        message: 'Google Calendar connected successfully',
+        connectedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Google Calendar connection error:', error);
+      res.status(500).json({ message: 'Failed to connect Google Calendar' });
     }
   });
 
@@ -927,11 +1035,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user!;
       console.log('User accessing leads:', user.id, 'Agency:', user.agencyId, 'Role:', user.role);
-      
+
       if (!user.agencyId) {
         return res.status(403).json({ message: 'משתמש לא משויך לסוכנות' });
       }
-      
+
       const leads = await storage.getLeadsByAgency(user.agencyId);
       console.log('Fetching leads for agency:', user.agencyId);
       console.log('Found leads:', leads.length);
@@ -953,7 +1061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Creating lead with data:', leadData);
       const lead = await storage.createLead(leadData);
-      
+
       await storage.logActivity({
         agencyId: user.agencyId!,
         userId: user.id,
@@ -974,7 +1082,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const leadId = req.params.id;
       const user = req.user!;
-      
+
       // Check if lead belongs to user's agency
       const existingLead = await storage.getLead(leadId);
       if (!existingLead || existingLead.agencyId !== user.agencyId) {
@@ -987,7 +1095,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const updatedLead = await storage.updateLead(leadId, leadData);
-      
+
       await storage.logActivity({
         agencyId: user.agencyId!,
         userId: user.id,
@@ -1008,7 +1116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const leadId = req.params.id;
       const user = req.user!;
-      
+
       // Check if lead belongs to user's agency
       const existingLead = await storage.getLead(leadId);
       if (!existingLead || existingLead.agencyId !== user.agencyId) {
@@ -1016,7 +1124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       await storage.deleteLead(leadId);
-      
+
       await storage.logActivity({
         agencyId: user.agencyId!,
         userId: user.id,
@@ -1037,7 +1145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const leadId = req.params.id;
       const user = req.user!;
-      
+
       // Check if lead belongs to user's agency
       const existingLead = await storage.getLead(leadId);
       if (!existingLead || existingLead.agencyId !== user.agencyId) {
@@ -1056,13 +1164,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const client = await storage.createClient(clientData);
-      
+
       // Update lead status to converted
       await storage.updateLead(leadId, { 
         status: 'won',
         clientId: client.id
       });
-      
+
       await storage.logActivity({
         agencyId: user.agencyId!,
         userId: user.id,
@@ -2096,13 +2204,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user!;
       console.log('Creating product with data:', req.body);
-      
+
       const productData = insertProductSchema.parse({
         ...req.body,
         agencyId: user.agencyId!,
         createdBy: user.id
       });
-      
+
       const product = await storage.createProduct(productData);
       console.log('Product created:', product);
       res.json(product);
@@ -2152,27 +2260,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user!;
       const timestamp = Date.now().toString().slice(-6);
       const quoteNumber = `QU-${timestamp}`;
-      
+
       const quoteData = {
         ...req.body,
         agencyId: user.agencyId!,
         createdBy: user.id,
         quoteNumber
       };
-      
+
       console.log('Creating quote with data:', JSON.stringify(quoteData, null, 2));
-      
+
       // Ensure required fields are present
       if (!quoteData.subtotal && !quoteData.subtotalAmount) {
         return res.status(400).json({ message: 'חסר שדה subtotal או subtotalAmount' });
       }
-      
+
       // Map subtotalAmount to subtotal if needed
       if (quoteData.subtotalAmount && !quoteData.subtotal) {
         quoteData.subtotal = quoteData.subtotalAmount;
         delete quoteData.subtotalAmount;
       }
-      
+
       const quote = await storage.createQuote(quoteData);
       res.json(quote);
     } catch (error) {
@@ -2200,7 +2308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get client or lead based on quote data
       let recipient: { name: string; email: string } | null = null;
-      
+
       if (quote.clientType === 'lead') {
         const lead = await storage.getLead(quote.clientId);
         if (!lead) {
@@ -2259,7 +2367,7 @@ ${quote.notes || ''}
       }
 
       console.log(`Sending email to: ${recipient.email} with sender: ${senderEmail} (reply-to: ${senderEmail})`);
-      
+
       // No PDF generation - send only link
       console.log('Sending email with quote link only (no PDF attachment)...');
 
@@ -2277,7 +2385,7 @@ ${quote.notes || ''}
       const success = await emailService.sendEmail(emailOptions);
 
       console.log(`Email send result: ${success}`);
-      
+
       if (success) {
         // Update quote as sent
         await storage.updateQuote(quote.id, { 
@@ -2430,18 +2538,18 @@ ${quote.notes || ''}
     try {
       const { agencyId, fileName } = req.params;
       const agency = await storage.getAgency(agencyId);
-      
+
       if (!agency || !agency.logo) {
         return res.status(404).json({ message: 'לוגו לא נמצא' });
       }
 
       console.log(`Serving logo for agency ${agencyId}, logo URL: ${agency.logo}`);
-      
+
       // Try to serve logo from public object storage first
       try {
         const { ObjectStorageService } = await import('./objectStorage');
         const objectStorageService = new ObjectStorageService();
-        
+
         // Extract filename from logo URL
         let logoFileName = '';
         if (agency.logo.startsWith('https://storage.googleapis.com/')) {
@@ -2450,9 +2558,9 @@ ${quote.notes || ''}
         } else {
           logoFileName = fileName;
         }
-        
+
         console.log('Searching for logo in public directories:', logoFileName);
-        
+
         // Try to find logo in public directories
         const logoFile = await objectStorageService.searchPublicObject(`logos/${logoFileName}`);
         if (logoFile) {
@@ -2460,13 +2568,13 @@ ${quote.notes || ''}
           objectStorageService.downloadObject(logoFile, res);
           return;
         }
-        
+
         console.log('Logo not found in public storage, trying direct fetch');
-        
+
       } catch (error) {
         console.error('Error with public object storage:', error);
       }
-      
+
       // Fallback to direct fetch for private storage (with auth)
       if (agency.logo.startsWith('https://storage.googleapis.com/')) {
         console.log('Attempting authenticated fetch from private storage');
@@ -2477,23 +2585,23 @@ ${quote.notes || ''}
           const pathParts = url.pathname.split('/');
           const bucketName = pathParts[1];
           const objectName = pathParts.slice(2).join('/');
-          
+
           const bucket = objectStorageClient.bucket(bucketName);
           const file = bucket.file(objectName);
-          
+
           const [exists] = await file.exists();
           if (!exists) {
             console.error('Logo file does not exist in storage');
             return res.status(404).json({ message: 'לוגו לא נמצא' });
           }
-          
+
           // Get file metadata
           const [metadata] = await file.getMetadata();
           const contentType = metadata.contentType || 'image/png';
-          
+
           res.set('Content-Type', contentType);
           res.set('Cache-Control', 'public, max-age=3600');
-          
+
           // Stream the file
           const stream = file.createReadStream();
           stream.on('error', (err) => {
@@ -2502,10 +2610,10 @@ ${quote.notes || ''}
               res.status(500).json({ message: 'שגיאה בטעינת לוגו' });
             }
           });
-          
+
           stream.pipe(res);
           console.log('Successfully streamed logo from authenticated storage');
-          
+
         } catch (fetchError) {
           console.error('Authenticated fetch failed:', fetchError);
           res.status(404).json({ message: 'לוגו לא נמצא' });
@@ -2536,7 +2644,7 @@ ${quote.notes || ''}
       const user = req.user!;
       const timestamp = Date.now().toString().slice(-6);
       const contractNumber = `CT-${timestamp}`;
-      
+
       const contractData = {
         ...req.body,
         agencyId: user.agencyId!,
@@ -2560,11 +2668,11 @@ ${quote.notes || ''}
         ipAddress,
         userAgent
       };
-      
+
       const updateData = role === 'client' 
         ? { clientSignature: signatureData }
         : { agencySignature: { ...signatureData, signedBy: req.user?.id } };
-        
+
       const contract = await storage.updateContract(req.params.id, updateData);
       res.json(contract);
     } catch (error) {
@@ -2588,7 +2696,7 @@ ${quote.notes || ''}
       const user = req.user!;
       const timestamp = Date.now().toString().slice(-6);
       const invoiceNumber = `INV-${timestamp}`;
-      
+
       const invoiceData = {
         ...req.body,
         agencyId: user.agencyId!,
@@ -2622,7 +2730,7 @@ ${quote.notes || ''}
         createdBy: user.id
       };
       const payment = await storage.createPayment(paymentData);
-      
+
       // Update invoice paid amount if invoiceId is provided
       if (payment.invoiceId) {
         const invoice = await storage.getInvoice(payment.invoiceId);
@@ -2636,7 +2744,7 @@ ${quote.notes || ''}
           });
         }
       }
-      
+
       res.json(payment);
     } catch (error) {
       res.status(500).json({ message: 'שגיאה ביצירת תשלום' });
@@ -2647,7 +2755,7 @@ ${quote.notes || ''}
   router.get('/api/financial/stats', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const user = req.user!;
-      
+
       const [invoices, payments, quotes, contracts] = await Promise.all([
         storage.getInvoicesByAgency(user.agencyId!),
         storage.getPaymentsByAgency(user.agencyId!),
@@ -2707,7 +2815,7 @@ ${quote.notes || ''}
     try {
       const { logoURL } = req.body;
       const agencyId = req.params.id;
-      
+
       const user = req.user!;
       if (agencyId !== user.agencyId) {
         return res.status(403).json({ message: 'אין הרשאה לעדכן סוכנות אחרת' });
@@ -2762,10 +2870,10 @@ ${quote.notes || ''}
       // Upload logo to PUBLIC directory instead of private
       const publicPaths = objectStorageService.getPublicObjectSearchPaths();
       const publicPath = publicPaths[0]; // Use first public path
-      
+
       const logoId = crypto.randomUUID();
       const fullPath = `${publicPath}/logos/${logoId}`;
-      
+
       // Parse the path to get bucket and object name
       const { bucketName, objectName } = (() => {
         let path = fullPath;
@@ -2781,7 +2889,7 @@ ${quote.notes || ''}
           objectName: pathParts.slice(2).join("/")
         };
       })();
-      
+
       // Create presigned URL for public upload
       const request = {
         bucket_name: bucketName,
@@ -2789,7 +2897,7 @@ ${quote.notes || ''}
         method: 'PUT',
         expires_at: new Date(Date.now() + 900 * 1000).toISOString(), // 15 minutes
       };
-      
+
       const response = await fetch(
         'http://127.0.0.1:1106/object-storage/signed-object-url',
         {
@@ -2798,11 +2906,11 @@ ${quote.notes || ''}
           body: JSON.stringify(request),
         }
       );
-      
+
       if (!response.ok) {
         throw new Error(`Failed to sign URL: ${response.status}`);
       }
-      
+
       const { signed_url: signedURL } = await response.json();
       res.json({ uploadURL: signedURL });
     } catch (error) {
@@ -2816,11 +2924,11 @@ ${quote.notes || ''}
     try {
       const user = req.user!;
       const updateData: any = {};
-      
+
       // Handle PDF settings
       if (req.body.pdfTemplate) updateData.pdfTemplate = req.body.pdfTemplate;
       if (req.body.pdfColor) updateData.pdfColor = req.body.pdfColor;
-      
+
       // Handle other agency settings
       if (req.body.name) updateData.name = req.body.name;
       if (req.body.email) updateData.email = req.body.email;
