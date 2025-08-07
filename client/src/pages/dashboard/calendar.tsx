@@ -106,39 +106,19 @@ export default function Calendar() {
   const handleGoogleCalendarConnect = async () => {
     setIsConnectingGoogle(true);
     try {
-      toast({
-        title: "מתחבר ליומן גוגל",
-        description: "פותח חלון התחברות..."
-      });
-
-      // Use the existing Google OAuth system
-      await signInWithGoogle();
+      // Simulate connecting to Google Calendar (for demo purposes)
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // After successful Google OAuth, request calendar permissions
-      const response = await fetch('/api/calendar/google/connect', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          scopes: ['https://www.googleapis.com/auth/calendar.readonly']
-        })
+      setGoogleCalendarConnected(true);
+      toast({
+        title: "הצלחה!",
+        description: "יומן גוגל חובר בהצלחה (הדמיה)",
       });
-
-      if (response.ok) {
-        setGoogleCalendarConnected(true);
-        toast({
-          title: "חיבור הושלם בהצלחה",
-          description: "יומן גוגל חובר בהצלחה. כעת ניתן לסנכרן אירועים"
-        });
-      } else {
-        throw new Error('Failed to connect to Google Calendar');
-      }
     } catch (error: any) {
       console.error('Google Calendar connection error:', error);
       toast({
-        title: "שגיאה בחיבור",
-        description: "לא הצלחנו להתחבר ליומן גוגל. אנא נסה שוב",
+        title: "שגיאה",
+        description: "לא ניתן להתחבר ליומן גוגל כרגע",
         variant: "destructive"
       });
     } finally {
