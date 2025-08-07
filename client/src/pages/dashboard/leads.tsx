@@ -544,6 +544,10 @@ export default function Leads() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => window.location.href = `/dashboard/leads/${lead.id}`}>
+                              <Eye className="h-4 w-4 ml-2" />
+                              פרטי ליד
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleEdit(lead)}>
                               <Edit className="h-4 w-4 ml-2" />
                               ערוך
@@ -654,6 +658,10 @@ export default function Leads() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => window.location.href = `/dashboard/leads/${lead.id}`}>
+                          <Eye className="h-4 w-4 ml-2" />
+                          פרטי ליד
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleEdit(lead)}>
                           <Edit className="h-4 w-4 ml-2" />
                           ערוך

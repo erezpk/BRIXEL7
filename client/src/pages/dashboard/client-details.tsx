@@ -43,8 +43,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
 import { type Client, type Project } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+import { ContactMeetings } from "@/components/contact-meetings";
+import { MeetingScheduler } from "@/components/meeting-scheduler";
 
 export default function ClientDetails() {
   const [, params] = useRoute("/dashboard/clients/:id");
@@ -343,6 +345,17 @@ export default function ClientDetails() {
             </div>
 
             <div className="flex items-center gap-3">
+              <MeetingScheduler
+                contactType="client"
+                contactId={client.id}
+                contactName={client.name}
+                trigger={
+                  <Button variant="outline" size="sm">
+                    <Calendar className="h-4 w-4 ml-2" />
+                    קבע פגישה
+                  </Button>
+                }
+              />
               <Button
                 variant="outline"
                 size="sm"
@@ -452,6 +465,12 @@ export default function ClientDetails() {
                       className="h-12 px-6 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
                     >
                       פרויקטים ({projects?.length || 0})
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="meetings" 
+                      className="h-12 px-6 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                    >
+                      פגישות
                     </TabsTrigger>
                     <TabsTrigger 
                       value="documents" 
@@ -566,6 +585,14 @@ export default function ClientDetails() {
                       )}
                     </div>
                   </div>
+                </TabsContent>
+
+                <TabsContent value="meetings" className="p-6">
+                  <ContactMeetings
+                    contactType="client"
+                    contactId={client.id}
+                    contactName={client.name}
+                  />
                 </TabsContent>
 
                 <TabsContent value="projects" className="p-6">

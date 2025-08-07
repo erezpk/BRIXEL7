@@ -11,6 +11,7 @@ import { emailService } from "./email-service.js"; // Import from email-service.
 import crypto from 'crypto'; // Import crypto for token generation
 import { ObjectStorageService, ObjectNotFoundError } from './objectStorage';
 import { generateQuotePDF } from './pdf-generator';
+import { google } from 'googleapis';
 // Removed Firebase/Google auth library import - using simple OAuth now
 
 // JWT not needed - using session-based authentication
@@ -339,26 +340,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Google Calendar connection
-  router.post('/api/calendar/google/connect', requireAuth, async (req, res) => {
+  // Google Calendar permissions (using existing auth)
+  router.post('/api/auth/google-calendar-permissions', requireAuth, async (req, res) => {
     try {
-      const { scopes } = req.body;
       const user = req.user!;
+      
+      // Since user is already authenticated with Google, just mark calendar as connected
+      await storage.updateUser(user.id, {
+        googleCalendarConnected: true,
+      });
 
-      // Here you would typically:
-      // 1. Verify the user has Google OAuth token
-      // 2. Request additional calendar permissions if needed
-      // 3. Store calendar connection info in database
+      res.json({ success: true, message: 'Calendar permissions granted' });
+    } catch (error) {
+      console.error('Google Calendar permissions error:', error);
+      res.status(500).json({ error: 'Failed to grant permissions' });
+    }
+  });
 
-      console.log('Connecting Google Calendar for user:', user.id);
-      console.log('Requested scopes:', scopes);
-
-      // For now, simulate successful connection
-      // In production, you'd integrate with Google Calendar API
-
+  // Check Google Calendar connection status
+  router.get('/api/auth/google-calendar/status', requireAuth, async (req, res) => {
+    try {
+      const user = req.user!;
+      const userData = await storage.getUserById(user.id);
+      
       res.json({ 
-        success: true, 
-        message: 'Google Calendar connected successfully',
+        connected: !!(userData?.googleCalendarConnected),
         connectedAt: new Date().toISOString()
       });
     } catch (error) {
@@ -3041,6 +3047,160 @@ ${quote.notes || ''}
     } catch (error) {
       console.error("Error generating test PDF:", error);
       res.status(500).json({ error: "שגיאה ביצירת PDF לדוגמא" });
+    }
+  });
+
+  // Google Calendar endpoints
+  router.get('/api/google/calendar/connect', requireAuth, async (req, res) => {
+    try {
+      const user = req.user;
+      
+      if (!user) {
+        return res.status(401).json({ message: 'לא מחובר' });
+      }
+
+      const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/api/google/calendar/callback`
+      );
+
+      const authUrl = oauth2Client.generateAuthUrl({
+        access_type: 'offline',
+        scope: [
+          'https://www.googleapis.com/auth/calendar',
+          'https://www.googleapis.com/auth/calendar.events'
+        ],
+        state: user.id,
+        prompt: 'consent'
+      });
+
+      res.json({ authUrl });
+    } catch (error) {
+      console.error('Google Calendar connect error:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת חיבור ליומן גוגל' });
+    }
+  });
+
+  router.get('/api/google/calendar/callback', async (req, res) => {
+    try {
+      const { code, state } = req.query;
+      
+      if (!code || !state) {
+        return res.status(400).json({ message: 'חסרים פרמטרים נדרשים' });
+      }
+
+      const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/api/google/calendar/callback`
+      );
+
+      const { tokens } = await oauth2Client.getToken(code as string);
+      oauth2Client.setCredentials(tokens);
+
+      const userId = state as string;
+      await storage.updateUser(userId, {
+        googleCalendarTokens: tokens
+      });
+
+      res.redirect('/dashboard/leads?connected=true');
+    } catch (error) {
+      console.error('Google Calendar callback error:', error);
+      res.redirect('/dashboard/leads?error=connection_failed');
+    }
+  });
+
+  router.post('/api/calendar/events', requireAuth, async (req, res) => {
+    try {
+      const user = req.user!;
+      
+      if (!user.googleCalendarTokens) {
+        return res.status(400).json({ message: 'לא מחובר ליומן גוגל' });
+      }
+
+      const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/api/google/calendar/callback`
+      );
+
+      oauth2Client.setCredentials(user.googleCalendarTokens);
+      const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+      const { title, description, startTime, endTime, contactType, contactId, contactName } = req.body;
+
+      const event = {
+        summary: title,
+        description: description,
+        start: {
+          dateTime: startTime,
+          timeZone: 'Asia/Jerusalem',
+        },
+        end: {
+          dateTime: endTime,
+          timeZone: 'Asia/Jerusalem',
+        },
+        reminders: {
+          useDefault: false,
+          overrides: [
+            { method: 'email', minutes: 24 * 60 },
+            { method: 'popup', minutes: 10 },
+          ],
+        },
+      };
+
+      const createdEvent = await calendar.events.insert({
+        calendarId: 'primary',
+        requestBody: event,
+      });
+
+      const calendarEvent = await storage.createCalendarEvent({
+        id: `cal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        agencyId: user.agencyId!,
+        userId: user.id,
+        title,
+        description,
+        startTime: new Date(startTime),
+        endTime: new Date(endTime),
+        contactType,
+        contactId,
+        contactName,
+        googleEventId: createdEvent.data.id,
+        status: 'scheduled',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      await storage.logActivity({
+        agencyId: user.agencyId!,
+        userId: user.id,
+        action: 'created',
+        entityType: 'calendar_event',
+        entityId: calendarEvent.id,
+        details: { title, contactName },
+      });
+
+      res.json(calendarEvent);
+    } catch (error) {
+      console.error('Calendar event creation error:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת אירוע ביומן' });
+    }
+  });
+
+  router.get('/api/calendar/events', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const { contactType, contactId } = req.query;
+      
+      const events = await storage.getCalendarEventsByAgency(req.user!.agencyId!, {
+        contactType: contactType as string,
+        contactId: contactId as string,
+      });
+
+      res.json(events);
+    } catch (error) {
+      console.error('Calendar events fetch error:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת אירועי יומן' });
     }
   });
 

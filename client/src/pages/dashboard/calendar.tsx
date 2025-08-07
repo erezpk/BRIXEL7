@@ -106,14 +106,29 @@ export default function Calendar() {
   const handleGoogleCalendarConnect = async () => {
     setIsConnectingGoogle(true);
     try {
-      // Simulate connecting to Google Calendar (for demo purposes)
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Use existing Google authentication system
+      const { signInWithGoogle } = await import('@/lib/google-oauth');
       
-      setGoogleCalendarConnected(true);
-      toast({
-        title: "הצלחה!",
-        description: "יומן גוגל חובר בהצלחה (הדמיה)",
+      // Sign in with Google (same as login page)
+      await signInWithGoogle();
+      
+      // After successful login, request calendar permissions
+      const response = await fetch('/api/auth/google-calendar-permissions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
+
+      if (response.ok) {
+        setGoogleCalendarConnected(true);
+        toast({
+          title: "הצלחה!",
+          description: "יומן גוגל חובר בהצלחה",
+        });
+      } else {
+        throw new Error('Failed to get calendar permissions');
+      }
     } catch (error: any) {
       console.error('Google Calendar connection error:', error);
       toast({

@@ -19,6 +19,7 @@ import TeamDashboard from "@/pages/team-member-portal/team-member-dashboard"; //
 import Clients from "@/pages/dashboard/clients";
 import ClientDetails from "@/pages/dashboard/client-details";
 import Leads from "@/pages/dashboard/leads";
+import LeadDetails from "@/pages/dashboard/lead-details";
 
 import Projects from "@/pages/dashboard/projects"; // index.tsx
 import NewProject from "@/pages/dashboard/projects/NewProject";
@@ -116,6 +117,13 @@ export default function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <Leads />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/dashboard/leads/:leadId">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <LeadDetails />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
