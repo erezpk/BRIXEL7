@@ -13,12 +13,12 @@ interface ContactMeetingsProps {
 }
 
 export function ContactMeetings({ contactType, contactId, contactName }: ContactMeetingsProps) {
-  // Fetch meetings for this contact
+  // Fetch Google Calendar events for this contact
   const { data: meetings, isLoading } = useQuery({
-    queryKey: ["/api/communications/calendar-events", contactType, contactId],
+    queryKey: ["/api/calendar/events", contactType, contactId],
     queryFn: async () => {
-      const response = await fetch(`/api/communications/calendar-events?contactType=${contactType}&contactId=${contactId}`);
-      if (!response.ok) throw new Error("Failed to fetch meetings");
+      const response = await fetch(`/api/calendar/events?contactType=${contactType}&contactId=${contactId}`);
+      if (!response.ok) throw new Error("Failed to fetch calendar events");
       return response.json();
     },
   });

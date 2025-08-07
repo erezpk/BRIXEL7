@@ -337,7 +337,7 @@ export default function LeadDetails() {
                 <div>
                   <Label className="text-sm text-muted-foreground">משויך ל</Label>
                   <p className="text-sm">
-                    {users.find((user: any) => user.id === lead.assignedTo)?.firstName} {users.find((user: any) => user.id === lead.assignedTo)?.lastName}
+                    {(users as any[]).find((user: any) => user.id === lead.assignedTo)?.firstName} {(users as any[]).find((user: any) => user.id === lead.assignedTo)?.lastName}
                   </p>
                 </div>
               )}
@@ -452,7 +452,7 @@ export default function LeadDetails() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="unassigned">לא משויך</SelectItem>
-                  {users.map((user: any) => (
+                  {(users as any[]).map((user: any) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.firstName} {user.lastName}
                     </SelectItem>

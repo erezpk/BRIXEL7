@@ -36,52 +36,97 @@ export function MeetingScheduler({ contactType, contactId, contactName, trigger 
 
   const createMeetingMutation = useMutation({
     mutationFn: async (meetingData: any) => {
-      // Create calendar event
-      const eventResponse = await apiRequest("POST", "/api/communications/calendar-events", {
-        title: meetingData.title,
-        description: meetingData.description,
-        startTime: meetingData.startTime,
-        endTime: meetingData.endTime,
-        location: meetingData.location,
-        type: "meeting",
-        priority: meetingData.priority,
-        contactType,
-        contactId,
-        attendees: [],
-      });
+      // Check if user is connected to Google Calendar
+      try {
+        // Create Google Calendar event using real API
+        const eventResponse = await apiRequest("POST", "/api/calendar/events", {
+          title: meetingData.title,
+          description: `פגישה עם ${contactName}\n\n${meetingData.description || ''}\n\nמיקום: ${meetingData.location || 'לא צוין'}`,
+          startTime: meetingData.startTime,
+          endTime: meetingData.endTime,
+          contactType,
+          contactId,
+          contactName,
+        });
 
-      // Also create a communication record
-      await apiRequest("POST", "/api/communications", {
-        type: "meeting",
-        contactType,
-        contactId,
-        subject: meetingData.title,
-        content: meetingData.description || "פגישה מתוכננת",
-        status: "scheduled",
-        scheduledDate: meetingData.startTime,
-        duration: meetingData.duration,
-      });
+        // Also create a communication record for tracking
+        await apiRequest("POST", "/api/communications", {
+          type: "meeting",
+          contactType,
+          contactId,
+          subject: meetingData.title,
+          content: meetingData.description || "פגישה מתוכננת",
+          status: "scheduled",
+          scheduledDate: meetingData.startTime,
+          duration: meetingData.duration,
+        });
 
-      return eventResponse;
+        return eventResponse;
+      } catch (error: any) {
+        if (error.message?.includes('לא מחובר ליומן גוגל')) {
+          // User not connected to Google Calendar, show connection option
+          throw new Error('CALENDAR_NOT_CONNECTED');
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/communications"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/communications/calendar-events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/calendar/events"] });
       toast({
-        title: "פגישה נקבעה",
-        description: `פגישה עם ${contactName} נקבעה בהצלחה`,
+        title: "פגישה נקבעה ביומן גוגל",
+        description: `פגישה עם ${contactName} נוספה ליומן Google Calendar שלך`,
       });
       setOpen(false);
       resetForm();
     },
     onError: (error: any) => {
+      console.error("Meeting creation error:", error);
+      
+      if (error.message === 'CALENDAR_NOT_CONNECTED') {
+        toast({
+          title: "נדרש חיבור ליומן Google",
+          description: "כדי לקבוע פגישות, עליך לחבר את המערכת ליומן Google שלך",
+          variant: "destructive",
+        });
+        
+        // Trigger Google Calendar connection
+        handleGoogleCalendarConnect();
+        return;
+      }
+      
       toast({
-        title: "שגיאה",
-        description: "לא ניתן לקבוע פגישה כרגע",
+        title: "שגיאה ביצירת פגישה",
+        description: error.message || "לא ניתן היה ליצור את הפגישה ביומן",
         variant: "destructive",
       });
     },
   });
+
+  // Google Calendar connection handler
+  const handleGoogleCalendarConnect = async () => {
+    try {
+      const response = await fetch('/api/google/calendar/connect');
+      const data = await response.json();
+      
+      if (data.authUrl) {
+        // Open Google authorization in new window
+        window.open(data.authUrl, 'google-auth', 'width=500,height=600');
+        
+        toast({
+          title: "מחבר ליומן Google",
+          description: "חלון חדש נפתח - אשר את הגישה ליומן Google שלך",
+        });
+      }
+    } catch (error) {
+      console.error('Google Calendar connection error:', error);
+      toast({
+        title: "שגיאה בחיבור",
+        description: "לא ניתן היה להתחבר ליומן Google",
+        variant: "destructive",
+      });
+    }
+  };
 
   const resetForm = () => {
     setDate(undefined);
