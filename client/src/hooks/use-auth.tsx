@@ -92,7 +92,7 @@ export function useAuth() {
 
   const googleLoginMutation = useMutation({
     mutationFn: async () => {
-      // Redirect to Google OAuth endpoint
+      // Redirect to Google OAuth endpoint - this will redirect to Google's auth page
       window.location.href = '/api/auth/google';
       return Promise.resolve();
     },

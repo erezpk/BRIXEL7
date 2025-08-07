@@ -104,6 +104,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   ));
 
+  // Configure Google OAuth strategy
+  console.log('Google Client ID available:', !!process.env.GOOGLE_CLIENT_ID);
+  console.log('Google Client Secret available:', !!process.env.GOOGLE_CLIENT_SECRET);
+  
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    console.log('Configuring Google OAuth Strategy...');
+    passport.use(new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "/api/auth/google/callback"
+    }, async (accessToken, refreshToken, profile, done) => {
+      try {
+        const email = profile.emails?.[0]?.value;
+        if (!email) {
+          return done(new Error('אין אימייל בפרופיל Google'));
+        }
+
+        // Check if user exists
+        let user = await storage.getUserByEmail(email);
+        
+        if (user) {
+          // Update Google Calendar tokens if available
+          if (accessToken) {
+            await storage.updateUser(user.id, {
+              googleCalendarTokens: {
+                access_token: accessToken,
+                refresh_token: refreshToken,
+                token_type: 'Bearer',
+                expiry_date: Date.now() + 3600000 // 1 hour from now
+              },
+              googleCalendarConnected: true
+            });
+          }
+          return done(null, user);
+        } else {
+          // New user - create account with minimal info
+          const newUser = await storage.createUser({
+            email: email,
+            password: 'google-oauth-user', // Placeholder for OAuth users
+            fullName: profile.displayName || (profile.name?.givenName + ' ' + profile.name?.familyName) || email,
+            role: 'client', // Default role
+            agencyId: null, // Will need to be assigned later
+            isActive: true,
+            avatar: profile.photos?.[0]?.value,
+            googleCalendarTokens: accessToken ? {
+              access_token: accessToken,
+              refresh_token: refreshToken,
+              token_type: 'Bearer',
+              expiry_date: Date.now() + 3600000
+            } : undefined,
+            googleCalendarConnected: !!accessToken
+          });
+          return done(null, newUser);
+        }
+      } catch (error) {
+        return done(error);
+      }
+    }));
+    console.log('Google OAuth Strategy configured successfully');
+  } else {
+    console.log('Google OAuth not configured - missing credentials');
+  }
+
   passport.serializeUser((user: any, done) => {
     done(null, {
       id: user.id,

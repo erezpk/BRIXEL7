@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
+import { FcGoogle } from "react-icons/fc";
 
 export default function Signup() {
   const [, setLocation] = useLocation();
@@ -280,6 +281,26 @@ export default function Signup() {
                 שגיאה ביצירת החשבון. אנא נסה שוב.
               </div>
             )}
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-muted-foreground">או</span>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => window.location.href = '/api/auth/google'}
+              data-testid="button-google-signup"
+            >
+              <FcGoogle className="mr-2 h-4 w-4" />
+              הירשם עם Google
+            </Button>
           </form>
           
           <div className="mt-6 text-center">
