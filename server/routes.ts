@@ -13,9 +13,7 @@ import { ObjectStorageService, ObjectNotFoundError } from './objectStorage';
 import { generateQuotePDF } from './pdf-generator';
 // Removed Firebase/Google auth library import - using simple OAuth now
 
-// Import JWT and JWT secret for authentication
-import jwt from 'jsonwebtoken';
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-key'; // Fallback secret
+// JWT not needed - using session-based authentication
 
 // Import verifyGoogleToken function (assuming it's defined elsewhere, e.g., './google-auth')
 // For demonstration purposes, let's define a placeholder:
@@ -327,13 +325,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user = newUser;
       }
 
-      const token = jwt.sign(
-        { userId: user.id, email: user.email },
-        JWT_SECRET,
-        { expiresIn: '7d' }
-      );
-
-      res.json({ user, token });
+      // Store user in session instead of JWT
+      req.login(user, (err) => {
+        if (err) {
+          console.error('Session login error:', err);
+          return res.status(500).json({ message: 'שגיאה ביצירת סשן' });
+        }
+        res.json({ user });
+      });
     } catch (error) {
       console.error('Google OAuth error:', error);
       res.status(401).json({ message: 'Google authentication failed' });
