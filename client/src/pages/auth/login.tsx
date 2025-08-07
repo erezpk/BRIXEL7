@@ -204,7 +204,7 @@ export default function Login() {
               type="button"
               variant="outline"
               className="w-full"
-              onClick={handleGoogleLogin}
+              onClick={() => window.location.href = '/api/auth/google'}
               disabled={isLoginLoading || isGoogleLoginLoading}
               data-testid="button-google-login"
             >

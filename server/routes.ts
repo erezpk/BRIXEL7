@@ -135,8 +135,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       callbackURL: callbackURL
     }, async (accessToken, refreshToken, profile, done) => {
       try {
+        console.log('Google OAuth profile received:', {
+          id: profile.id,
+          email: profile.emails?.[0]?.value,
+          name: profile.displayName
+        });
+        
         const email = profile.emails?.[0]?.value;
         if (!email) {
+          console.log('No email in Google profile:', profile);
           return done(new Error('אין אימייל בפרופיל Google'));
         }
 
@@ -330,12 +337,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   router.get('/api/auth/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/login' }),
+    passport.authenticate('google', { 
+      failureRedirect: '/login',
+      failureMessage: true 
+    }),
     (req, res) => {
+      console.log('Google OAuth callback success, user:', req.user);
       // Successful authentication, redirect home
       res.redirect('/dashboard');
     }
   );
+
+  // Add error handling for OAuth failures
+  router.get('/api/auth/google/error', (req, res) => {
+    console.log('OAuth error:', req.session);
+    res.status(401).json({ 
+      message: 'שגיאה באימות Google', 
+      error: req.session?.messages || 'לא ניתן להתחבר עם Google' 
+    });
+  });
 
   // Simple Google OAuth route (without Firebase)
   router.post('/api/auth/google-simple', async (req, res) => {
