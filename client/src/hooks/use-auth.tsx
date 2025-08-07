@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { signInWithGoogle } from "@/lib/google-oauth";
 
 interface User {
   id: string;
@@ -93,10 +92,9 @@ export function useAuth() {
 
   const googleLoginMutation = useMutation({
     mutationFn: async () => {
-      return await signInWithGoogle();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      // Simple redirect to Google OAuth endpoint
+      window.location.href = '/api/auth/google';
+      return Promise.resolve();
     },
   });
 

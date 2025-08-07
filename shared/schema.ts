@@ -35,14 +35,6 @@ export const users = pgTable("users", {
   avatar: text("avatar"),
   isActive: boolean("is_active").default(true).notNull(),
   lastLogin: timestamp("last_login"),
-  googleCalendarTokens: json("google_calendar_tokens").$type<{
-    access_token?: string;
-    refresh_token?: string;
-    scope?: string;
-    token_type?: string;
-    expiry_date?: number;
-  }>(),
-  googleCalendarConnected: boolean("google_calendar_connected").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

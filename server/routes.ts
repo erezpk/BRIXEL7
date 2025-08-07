@@ -179,11 +179,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'משתמש כבר קיים עם אימייל זה' });
       }
 
-      // Create agency
-      const agencySlug = data.agencyName.toLowerCase()
+      // Create unique agency slug
+      const baseSlug = data.agencyName.toLowerCase()
         .replace(/[^a-z0-9\u0590-\u05FF]/g, '-')
         .replace(/-+/g, '-')
-        .replace(/^-+|-+$/g, '');
+        .replace(/^-+|-+$/g, '') || 'agency';
+      
+      // Ensure slug is unique by checking if it exists
+      let agencySlug = baseSlug;
+      let counter = 1;
+      while (await storage.getAgencyBySlug(agencySlug)) {
+        agencySlug = `${baseSlug}-${counter}`;
+        counter++;
+      }
 
       const agency = await storage.createAgency({
         name: data.agencyName,
