@@ -45,6 +45,8 @@ import InvoicesPage from "@/pages/dashboard/financial/invoices";
 import QuoteApprovalPage from "@/pages/quote-approval/[id]";
 import TeamMemberDashboard from "@/pages/team-member-portal/team-member-dashboard";
 import NotFound from "@/pages/not-found";
+import PrivacyPolicy from "@/pages/privacy-policy";
+import TermsOfService from "@/pages/terms-of-service";
 import HelpCenter from "@/pages/help-center";
 import PDFSettingsPage from "@/pages/dashboard/settings/pdf-settings";
 import PDFSettingsMainPage from "@/pages/dashboard/pdf-settings";
@@ -414,6 +416,10 @@ export default function App() {
 
           {/* ADDED HELP CENTER ROUTE */}
           <Route path="/help" component={HelpCenter} />
+          <Route path="/privacy-policy" component={PrivacyPolicy} />
+          <Route path="/terms-of-service" component={TermsOfService} />
+          <Route path="/help-center" component={HelpCenter} />
+          <Route path="/" component={Homepage} />
 
           {/* Public Subscription Landing */}
           <Route path="/subscription" component={SubscriptionLanding} />
