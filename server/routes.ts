@@ -108,15 +108,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('Google Client ID available:', !!process.env.GOOGLE_CLIENT_ID);
   console.log('Google Client Secret available:', !!process.env.GOOGLE_CLIENT_SECRET);
   
-  // Try multiple callback URLs for development
-  const possibleCallbacks = [
-    'https://workspace.replit.app/api/auth/google/callback',
-    'http://localhost:5000/api/auth/google/callback',
-    `https://${process.env.REPL_SLUG || 'workspace'}.replit.app/api/auth/google/callback`
-  ];
-  const callbackURL = possibleCallbacks[0]; // Use the first one as primary
+  // Use the actual Replit domain
+  const publicDomain = process.env.REPLIT_DOMAINS || 'workspace.replit.app';
+  const callbackURL = `https://${publicDomain}/api/auth/google/callback`;
   console.log('Google OAuth Callback URL:', callbackURL);
-  console.log('Alternative callback URLs:', possibleCallbacks.slice(1));
   
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     console.log('Configuring Google OAuth Strategy...');
