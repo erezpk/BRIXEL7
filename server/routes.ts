@@ -3101,7 +3101,8 @@ ${quote.notes || ''}
 
       const userId = state as string;
       await storage.updateUser(userId, {
-        googleCalendarTokens: tokens
+        googleCalendarTokens: tokens,
+        googleCalendarConnected: true
       });
 
       res.redirect('/dashboard/leads?connected=true');
@@ -3114,8 +3115,9 @@ ${quote.notes || ''}
   router.post('/api/calendar/events', requireAuth, async (req, res) => {
     try {
       const user = req.user!;
+      const userData = await storage.getUserById(user.id);
       
-      if (!user.googleCalendarTokens) {
+      if (!userData?.googleCalendarTokens) {
         return res.status(400).json({ message: 'לא מחובר ליומן גוגל' });
       }
 
@@ -3125,7 +3127,7 @@ ${quote.notes || ''}
         `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/api/google/calendar/callback`
       );
 
-      oauth2Client.setCredentials(user.googleCalendarTokens);
+      oauth2Client.setCredentials(userData.googleCalendarTokens);
       const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
       const { title, description, startTime, endTime, contactType, contactId, contactName } = req.body;

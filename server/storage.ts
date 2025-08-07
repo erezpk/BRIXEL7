@@ -2,7 +2,7 @@ import {
   agencies, users, clients, projects, tasks, leads, taskComments, digitalAssets, agencyTemplates, clientCardTemplates, activityLog, passwordResetTokens,
   clientSettings, products, quotes, contracts, invoices, payments,
   paymentSettings, clientPaymentMethods, retainers, retainerTransactions, oneTimePayments,
-  leadCollectionForms, formSubmissions,
+  leadCollectionForms, formSubmissions, calendarEvents, communications,
   type Agency, type InsertAgency,
   type User, type InsertUser,
   type Client, type InsertClient,
@@ -19,6 +19,8 @@ import {
   type OneTimePayment, type InsertOneTimePayment,
   type LeadCollectionForm, type InsertLeadCollectionForm,
   type FormSubmission, type InsertFormSubmission,
+  type CalendarEvent, type InsertCalendarEvent,
+  type Communication, type InsertCommunication,
   type Project, type InsertProject,
   type Task, type InsertTask,
   type Lead, type InsertLead,
@@ -219,6 +221,15 @@ export interface IStorage {
   getOneTimePaymentsByAgency(agencyId: string): Promise<OneTimePayment[]>;
   createOneTimePayment(payment: InsertOneTimePayment): Promise<OneTimePayment>;
   updateOneTimePayment(id: string, payment: Partial<InsertOneTimePayment>): Promise<OneTimePayment>;
+
+  // Calendar Events
+  createCalendarEvent(event: InsertCalendarEvent): Promise<CalendarEvent>;
+  getCalendarEventsByAgency(agencyId: string, filters?: { contactType?: string; contactId?: string }): Promise<CalendarEvent[]>;
+  updateCalendarEvent(id: string, event: Partial<InsertCalendarEvent>): Promise<CalendarEvent>;
+
+  // Communications
+  createCommunication(communication: InsertCommunication): Promise<Communication>;
+  getCommunicationsByAgency(agencyId: string, filters?: { contactType?: string; contactId?: string }): Promise<Communication[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1239,6 +1250,69 @@ export class DatabaseStorage implements IStorage {
       .update(formSubmissions)
       .set({ createdLead: leadId, isProcessed: true })
       .where(eq(formSubmissions.id, submissionId));
+  }
+
+  // Calendar Events Implementation
+  async createCalendarEvent(event: InsertCalendarEvent): Promise<CalendarEvent> {
+    const [newEvent] = await this.db
+      .insert(calendarEvents)
+      .values({ ...event, createdAt: new Date(), updatedAt: new Date() })
+      .returning();
+    return newEvent;
+  }
+
+  async getCalendarEventsByAgency(agencyId: string, filters?: { contactType?: string; contactId?: string }): Promise<CalendarEvent[]> {
+    let conditions = [eq(calendarEvents.agencyId, agencyId)];
+    
+    if (filters?.contactType) {
+      conditions.push(eq(calendarEvents.contactType, filters.contactType));
+    }
+    
+    if (filters?.contactId) {
+      conditions.push(eq(calendarEvents.contactId, filters.contactId));
+    }
+
+    return this.db
+      .select()
+      .from(calendarEvents)
+      .where(and(...conditions))
+      .orderBy(desc(calendarEvents.startTime));
+  }
+
+  async updateCalendarEvent(id: string, event: Partial<InsertCalendarEvent>): Promise<CalendarEvent> {
+    const [updatedEvent] = await this.db
+      .update(calendarEvents)
+      .set({ ...event, updatedAt: new Date() })
+      .where(eq(calendarEvents.id, id))
+      .returning();
+    return updatedEvent;
+  }
+
+  // Communications Implementation
+  async createCommunication(communication: InsertCommunication): Promise<Communication> {
+    const [newCommunication] = await this.db
+      .insert(communications)
+      .values({ ...communication, createdAt: new Date(), updatedAt: new Date() })
+      .returning();
+    return newCommunication;
+  }
+
+  async getCommunicationsByAgency(agencyId: string, filters?: { contactType?: string; contactId?: string }): Promise<Communication[]> {
+    let conditions = [eq(communications.agencyId, agencyId)];
+    
+    if (filters?.contactType) {
+      conditions.push(eq(communications.contactType, filters.contactType));
+    }
+    
+    if (filters?.contactId) {
+      conditions.push(eq(communications.contactId, filters.contactId));
+    }
+
+    return this.db
+      .select()
+      .from(communications)
+      .where(and(...conditions))
+      .orderBy(desc(communications.createdAt));
   }
 }
 

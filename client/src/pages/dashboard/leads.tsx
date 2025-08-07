@@ -297,7 +297,7 @@ export default function Leads() {
                 ליד חדש
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingLead ? "ערוך ליד" : "ליד חדש"}</DialogTitle>
               </DialogHeader>

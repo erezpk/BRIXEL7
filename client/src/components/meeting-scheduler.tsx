@@ -63,7 +63,7 @@ export function MeetingScheduler({ contactType, contactId, contactName, trigger 
 
         return eventResponse;
       } catch (error: any) {
-        if (error.message?.includes('לא מחובר ליומן גוגל')) {
+        if (error.message?.includes('לא מחובר ליומן גוגל') || error.status === 400) {
           // User not connected to Google Calendar, show connection option
           throw new Error('CALENDAR_NOT_CONNECTED');
         }

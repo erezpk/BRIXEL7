@@ -605,49 +605,51 @@ export default function Homepage() {
 
             {/* Contact Form */}
             <Card className="shadow-lg">
-              <CardContent className="p-8">
-                <form className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-2 text-right">
-                      שם מלא
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-right"
-                      placeholder="הזינו את שמכם המלא"
-                    />
+              <CardContent className="p-6">
+                <form className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-1 text-right">
+                        שם מלא
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-right text-sm"
+                        placeholder="שמכם המלא"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-1 text-right">
+                        אימייל
+                      </label>
+                      <input
+                        type="email"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-right text-sm"
+                        placeholder="כתובת אימייל"
+                      />
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-2 text-right">
-                      אימייל
-                    </label>
-                    <input
-                      type="email"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-right"
-                      placeholder="הזינו את כתובת האימייל"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-2 text-right">
+                    <label className="block text-sm font-medium text-gray-900 mb-1 text-right">
                       נושא
                     </label>
                     <input
                       type="text"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-right"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-right text-sm"
                       placeholder="נושא הפנייה"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-2 text-right">
+                    <label className="block text-sm font-medium text-gray-900 mb-1 text-right">
                       הודעה
                     </label>
                     <textarea
-                      rows={4}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-right resize-none"
-                      placeholder="כתבו את הודעתכם כאן..."
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-right resize-none text-sm"
+                      placeholder="הודעתכם..."
                     ></textarea>
                   </div>
-                  <Button className="w-full">שלחו הודעה</Button>
+                  <Button className="w-full" size="sm">שלחו הודעה</Button>
                 </form>
               </CardContent>
             </Card>
@@ -705,11 +707,21 @@ export default function Homepage() {
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold mb-4">תמיכה</h3>
+              <h3 className="font-semibold mb-4">תמיכה ומידע</h3>
               <ul className="space-y-2 text-gray-400">
                 <li>
-                  <Link href="/help" className="hover:text-white transition-colors cursor-pointer text-gray-400">
+                  <Link href="/help-center" className="hover:text-white transition-colors cursor-pointer text-gray-400">
                     מרכז עזרה
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/privacy-policy" className="hover:text-white transition-colors cursor-pointer text-gray-400">
+                    מדיניות פרטיות
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terms-of-service" className="hover:text-white transition-colors cursor-pointer text-gray-400">
+                    תנאי שירות
                   </Link>
                 </li>
               </ul>
