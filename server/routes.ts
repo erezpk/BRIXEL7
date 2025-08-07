@@ -166,12 +166,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return done(null, user);
         } else {
           // New user - create account with minimal info
+          // For Google OAuth users, create a temporary agency
+          const tempAgency = await storage.createAgency({
+            name: `${profile.displayName || email}'s Agency`,
+            slug: `${email.split('@')[0]}-agency-${Date.now()}`,
+            industry: 'technology'
+          });
+          
           const newUser = await storage.createUser({
             email: email,
             password: 'google-oauth-user', // Placeholder for OAuth users
             fullName: profile.displayName || (profile.name?.givenName + ' ' + profile.name?.familyName) || email,
-            role: 'client', // Default role
-            agencyId: null, // Will need to be assigned later
+            role: 'agency_admin', // Make them admin of their own agency
+            agencyId: tempAgency.id,
             isActive: true,
             avatar: profile.photos?.[0]?.value,
             googleCalendarTokens: accessToken ? {
@@ -182,6 +189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             } : undefined,
             googleCalendarConnected: !!accessToken
           });
+          console.log('Created new user via Google OAuth:', newUser.email);
           return done(null, newUser);
         }
       } catch (error) {
@@ -337,14 +345,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   router.get('/api/auth/google/callback', 
-    passport.authenticate('google', { 
-      failureRedirect: '/login',
-      failureMessage: true 
-    }),
-    (req, res) => {
-      console.log('Google OAuth callback success, user:', req.user);
-      // Successful authentication, redirect home
-      res.redirect('/dashboard');
+    (req, res, next) => {
+      passport.authenticate('google', (err: any, user: any, info: any) => {
+        console.log('Google OAuth callback - err:', err, 'user:', user, 'info:', info);
+        
+        if (err) {
+          console.error('OAuth error:', err);
+          return res.redirect('/login?error=oauth_error');
+        }
+        
+        if (!user) {
+          console.log('No user returned from Google OAuth');
+          return res.redirect('/login?error=oauth_no_user');
+        }
+        
+        req.logIn(user, (err) => {
+          if (err) {
+            console.error('Login error:', err);
+            return res.redirect('/login?error=login_failed');
+          }
+          
+          console.log('User successfully logged in via Google:', user.email);
+          res.redirect('/dashboard');
+        });
+      })(req, res, next);
     }
   );
 
@@ -353,7 +377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('OAuth error:', req.session);
     res.status(401).json({ 
       message: 'שגיאה באימות Google', 
-      error: req.session?.messages || 'לא ניתן להתחבר עם Google' 
+      error: (req.session as any)?.messages || 'לא ניתן להתחבר עם Google' 
     });
   });
 
