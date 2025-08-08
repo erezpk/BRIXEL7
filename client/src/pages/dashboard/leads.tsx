@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Plus, Eye, EyeOff, Filter, LayoutGrid, List, UserPlus, Phone, Mail, Calendar, DollarSign, Star, MoreHorizontal, Trash2, Edit, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -215,6 +216,56 @@ export default function Leads() {
       convertMutation.mutate(leadId);
     }
   };
+
+  // Drag and Drop handler
+  const handleDragEnd = (result: any) => {
+    const { destination, source, draggableId } = result;
+
+    // If dropped outside a valid area
+    if (!destination) {
+      return;
+    }
+
+    // If dropped in the same place
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
+
+    // Update lead status
+    const newStatus = destination.droppableId;
+    const leadToUpdate = leads.find((lead: Lead) => lead.id === draggableId);
+    
+    if (leadToUpdate && leadToUpdate.status !== newStatus) {
+      updateLeadMutation.mutate({
+        id: leadToUpdate.id,
+        status: newStatus
+      });
+    }
+  };
+
+  // Update lead mutation for drag and drop
+  const updateLeadMutation = useMutation({
+    mutationFn: async (updatedLead: { id: string; status: string }) => {
+      return apiRequest(`/api/leads/${updatedLead.id}`, 'PUT', { status: updatedLead.status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+      toast({
+        title: "הצלחה",
+        description: "סטטוס הליד עודכן בהצלחה",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "שגיאה",
+        description: "שגיאה בעדכון סטטוס הליד",
+        variant: "destructive",
+      });
+    },
+  });
 
   const filteredLeads = leads.filter((lead: Lead) => {
     return (
@@ -519,25 +570,42 @@ export default function Leads() {
 
       {/* Content */}
       {viewMode === 'kanban' ? (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 min-h-[calc(100vh-350px)] overflow-hidden">
-          {statusOptions.map(status => (
-            <Card key={status.value} className="flex flex-col">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${status.color}`} />
-                    <CardTitle className="text-sm">{status.label}</CardTitle>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 min-h-[calc(100vh-350px)] overflow-hidden">
+            {statusOptions.map(status => (
+              <Card key={status.value} className="flex flex-col">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${status.color}`} />
+                      <CardTitle className="text-sm">{status.label}</CardTitle>
+                    </div>
+                    <Badge variant="secondary">{groupedByStatus[status.value]?.length || 0}</Badge>
                   </div>
-                  <Badge variant="secondary">{groupedByStatus[status.value]?.length || 0}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto space-y-3 max-h-[calc(100vh-450px)]">
-                {groupedByStatus[status.value]?.map((lead: Lead) => (
-                  <Card 
-                    key={lead.id} 
-                    className="p-4 hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-gray-200 hover:border-l-blue-500"
-                    onClick={() => window.location.href = `/dashboard/leads/${lead.id}`}
-                  >
+                </CardHeader>
+                <Droppable droppableId={status.value}>
+                  {(provided, snapshot) => (
+                    <CardContent
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className={cn(
+                        "flex-1 overflow-y-auto space-y-3 max-h-[calc(100vh-450px)]",
+                        snapshot.isDraggingOver && "bg-blue-50 dark:bg-blue-900/20"
+                      )}
+                    >
+                      {groupedByStatus[status.value]?.map((lead: Lead, index: number) => (
+                        <Draggable key={lead.id} draggableId={lead.id} index={index}>
+                          {(provided, snapshot) => (
+                            <Card 
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={cn(
+                                "p-4 hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-gray-200 hover:border-l-blue-500",
+                                snapshot.isDragging && "rotate-2 shadow-xl"
+                              )}
+                              onClick={() => window.location.href = `/dashboard/leads/${lead.id}`}
+                            >
                     <div className="space-y-2">
                       <div className="flex items-start justify-between">
                         <h4 className="font-medium text-sm">{lead.name}</h4>
@@ -611,13 +679,19 @@ export default function Leads() {
                           {getUserName(lead.assignedTo)}
                         </div>
                       )}
-                    </div>
-                  </Card>
-                ))}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                              </div>
+                            </Card>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </CardContent>
+                  )}
+                </Droppable>
+              </Card>
+            ))}
+          </div>
+        </DragDropContext>
       ) : (
         <Card className="mb-8">
           <Table>
