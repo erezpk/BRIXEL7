@@ -10,6 +10,7 @@ import { lazy } from "react";
 import Homepage from "@/pages/homepage";
 import Login from "@/pages/auth/login";
 import Signup from "@/pages/auth/signup";
+import SetupAgency from "./pages/setup-agency";
 import ForgotPassword from "@/pages/auth/forgot-password";
 import ResetPassword from "@/pages/auth/reset-password";
 
@@ -104,6 +105,7 @@ export default function App() {
           <Route path="/" component={Homepage} />
           <Route path="/login" component={Login} />
           <Route path="/signup" component={Signup} />
+          <Route path="/setup-agency" component={SetupAgency} />
           <Route path="/forgot-password" component={ForgotPassword} />
           <Route path="/reset-password" component={ResetPassword} />
 

@@ -151,6 +151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let user = await storage.getUserByEmail(email);
         
         if (user) {
+          console.log('Existing user found for Google OAuth:', user.email);
           // Update Google Calendar tokens if available
           if (accessToken) {
             await storage.updateUser(user.id, {
@@ -163,23 +164,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               googleCalendarConnected: true
             });
           }
-          return done(null, user);
+          return done(null, { ...user, isExistingUser: true });
         } else {
-          // New user - create account with minimal info
-          // For Google OAuth users, create a temporary agency
-          const tempAgency = await storage.createAgency({
-            name: `${profile.displayName || email}'s Agency`,
-            slug: `${email.split('@')[0]}-agency-${Date.now()}`,
-            industry: 'technology'
-          });
-          
-          const newUser = await storage.createUser({
+          console.log('New user detected for Google OAuth:', email);
+          // Mark as new user for agency setup flow
+          return done(null, { 
             email: email,
-            password: 'google-oauth-user', // Placeholder for OAuth users
             fullName: profile.displayName || (profile.name?.givenName + ' ' + profile.name?.familyName) || email,
-            role: 'agency_admin', // Make them admin of their own agency
-            agencyId: tempAgency.id,
-            isActive: true,
             avatar: profile.photos?.[0]?.value,
             googleCalendarTokens: accessToken ? {
               access_token: accessToken,
@@ -187,10 +178,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               token_type: 'Bearer',
               expiry_date: Date.now() + 3600000
             } : undefined,
-            googleCalendarConnected: !!accessToken
+            isNewUser: true,
+            tempGoogleData: {
+              accessToken,
+              refreshToken,
+              profile
+            }
           });
-          console.log('Created new user via Google OAuth:', newUser.email);
-          return done(null, newUser);
         }
       } catch (error) {
         return done(error);
@@ -359,6 +353,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.redirect('/login?error=oauth_no_user');
         }
         
+        // Check if this is a new user needing agency setup
+        if (user.isNewUser) {
+          console.log('New user needs agency setup:', user.email);
+          // Store temp data in session for agency setup
+          req.session.tempGoogleUser = user;
+          return res.redirect('/setup-agency?from=google');
+        }
+        
         req.logIn(user, (err) => {
           if (err) {
             console.error('Login error:', err);
@@ -371,6 +373,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
       })(req, res, next);
     }
   );
+
+  // Setup agency for Google OAuth users
+  router.post('/api/setup-agency', (req, res, next) => {
+    if (!req.session.tempGoogleUser) {
+      return res.status(400).json({ message: 'אין נתוני Google זמניים' });
+    }
+
+    const { agencyName, industry, website, phone } = req.body;
+    
+    if (!agencyName?.trim() || !industry) {
+      return res.status(400).json({ message: 'שם סוכנות ותחום עיסוק נדרשים' });
+    }
+
+    // Create the agency and user
+    const tempUser = req.session.tempGoogleUser;
+    
+    storage.createAgency({
+      name: agencyName.trim(),
+      slug: `${agencyName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+      industry: industry,
+      logo: null,
+      settings: {
+        currency: 'ILS',
+        timezone: 'Asia/Jerusalem',
+        language: 'he'
+      }
+    }).then(agency => {
+      return storage.createUser({
+        email: tempUser.email,
+        password: 'google-oauth-user',
+        fullName: tempUser.fullName,
+        role: 'agency_admin',
+        agencyId: agency.id,
+        isActive: true,
+        avatar: tempUser.avatar,
+        googleCalendarTokens: tempUser.googleCalendarTokens,
+        googleCalendarConnected: !!tempUser.googleCalendarTokens
+      });
+    }).then(user => {
+      // Clear temp data and log in
+      delete req.session.tempGoogleUser;
+      
+      req.logIn(user, (err) => {
+        if (err) {
+          console.error('Login error after agency setup:', err);
+          return res.status(500).json({ message: 'שגיאה בהתחברות' });
+        }
+        
+        res.json({ 
+          message: 'הסוכנות נוצרה בהצלחה',
+          user: {
+            id: user.id,
+            email: user.email,
+            fullName: user.fullName,
+            role: user.role,
+            agencyId: user.agencyId
+          }
+        });
+      });
+    }).catch(error => {
+      console.error('Error creating agency for Google user:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת הסוכנות' });
+    });
+  });
 
   // Add error handling for OAuth failures
   router.get('/api/auth/google/error', (req, res) => {
