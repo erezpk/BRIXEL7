@@ -47,22 +47,37 @@ export function FloatingChatButton() {
   // Fetch conversations
   const { data: conversations = [] } = useQuery<ChatConversation[]>({
     queryKey: ['chat-conversations'],
-    queryFn: () => fetch('/api/chat/conversations').then(res => res.json()),
-    enabled: isOpen
+    queryFn: async () => {
+      const res = await fetch('/api/chat/conversations');
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: isOpen,
+    retry: false
   });
 
   // Fetch messages for selected conversation
   const { data: messages = [] } = useQuery<ChatMessage[]>({
     queryKey: ['chat-messages', selectedConversation],
-    queryFn: () => fetch(`/api/chat/conversations/${selectedConversation}/messages`).then(res => res.json()),
-    enabled: !!selectedConversation
+    queryFn: async () => {
+      const res = await fetch(`/api/chat/conversations/${selectedConversation}/messages`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!selectedConversation,
+    retry: false
   });
 
   // Fetch chat settings
   const { data: settings } = useQuery({
     queryKey: ['chat-settings'],
-    queryFn: () => fetch('/api/chat/settings').then(res => res.json()),
-    enabled: isOpen
+    queryFn: async () => {
+      const res = await fetch('/api/chat/settings');
+      if (!res.ok) return { aiEnabled: false, allowFileSharing: true };
+      return res.json();
+    },
+    enabled: isOpen,
+    retry: false
   });
 
   // Send message mutation
@@ -73,6 +88,7 @@ export function FloatingChatButton() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(messageData)
       });
+      if (!response.ok) throw new Error('Failed to send message');
       return response.json();
     },
     onSuccess: (newMessage) => {
@@ -141,7 +157,7 @@ export function FloatingChatButton() {
     createConversationMutation.mutate('שיחה חדשה');
   };
 
-  const totalUnreadMessages = conversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
+  const totalUnreadMessages = Array.isArray(conversations) ? conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0) : 0;
 
   return (
     <>
@@ -163,7 +179,7 @@ export function FloatingChatButton() {
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-24 left-6 z-40 w-96 h-[500px]">
+        <div className="fixed bottom-24 left-6 z-40 w-80 h-96">
           <Card className="w-full h-full shadow-xl">
             <CardHeader className="p-4 border-b">
               <div className="flex items-center justify-between">
@@ -213,8 +229,8 @@ export function FloatingChatButton() {
                         שיחה חדשה
                       </Button>
                     </div>
-                    <ScrollArea className="h-[300px]">
-                      {conversations.map((conv) => (
+                    <ScrollArea className="h-48">
+                      {Array.isArray(conversations) && conversations.map((conv) => (
                         <div
                           key={conv.id}
                           className={`p-3 cursor-pointer hover:bg-gray-100 border-b ${
@@ -244,7 +260,7 @@ export function FloatingChatButton() {
                       <>
                         <ScrollArea className="flex-1 p-3">
                           <div className="space-y-3">
-                            {messages.map((message) => (
+                            {Array.isArray(messages) && messages.map((message) => (
                               <div
                                 key={message.id}
                                 className={`flex ${message.messageType === 'user' ? 'justify-end' : 'justify-start'}`}
