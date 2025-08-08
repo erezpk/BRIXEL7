@@ -26,6 +26,7 @@ import {
   type ChatMessage, type InsertChatMessage,
   type ChatSettings, type InsertChatSettings,
   type ChatAuditLog, type InsertChatAuditLog,
+  type UpsertUser,
   type Project, type InsertProject,
   type Task, type InsertTask,
   type Lead, type InsertLead,
@@ -58,6 +59,8 @@ export interface IStorage {
   getUserById(id: string): Promise<User | undefined>;
   getUsersByAgency(agencyId: string): Promise<User[]>;
   updateUser(id: string, user: Partial<InsertUser>): Promise<User>;
+  // (IMPORTANT) these user operations are mandatory for Replit Auth.
+  upsertUser(user: UpsertUser): Promise<User>;
 
   // Clients
   getClient(id: string): Promise<Client | undefined>;
@@ -355,6 +358,22 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ ...updateUser, updatedAt: new Date() })
       .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  // (IMPORTANT) these user operations are mandatory for Replit Auth.
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await this.db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
       .returning();
     return user;
   }

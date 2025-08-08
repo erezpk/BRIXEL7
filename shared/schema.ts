@@ -1,7 +1,19 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, uuid, timestamp, integer, boolean, json, date, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, uuid, timestamp, integer, boolean, json, date, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// Session storage table.
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
 
 // Agencies (multi-tenant support)
 export const agencies = pgTable("agencies", {
@@ -21,13 +33,17 @@ export const agencies = pgTable("agencies", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Users
+// User storage table.
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  fullName: text("full_name").notNull(),
-  role: text("role").notNull(), // super_admin, agency_admin, team_member, client
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  password: text("password"),
+  fullName: text("full_name"),
+  role: text("role").notNull().default("agency_admin"), // super_admin, agency_admin, team_member, client
   agencyId: uuid("agency_id").references(() => agencies.id),
   phone: text("phone"),
   company: text("company"),
@@ -1244,6 +1260,7 @@ export type InsertAgency = z.infer<typeof insertAgencySchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = typeof users.$inferInsert;
 
 export type Client = typeof clients.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
