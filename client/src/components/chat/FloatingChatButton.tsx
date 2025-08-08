@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { MessageCircle, X, Send, Settings, Bot } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MessageCircle, X, Send, Settings, Bot, User, HelpCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -33,7 +33,24 @@ export function FloatingChatButton() {
   const [activeTab, setActiveTab] = useState<'chat' | 'settings'>('chat');
   const [newMessage, setNewMessage] = useState('');
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [guestMode, setGuestMode] = useState(false);
+  const [guestInfo, setGuestInfo] = useState({ name: '', email: '' });
+  const [showGuestForm, setShowGuestForm] = useState(false);
+  const [, forceUpdate] = useState({});
   const queryClient = useQueryClient();
+
+  // Listen for guest message updates
+  useEffect(() => {
+    const handleGuestUpdate = () => forceUpdate({});
+    window.addEventListener('guest-message-update', handleGuestUpdate);
+    return () => window.removeEventListener('guest-message-update', handleGuestUpdate);
+  }, []);
+
+  // Check if user is authenticated
+  const { data: user } = useQuery({
+    queryKey: ['/api/auth/me'],
+    retry: false
+  });
 
   // WebSocket hook for real-time messaging
   const { sendMessage, isConnected } = useChatWebSocket({
@@ -44,7 +61,7 @@ export function FloatingChatButton() {
     }
   });
 
-  // Fetch conversations
+  // Fetch conversations (only for authenticated users)
   const { data: conversations = [] } = useQuery<ChatConversation[]>({
     queryKey: ['chat-conversations'],
     queryFn: async () => {
@@ -52,7 +69,7 @@ export function FloatingChatButton() {
       if (!res.ok) return [];
       return res.json();
     },
-    enabled: isOpen,
+    enabled: isOpen && !!user,
     retry: false
   });
 
@@ -68,7 +85,7 @@ export function FloatingChatButton() {
     retry: false
   });
 
-  // Fetch chat settings
+  // Fetch chat settings (only for authenticated users)
   const { data: settings } = useQuery({
     queryKey: ['chat-settings'],
     queryFn: async () => {
@@ -76,7 +93,7 @@ export function FloatingChatButton() {
       if (!res.ok) return { aiEnabled: false, allowFileSharing: true };
       return res.json();
     },
-    enabled: isOpen,
+    enabled: isOpen && !!user,
     retry: false
   });
 
@@ -131,7 +148,50 @@ export function FloatingChatButton() {
   });
 
   const handleSendMessage = () => {
-    if (!newMessage.trim() || !selectedConversation) return;
+    if (!newMessage.trim()) return;
+
+    if (guestMode && selectedConversation === 'guest-support') {
+      // Handle guest messaging
+      const guestMessage = {
+        id: 'guest-' + Date.now(),
+        content: newMessage.trim(),
+        senderId: 'guest',
+        senderName: guestInfo.name,
+        messageType: 'text' as const,
+        createdAt: new Date().toISOString(),
+        isRead: true
+      };
+
+      // Get existing messages and add new one
+      const existingMessages = JSON.parse(localStorage.getItem('guest-chat-messages') || '[]');
+      const updatedMessages = [...existingMessages, guestMessage];
+      localStorage.setItem('guest-chat-messages', JSON.stringify(updatedMessages));
+
+      // Auto-reply after a short delay (simulating support response)
+      setTimeout(() => {
+        const autoReply = {
+          id: 'support-' + Date.now(),
+          content: 'תודה על ההודעה שלך! צוות התמיכה יחזור אליך בהקדם האפשרי.',
+          senderId: 'system',
+          senderName: 'תמיכה',
+          messageType: 'system' as const,
+          createdAt: new Date().toISOString(),
+          isRead: true
+        };
+        
+        const currentMessages = JSON.parse(localStorage.getItem('guest-chat-messages') || '[]');
+        const withReply = [...currentMessages, autoReply];
+        localStorage.setItem('guest-chat-messages', JSON.stringify(withReply));
+        
+        // Force re-render by triggering component update
+        window.dispatchEvent(new Event('guest-message-update'));
+      }, 1500);
+      
+      setNewMessage('');
+      return;
+    }
+
+    if (!selectedConversation) return;
 
     sendMessageMutation.mutate({
       conversationId: selectedConversation,
@@ -154,7 +214,35 @@ export function FloatingChatButton() {
   };
 
   const startNewConversation = () => {
-    createConversationMutation.mutate('שיחה חדשה');
+    if (user) {
+      createConversationMutation.mutate('שיחה חדשה');
+    } else {
+      setShowGuestForm(true);
+    }
+  };
+
+  const startGuestChat = () => {
+    if (!guestInfo.name.trim()) return;
+    
+    setGuestMode(true);
+    setShowGuestForm(false);
+    setSelectedConversation('guest-support');
+    
+    // Add welcome message
+    const welcomeMessage = {
+      id: 'welcome-' + Date.now(),
+      content: `שלום ${guestInfo.name}! איך אוכל לעזור לך היום?`,
+      senderId: 'system',
+      senderName: 'תמיכה',
+      messageType: 'system' as const,
+      createdAt: new Date().toISOString(),
+      isRead: true
+    };
+    
+    // Store in localStorage for guest sessions
+    const guestMessages = [welcomeMessage];
+    localStorage.setItem('guest-chat-messages', JSON.stringify(guestMessages));
+    localStorage.setItem('guest-info', JSON.stringify(guestInfo));
   };
 
   const totalUnreadMessages = Array.isArray(conversations) ? conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0) : 0;
@@ -168,7 +256,7 @@ export function FloatingChatButton() {
           className="rounded-full w-14 h-14 shadow-lg bg-blue-600 hover:bg-blue-700 text-white"
           size="icon"
         >
-          {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
+          {isOpen ? <X className="h-6 w-6" /> : <HelpCircle className="h-6 w-6" />}
           {totalUnreadMessages > 0 && (
             <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs min-w-[1.25rem] h-5 flex items-center justify-center">
               {totalUnreadMessages > 99 ? '99+' : totalUnreadMessages}
@@ -183,40 +271,169 @@ export function FloatingChatButton() {
           <Card className="w-full h-full shadow-xl">
             <CardHeader className="p-4 border-b">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-right">צ'אט צוות</h3>
+                <h3 className="font-semibold text-right">
+                  {!user ? 'תמיכה' : (user.role === 'agency_admin' ? 'צ\'אט חכם' : 'צ\'אט תמיכה')}
+                </h3>
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setActiveTab(activeTab === 'chat' ? 'settings' : 'chat')}
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
+                  <div className={`w-2 h-2 rounded-full ${!user || isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                  {user && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setActiveTab(activeTab === 'chat' ? 'settings' : 'chat')}
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
 
-              {/* Tab Navigation */}
-              <div className="flex gap-2 mt-2">
-                <Button
-                  variant={activeTab === 'chat' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setActiveTab('chat')}
-                >
-                  שיחות
-                </Button>
-                <Button
-                  variant={activeTab === 'settings' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setActiveTab('settings')}
-                >
-                  הגדרות
-                </Button>
-              </div>
+              {/* Tab Navigation - Only for authenticated users */}
+              {user && (
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant={activeTab === 'chat' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setActiveTab('chat')}
+                  >
+                    שיחות
+                  </Button>
+                  {user.role === 'agency_admin' && (
+                    <Button
+                      variant={activeTab === 'settings' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setActiveTab('settings')}
+                    >
+                      הגדרות ובוט
+                    </Button>
+                  )}
+                </div>
+              )}
             </CardHeader>
 
             <CardContent className="p-0 h-full">
-              {activeTab === 'chat' ? (
+              {!user ? (
+                // Guest Support Chat Interface
+                <div className="flex flex-col h-full">
+                  {showGuestForm ? (
+                    // Guest Information Form
+                    <div className="p-4 space-y-4">
+                      <div className="text-center">
+                        <h4 className="font-medium mb-2">התחל שיחה עם התמיכה</h4>
+                        <p className="text-sm text-gray-600 mb-4">
+                          אנא הזן את הפרטים שלך כדי שנוכל לעזור לך
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <Input
+                          placeholder="השם שלך"
+                          value={guestInfo.name}
+                          onChange={(e) => setGuestInfo(prev => ({ ...prev, name: e.target.value }))}
+                          className="text-right"
+                        />
+                        <Input
+                          type="email"
+                          placeholder="כתובת מייל (אופציונלי)"
+                          value={guestInfo.email}
+                          onChange={(e) => setGuestInfo(prev => ({ ...prev, email: e.target.value }))}
+                          className="text-right"
+                        />
+                        
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={startGuestChat}
+                            disabled={!guestInfo.name.trim()}
+                            className="flex-1"
+                          >
+                            התחל שיחה
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowGuestForm(false)}
+                            className="flex-1"
+                          >
+                            ביטול
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    // Guest Chat Messages Area
+                    <>
+                      <ScrollArea className="flex-1 p-4">
+                        {guestMode ? (
+                          <div className="space-y-3">
+                            {/* Render guest messages from localStorage */}
+                            {JSON.parse(localStorage.getItem('guest-chat-messages') || '[]').map((message: any) => (
+                              <div key={message.id} className={`flex items-start gap-2 ${
+                                message.senderId === 'guest' ? 'flex-row-reverse' : ''
+                              }`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                  message.senderId === 'guest' 
+                                    ? 'bg-gray-500' 
+                                    : 'bg-blue-500'
+                                }`}>
+                                  {message.senderId === 'guest' ? (
+                                    <User className="h-4 w-4 text-white" />
+                                  ) : (
+                                    <HelpCircle className="h-4 w-4 text-white" />
+                                  )}
+                                </div>
+                                <div className={`rounded-lg p-3 max-w-[80%] ${
+                                  message.senderId === 'guest' 
+                                    ? 'bg-gray-100 text-right' 
+                                    : 'bg-blue-50'
+                                }`}>
+                                  <p className="text-sm">{message.content}</p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {new Date(message.createdAt).toLocaleTimeString('he-IL', {
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center space-y-4 mt-8">
+                            <div className="w-16 h-16 mx-auto bg-blue-100 rounded-full flex items-center justify-center">
+                              <HelpCircle className="h-8 w-8 text-blue-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium mb-2">זקוק לעזרה?</h4>
+                              <p className="text-sm text-gray-600 mb-4">
+                                צוות התמיכה שלנו כאן לעזור לך
+                              </p>
+                              <Button onClick={() => setShowGuestForm(true)}>
+                                התחל שיחה
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </ScrollArea>
+                      
+                      {guestMode && (
+                        <div className="p-3 border-t">
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="הקלד את ההודעה שלך..."
+                              value={newMessage}
+                              onChange={(e) => setNewMessage(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                              className="text-right flex-1"
+                            />
+                            <Button size="sm" onClick={handleSendMessage} disabled={!newMessage.trim()}>
+                              <Send className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              ) : user && activeTab === 'chat' ? (
                 <div className="flex h-full">
                   {/* Conversations List */}
                   <div className="w-1/3 border-r bg-gray-50">
