@@ -189,14 +189,14 @@ export default function Settings() {
     mutationFn: async (accountId: string) => {
       const account = adAccounts.find(a => a.id === accountId);
       if (!account) throw new Error('Account not found');
-      
+
       const endpoint = account.platform === 'facebook' ? '/api/ads/facebook/sync' : '/api/ads/google/sync';
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accessToken: 'mock-token' })
       });
-      
+
       if (!response.ok) throw new Error('Sync failed');
       return response.json();
     },
@@ -340,7 +340,7 @@ export default function Settings() {
                             body: JSON.stringify({ logoURL: uploadURL }),
                             credentials: 'include'
                           });
-                          
+
                           if (response.ok) {
                             setAgencyLogo(uploadURL || null);
                             toast({
@@ -441,235 +441,297 @@ export default function Settings() {
           {updateSettingsMutation.isPending ? "שומר..." : "שמור הגדרות"}
         </Button>
       </div>
-    </div>
-  );
-}
-                          <Label htmlFor="app-id">App ID</Label>
-                          <Input
-                            id="app-id"
-                            value={facebookForm.appId}
-                            onChange={(e) => setFacebookForm(prev => ({ ...prev, appId: e.target.value }))}
-                            placeholder="הזן App ID"
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="app-secret">App Secret</Label>
-                          <Input
-                            id="app-secret"
-                            type="password"
-                            value={facebookForm.appSecret}
-                            onChange={(e) => setFacebookForm(prev => ({ ...prev, appSecret: e.target.value }))}
-                            placeholder="הזן App Secret"
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="access-token">Access Token</Label>
-                          <Input
-                            id="access-token"
-                            value={facebookForm.accessToken}
-                            onChange={(e) => setFacebookForm(prev => ({ ...prev, accessToken: e.target.value }))}
-                            placeholder="הזן Access Token"
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button 
-                          onClick={() => connectFacebookMutation.mutate(facebookForm)} 
-                          disabled={connectFacebookMutation.isPending || !facebookForm.appId || !facebookForm.accessToken}
-                        >
-                          {connectFacebookMutation.isPending ? "מחבר..." : "חבר חשבון"}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
 
-                  <Dialog open={isGoogleDialogOpen} onOpenChange={setIsGoogleDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Chrome className="h-4 w-4 me-2" />
-                        חבר גוגל אדס
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>חיבור גוגל אדס</DialogTitle>
-                        <DialogDescription>
-                          הזן את פרטי חשבון הגוגל אדס שלך
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                          <Label htmlFor="client-id">Client ID</Label>
-                          <Input
-                            id="client-id"
-                            value={googleForm.clientId}
-                            onChange={(e) => setGoogleForm(prev => ({ ...prev, clientId: e.target.value }))}
-                            placeholder="הזן Client ID"
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="client-secret">Client Secret</Label>
-                          <Input
-                            id="client-secret"
-                            type="password"
-                            value={googleForm.clientSecret}
-                            onChange={(e) => setGoogleForm(prev => ({ ...prev, clientSecret: e.target.value }))}
-                            placeholder="הזן Client Secret"
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="customer-id">Customer ID</Label>
-                          <Input
-                            id="customer-id"
-                            value={googleForm.customerId}
-                            onChange={(e) => setGoogleForm(prev => ({ ...prev, customerId: e.target.value }))}
-                            placeholder="הזן Customer ID (123-456-7890)"
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="refresh-token">Refresh Token</Label>
-                          <Input
-                            id="refresh-token"
-                            value={googleForm.refreshToken}
-                            onChange={(e) => setGoogleForm(prev => ({ ...prev, refreshToken: e.target.value }))}
-                            placeholder="הזן Refresh Token"
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button 
-                          onClick={() => connectGoogleMutation.mutate(googleForm)} 
-                          disabled={connectGoogleMutation.isPending || !googleForm.clientId || !googleForm.customerId}
-                        >
-                          {connectGoogleMutation.isPending ? "מחבר..." : "חבר חשבון"}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Facebook className="h-5 w-5 text-blue-600" />
+            חיבורי פלטפורמות פרסום
+          </CardTitle>
+          <CardDescription>
+            חבר את חשבונות הפייסבוק אדס וגוגל אדס שלך כדי לסנכרן לידים
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex justify-end mb-4">
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => window.location.href = '/api/ads/facebook/oauth'}
+                className="bg-blue-50 hover:bg-blue-100 border-blue-200"
+              >
+                <Facebook className="h-4 w-4 me-2" />
+                חיבור מהיר עם פייסבוק
+              </Button>
 
-              <div className="space-y-4">
-                {adAccounts.map((account) => (
-                  <Card key={account.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {account.platform === 'facebook' ? (
-                            <Facebook className="h-8 w-8 text-blue-600" />
-                          ) : (
-                            <Chrome className="h-8 w-8 text-blue-500" />
-                          )}
-                          <div>
-                            <h4 className="font-medium">{account.name}</h4>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              {getStatusBadge(account.status)}
-                              {account.lastSync && (
-                                <span>
-                                  סונכרן לאחרונה: {new Date(account.lastSync).toLocaleDateString('he-IL')}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {account.leadCount !== undefined && (
-                            <Badge variant="outline">
-                              {account.leadCount} לידים
-                            </Badge>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => syncAccountMutation.mutate(account.id)}
-                            disabled={syncAccountMutation.isPending}
-                          >
-                            {syncAccountMutation.isPending ? (
-                              <RefreshCw className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <RefreshCw className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => disconnectAccount(account.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-
-                {adAccounts.length === 0 && (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">עדיין לא חיברת חשבונות פרסום</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      חבר את חשבונות הפייסבוק אדס ו/או גוגל אדס שלך כדי להתחיל לסנכרן לידים
-                    </p>
+              <Dialog open={isFacebookDialogOpen} onOpenChange={setIsFacebookDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    חיבור ידני
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>חיבור פייסבוק אדס (ידני)</DialogTitle>
+                    <DialogDescription>
+                      הזן את פרטי החיבור של הפייסבוק אדס שלך
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="app-id">App ID</Label>
+                      <Input
+                        id="app-id"
+                        value={facebookForm.appId}
+                        onChange={(e) => setFacebookForm(prev => ({ ...prev, appId: e.target.value }))}
+                        placeholder="הזן App ID"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="app-secret">App Secret</Label>
+                      <Input
+                        id="app-secret"
+                        type="password"
+                        value={facebookForm.appSecret}
+                        onChange={(e) => setFacebookForm(prev => ({ ...prev, appSecret: e.target.value }))}
+                        placeholder="הזן App Secret"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="access-token">Access Token</Label>
+                      <Input
+                        id="access-token"
+                        value={facebookForm.accessToken}
+                        onChange={(e) => setFacebookForm(prev => ({ ...prev, accessToken: e.target.value }))}
+                        placeholder="הזן Access Token"
+                      />
+                    </div>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  <DialogFooter>
+                    <Button 
+                      onClick={() => connectFacebookMutation.mutate(facebookForm)} 
+                      disabled={connectFacebookMutation.isPending || !facebookForm.appId || !facebookForm.accessToken}
+                    >
+                      {connectFacebookMutation.isPending ? "מחבר..." : "חבר חשבון"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
-        <TabsContent value="email" className="space-y-6">
+              <Dialog open={isGoogleDialogOpen} onOpenChange={setIsGoogleDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Chrome className="h-4 w-4 me-2" />
+                    חבר גוגל אדס
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>חיבור גוגל אדס</DialogTitle>
+                    <DialogDescription>
+                      הזן את פרטי חשבון הגוגל אדס שלך
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="client-id">Client ID</Label>
+                      <Input
+                        id="client-id"
+                        value={googleForm.clientId}
+                        onChange={(e) => setGoogleForm(prev => ({ ...prev, clientId: e.target.value }))}
+                        placeholder="הזן Client ID"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="client-secret">Client Secret</Label>
+                      <Input
+                        id="client-secret"
+                        type="password"
+                        value={googleForm.clientSecret}
+                        onChange={(e) => setGoogleForm(prev => ({ ...prev, clientSecret: e.target.value }))}
+                        placeholder="הזן Client Secret"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="customer-id">Customer ID</Label>
+                      <Input
+                        id="customer-id"
+                        value={googleForm.customerId}
+                        onChange={(e) => setGoogleForm(prev => ({ ...prev, customerId: e.target.value }))}
+                        placeholder="הזן Customer ID (123-456-7890)"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="refresh-token">Refresh Token</Label>
+                      <Input
+                        id="refresh-token"
+                        value={googleForm.refreshToken}
+                        onChange={(e) => setGoogleForm(prev => ({ ...prev, refreshToken: e.target.value }))}
+                        placeholder="הזן Refresh Token"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button 
+                      onClick={() => connectGoogleMutation.mutate(googleForm)} 
+                      disabled={connectGoogleMutation.isPending || !googleForm.clientId || !googleForm.customerId}
+                    >
+                      {connectGoogleMutation.isPending ? "מחבר..." : "חבר חשבון"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {adAccounts.map((account) => (
+              <Card key={account.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {account.platform === 'facebook' ? (
+                        <Facebook className="h-8 w-8 text-blue-600" />
+                      ) : (
+                        <Chrome className="h-8 w-8 text-blue-500" />
+                      )}
+                      <div>
+                        <h4 className="font-medium">{account.name}</h4>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          {getStatusBadge(account.status)}
+                          {account.lastSync && (
+                            <span>
+                              סונכרן לאחרונה: {new Date(account.lastSync).toLocaleDateString('he-IL')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {account.leadCount !== undefined && (
+                        <Badge variant="outline">
+                          {account.leadCount} לידים
+                        </Badge>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => syncAccountMutation.mutate(account.id)}
+                        disabled={syncAccountMutation.isPending}
+                      >
+                        {syncAccountMutation.isPending ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => disconnectAccount(account.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+
+            {adAccounts.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">עדיין לא חיברת חשבונות פרסום</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  חבר את חשבונות הפייסבוק אדס ו/או גוגל אדס שלך כדי להתחיל לסנכרן לידים
+                </p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Tabs defaultValue="email" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="team">ניהול צוות</TabsTrigger>
+          <TabsTrigger value="notifications">התראות</TabsTrigger>
+          <TabsTrigger value="email">אימייל</TabsTrigger>
+          <TabsTrigger value="leads">לידים</TabsTrigger>
+          <TabsTrigger value="account">חשבון</TabsTrigger>
+        </TabsList>
+        <TabsContent value="team" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
-                הגדרות אימייל
+                <Building className="h-5 w-5" />
+                הגדרות סוכנות
               </CardTitle>
               <CardDescription>
-                נהל את שירות האימייל ובדוק את החיבור למערכת
+                עדכן פרטי הסוכנות ולוגו שיופיע בהצעות מחיר
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Mail className="h-8 w-8 text-primary" />
-                  <div>
-                    <h3 className="font-medium">שירות אימייל</h3>
-                    <p className="text-sm text-muted-foreground">
-                      בדוק והגדר את שירות האימייל למערכת
-                    </p>
-                  </div>
-                </div>
-                <Button 
-                  variant="outline"
-                  onClick={() => setLocation('/dashboard/settings/email')}
-                  className="flex items-center gap-2"
-                >
-                  <SettingsIcon className="h-4 w-4" />
-                  הגדרות מתקדמות
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-              </div>
+              <div className="space-y-4">
+                <div>
+                  <Label>לוגו סוכנות</Label>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    העלה לוגו שיופיע בהצעות מחיר ובמסמכים הרשמיים
+                  </p>
+                  {agencyLogo && (
+                    <div className="mb-4">
+                      <img 
+                        src={agencyLogo} 
+                        alt="לוגו סוכנות" 
+                        className="max-w-48 max-h-24 object-contain border rounded-lg p-2"
+                      />
+                    </div>
+                  )}
+                  <ObjectUploader
+                    maxNumberOfFiles={1}
+                    maxFileSize={5 * 1024 * 1024} // 5MB
+                    onGetUploadParameters={async () => {
+                      const response = await fetch('/api/agencies/current/upload-logo', {
+                        method: 'POST',
+                        credentials: 'include'
+                      });
+                      if (!response.ok) throw new Error('Failed to get upload URL');
+                      const data = await response.json();
+                      return {
+                        method: 'PUT' as const,
+                        url: data.uploadURL,
+                      };
+                    }}
+                    onComplete={async (result) => {
+                      if (result.successful && result.successful[0]) {
+                        const uploadURL = result.successful[0].uploadURL;
+                        try {
+                          const response = await fetch('/api/agencies/current/logo', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ logoURL: uploadURL }),
+                            credentials: 'include'
+                          });
 
-
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-2">תבניות זמינות</h4>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>• אימייל ברוכים הבאים</p>
-                    <p>• הודעות על לידים חדשים</p>
-                    <p>• עדכוני פרויקטים</p>
-                    <p>• איפוס סיסמה</p>
-                  </div>
-                </div>
-
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-2">אפשרויות תמיכה</h4>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>• Gmail SMTP</p>
-                    <p>• SMTP כללי</p>
-                    <p>• בדיקת חיבור</p>
-                    <p>• שליחת אימיילי בדיקה</p>
-                  </div>
+                          if (response.ok) {
+                            setAgencyLogo(uploadURL || null);
+                            toast({
+                              title: "לוגו הועלה בהצלחה",
+                              description: "הלוגו יופיע בהצעות מחיר החדשות"
+                            });
+                          }
+                        } catch (error) {
+                          toast({
+                            title: "שגיאה בשמירת לוגו",
+                            description: "נסה שוב מאוחר יותר",
+                            variant: "destructive"
+                          });
+                        }
+                      }
+                    }}
+                  >
+                    <Upload className="h-4 w-4 me-2" />
+                    העלה לוגו
+                  </ObjectUploader>
                 </div>
               </div>
             </CardContent>
@@ -735,6 +797,66 @@ export default function Settings() {
                       }))
                     }
                   />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="email" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                הגדרות אימייל
+              </CardTitle>
+              <CardDescription>
+                נהל את שירות האימייל ובדוק את החיבור למערכת
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Mail className="h-8 w-8 text-primary" />
+                  <div>
+                    <h3 className="font-medium">שירות אימייל</h3>
+                    <p className="text-sm text-muted-foreground">
+                      בדוק והגדר את שירות האימייל למערכת
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  variant="outline"
+                  onClick={() => setLocation('/dashboard/settings/email')}
+                  className="flex items-center gap-2"
+                >
+                  <SettingsIcon className="h-4 w-4" />
+                  הגדרות מתקדמות
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </div>
+
+
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium mb-2">תבניות זמינות</h4>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>• אימייל ברוכים הבאים</p>
+                    <p>• הודעות על לידים חדשים</p>
+                    <p>• עדכוני פרויקטים</p>
+                    <p>• איפוס סיסמה</p>
+                  </div>
+                </div>
+
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium mb-2">אפשרויות תמיכה</h4>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>• Gmail SMTP</p>
+                    <p>• SMTP כללי</p>
+                    <p>• בדיקת חיבור</p>
+                    <p>• שליחת אימיילי בדיקה</p>
+                  </div>
                 </div>
               </div>
             </CardContent>
