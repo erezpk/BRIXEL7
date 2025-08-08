@@ -13,6 +13,8 @@ import { ObjectPermission } from './objectAcl';
 import { generateQuotePDF } from './pdf-generator';
 import { google } from 'googleapis';
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import subscriptionsRouter from "./routes/subscriptions";
+import facebookAdsRouter from "./routes/facebook-ads";
 
 // Placeholder for generateId function
 function generateId(): string {
@@ -170,11 +172,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Mount the router to the app
   app.use('/', router);
+  app.use("/api/subscriptions", subscriptionsRouter);
+  app.use("/api/ads/facebook", facebookAdsRouter);
 
   const httpServer = createServer(app);
-  
+
   // Setup WebSocket server
   setupWebSocketServer(httpServer, storage);
-  
+
   return httpServer;
 }
