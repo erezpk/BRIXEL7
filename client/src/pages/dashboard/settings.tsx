@@ -7,12 +7,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Bell, Building, Users } from "lucide-react";
+import { Bell, Building, Users, Facebook, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { rtlClass } from "@/lib/rtl";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
+
+// Mock data and types for demonstration
+// In a real application, these would be fetched from your API
+const mockAdAccounts = [
+  { id: '1', platform: 'facebook', status: 'connected', name: 'My Facebook Ad Account' },
+  { id: '2', platform: 'google', status: 'not_connected', name: 'My Google Ads Account' },
+];
 
 export default function Settings() {
   const [, setLocation] = useLocation();
@@ -31,6 +38,36 @@ export default function Settings() {
   // Fetch team members
   const { data: teamMembers = [], isLoading: isLoadingTeam } = useQuery({
     queryKey: ['/api/team'],
+  });
+
+  // Fetch connected ad accounts (mocked)
+  const { data: adAccounts = mockAdAccounts, isLoading: isLoadingAdAccounts } = useQuery({
+    queryKey: ['/api/ads/accounts'],
+    initialData: mockAdAccounts, // Use mocked data initially
+  });
+
+  // Mutation to connect Facebook account
+  const connectFacebookMutation = useMutation({
+    mutationFn: async () => {
+      // This function would typically initiate the OAuth flow on the server
+      // For this example, we'll simulate it by redirecting the client
+      return await apiRequest("/api/ads/facebook/oauth", "GET");
+    },
+    onSuccess: (data) => {
+      // Handle success, e.g., refresh ad accounts or show a success message
+      toast({
+        title: "Facebook Connected",
+        description: "Your Facebook Ads account has been successfully connected.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/ads/accounts'] }); // Refresh ad accounts
+    },
+    onError: (error) => {
+      toast({
+        title: "Facebook Connection Failed",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const updateSettingsMutation = useMutation({
@@ -61,7 +98,7 @@ export default function Settings() {
             נהל את הגדרות הצוות והתראות שלך
           </p>
         </div>
-        <Button 
+        <Button
           onClick={() => setLocation('/dashboard/agency-templates')}
           className="flex items-center gap-2"
         >
@@ -75,6 +112,7 @@ export default function Settings() {
           <TabsTrigger value="team">ניהול צוות</TabsTrigger>
           <TabsTrigger value="agency">הגדרות סוכנות</TabsTrigger>
           <TabsTrigger value="notifications">התראות</TabsTrigger>
+          <TabsTrigger value="integrations">אינטגרציות</TabsTrigger>
         </TabsList>
 
         <TabsContent value="team" className="space-y-6">
@@ -146,7 +184,7 @@ export default function Settings() {
                 <p className="text-muted-foreground mb-4">
                   עדכן פרטי סוכנות, העלה לוגו, ערוך טמפלטים להצעות מחיר ועוד
                 </p>
-                <Button 
+                <Button
                   onClick={() => setLocation('/dashboard/agency-templates')}
                   className="flex items-center gap-2"
                 >
@@ -222,11 +260,90 @@ export default function Settings() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* New Integrations Tab */}
+        <TabsContent value="integrations" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <img src="/icons/integration.svg" alt="Integration Icon" className="h-5 w-5" />
+                אינטגרציות
+              </CardTitle>
+              <CardDescription>
+                חבר את השירותים החיצוניים שלך לסנכרון נתונים
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Facebook Ads Integration */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Facebook className="h-5 w-5 text-blue-600" />
+                    פייסבוק אדס
+                  </CardTitle>
+                  <CardDescription>
+                    חבר את חשבון הפייסבוק אדס שלך כדי לסנכרן קמפיינים ולידים אוטומטית
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium">סטטוס חיבור</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {adAccounts.some(acc => acc.platform === 'facebook' && acc.status === 'connected')
+                          ? 'מחובר' : 'לא מחובר'}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        // Redirect to Facebook OAuth
+                        window.location.href = '/api/ads/facebook/oauth';
+                      }}
+                      disabled={connectFacebookMutation.isPending}
+                    >
+                      <Facebook className="w-4 h-4 mr-2" />
+                      {connectFacebookMutation.isPending ? 'מתחבר...' : 'חבר חשבון פייסבוק'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Add other integrations here */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <img src="/icons/google-ads.svg" alt="Google Ads Icon" className="h-5 w-5" />
+                    גוגל אדס
+                  </CardTitle>
+                  <CardDescription>
+                    חבר את חשבון הגוגל אדס שלך לסנכרון אוטומטי
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium">סטטוס חיבור</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {adAccounts.some(acc => acc.platform === 'google' && acc.status === 'connected')
+                          ? 'מחובר' : 'לא מחובר'}
+                      </p>
+                    </div>
+                    <Button className="flex items-center gap-2">
+                      <img src="/icons/google-ads.svg" alt="Google Ads Icon" className="w-4 h-4" />
+                      חבר חשבון גוגל אדס
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
       </Tabs>
 
       <div className="flex justify-end">
-        <Button 
-          onClick={() => updateSettingsMutation.mutate(settings)} 
+        <Button
+          onClick={() => updateSettingsMutation.mutate(settings)}
           disabled={updateSettingsMutation.isPending}
         >
           {updateSettingsMutation.isPending ? "שומר..." : "שמור הגדרות"}
