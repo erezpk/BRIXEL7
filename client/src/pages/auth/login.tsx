@@ -68,11 +68,11 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     try {
-      // Redirect directly to Google OAuth - no need for mutation
-      window.location.href = '/api/auth/google';
+      // Redirect directly to Replit OAuth login
+      window.location.href = '/api/login';
     } catch (error: any) {
       toast({
-        title: "שגיאה בהתחברות עם Google",
+        title: "שגיאה בהתחברות",
         description: error?.message || "אירעה שגיאה בהתחברות",
         variant: "destructive",
       });
@@ -194,13 +194,11 @@ export default function Login() {
             <Button
               type="button"
               variant="outline"
+              onClick={handleGoogleLogin}
               className="w-full"
-              onClick={() => window.location.href = '/api/auth/google'}
-              disabled={isLoginLoading || isGoogleLoginLoading}
-              data-testid="button-google-login"
             >
               <FcGoogle className="mr-2 h-4 w-4" />
-              {isGoogleLoginLoading ? "מתחבר עם Google..." : "התחבר עם Google"}
+              התחבר עם Replit
             </Button>
           </form>
           
