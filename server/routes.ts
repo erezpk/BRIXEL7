@@ -110,10 +110,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('Google Client ID available:', !!process.env.GOOGLE_CLIENT_ID);
   console.log('Google Client Secret available:', !!process.env.GOOGLE_CLIENT_SECRET);
   
-  // Use current development URL for Google OAuth
-  const callbackURL = 'https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/api/auth/google/callback';
+  // Google OAuth callback URL - try to use current domain if available
+  const currentDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
+  const callbackURL = currentDomain 
+    ? `https://${currentDomain}/api/auth/google/callback`
+    : 'https://brixel-7.replit.app/api/auth/google/callback';
   
   console.log('Environment:', process.env.NODE_ENV || 'development');
+  console.log('Available domains:', process.env.REPLIT_DOMAINS || 'none');
   console.log('Google OAuth Callback URL:', callbackURL);
   
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
@@ -334,30 +338,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (err) {
           console.error('OAuth error:', err);
-          return res.redirect('/login?error=oauth_error');
+          // Get the correct host for redirect
+          const currentHost = req.get('host');
+          const protocol = req.get('x-forwarded-proto') || 'https';
+          const baseUrl = `${protocol}://${currentHost}`;
+          return res.redirect(`${baseUrl}/login?error=oauth_error`);
         }
         
         if (!user) {
           console.log('No user returned from Google OAuth');
-          return res.redirect('/login?error=oauth_no_user');
+          // Get the correct host for redirect
+          const currentHost = req.get('host');
+          const protocol = req.get('x-forwarded-proto') || 'https';
+          const baseUrl = `${protocol}://${currentHost}`;
+          return res.redirect(`${baseUrl}/login?error=oauth_no_user`);
         }
+        
+        // Get the correct host for redirect
+        const currentHost = req.get('host');
+        const protocol = req.get('x-forwarded-proto') || 'https';
+        const baseUrl = `${protocol}://${currentHost}`;
+        
+        console.log('Redirecting to host:', baseUrl);
         
         // Check if this is a new user needing agency setup
         if (user.isNewUser) {
           console.log('New user needs agency setup:', user.email);
           // Store temp data in session for agency setup
           req.session.tempGoogleUser = user;
-          return res.redirect('/setup-agency?from=google');
+          return res.redirect(`${baseUrl}/setup-agency?from=google`);
         }
         
         req.logIn(user, (err) => {
           if (err) {
             console.error('Login error:', err);
-            return res.redirect('/login?error=login_failed');
+            return res.redirect(`${baseUrl}/login?error=login_failed`);
           }
           
           console.log('User successfully logged in via Google:', user.email);
-          res.redirect('/dashboard');
+          res.redirect(`${baseUrl}/dashboard`);
         });
       })(req, res, next);
     }
