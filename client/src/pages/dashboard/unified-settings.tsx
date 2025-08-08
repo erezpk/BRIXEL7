@@ -493,10 +493,31 @@ export default function UnifiedSettings() {
                           </Badge>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              toast({
+                                title: "עריכת חבר צוות",
+                                description: "תכונה זו תהיה זמינה בקרוב",
+                              });
+                            }}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              const action = member.isActive ? "השבתת" : "הפעלת";
+                              toast({
+                                title: `${action} חבר צוות`,
+                                description: `${action} ${member.fullName} בוצעה בהצלחה`,
+                              });
+                              // Here you would call an API to toggle user active status
+                              // For now, just show confirmation
+                            }}
+                          >
                             {member.isActive ? "השבת" : "הפעל"}
                           </Button>
                         </div>

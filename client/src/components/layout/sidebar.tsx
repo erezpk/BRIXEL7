@@ -63,7 +63,7 @@ const navigation = [
     icon: BarChart3, 
     subItems: [
       { name: "הצעות מחיר", href: "/dashboard/sales/quotes", icon: FileText },
-      { name: "ניהול מוצרים", href: "/dashboard/products", icon: Package },
+      { name: "ניהול פריטים ומוצרים", href: "/dashboard/products", icon: Package },
       { name: "תשלומים", href: "/dashboard/payments", icon: CreditCard },
     ]
   },
@@ -73,7 +73,6 @@ const navigation = [
     name: "ניהול סוכנות", 
     icon: Building2, 
     subItems: [
-      { name: "הגדרות סוכנות וטמפלטים", href: "/dashboard/agency-templates", icon: FileText },
       { name: "צוות", href: "/dashboard/team", icon: UserCheck },
       { name: "דוחות", href: "/dashboard/reports", icon: BarChart3 },
     ]
@@ -84,7 +83,6 @@ const navigation = [
     subItems: [
       { name: "פרופיל אישי", href: "/dashboard/profile", icon: User },
       { name: "הגדרות מערכת", href: "/dashboard/unified-settings", icon: Settings },
-      { name: "ניהול פריטים", href: "/dashboard/items-management", icon: Package },
       { name: "הגדרות אימייל", href: "/dashboard/email-setup", icon: Mail },
     ]
   },

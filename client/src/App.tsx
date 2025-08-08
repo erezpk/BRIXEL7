@@ -36,7 +36,7 @@ import Settings from "@/pages/dashboard/settings";
 import EmailSetup from "@/pages/dashboard/email-setup";
 // Removed unused pages for cleaner navigation
 import Financial from "@/pages/dashboard/financial";
-import ProductsPage from "@/pages/dashboard/products";
+import ProductsPage from "@/pages/dashboard/products-with-items";
 import NewQuotePage from "@/pages/dashboard/sales/quotes/new";
 import QuotesPage from "@/pages/dashboard/sales/quotes/index";
 import QuoteDetailPage from "@/pages/dashboard/sales/quotes/[id]";
@@ -243,13 +243,7 @@ export default function App() {
               </DashboardLayout>
             </ProtectedRoute>
           </Route>
-          <Route path="/dashboard/agency-templates">
-            <ProtectedRoute>
-              <DashboardLayout>
-                <AgencyTemplates />
-              </DashboardLayout>
-            </ProtectedRoute>
-          </Route>
+
           <Route path="/dashboard/settings/pdf">
             <ProtectedRoute>
               <DashboardLayout>
