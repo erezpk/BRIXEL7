@@ -15,6 +15,7 @@ import { google } from 'googleapis';
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import subscriptionsRouter from "./routes/subscriptions";
 import facebookAdsRouter from "./routes/facebook-ads";
+import { requireAuth as authMiddleware, requireAgencyAccess, requireUserWithAgency as requireAgency, requireRole } from "./middleware/auth";
 
 // Placeholder for generateId function
 function generateId(): string {
@@ -41,8 +42,8 @@ declare global {
 
 const router = express.Router();
 
-// Helper middleware functions
-function requireAuth(req: any, res: any, next: any) {
+// Helper middleware functions (keeping for compatibility)
+function requireAuthOld(req: any, res: any, next: any) {
   if (!req.user?.claims) {
     return res.status(401).json({ message: 'Authentication required' });
   }
@@ -370,7 +371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Agency routes
-  router.get('/api/agencies', requireAuth, async (req, res) => {
+  router.get('/api/agencies', authMiddleware, async (req, res) => {
     try {
       // For now, return empty array or implement agency listing
       res.json([]);
@@ -381,7 +382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Client routes
-  router.get('/api/clients', isAuthenticated, async (req, res) => {
+  router.get('/api/clients', authMiddleware, async (req, res) => {
     try {
       // For now, return empty array since we're transitioning auth
       res.json([]);
@@ -391,7 +392,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  router.post('/api/clients', isAuthenticated, async (req, res) => {
+  router.post('/api/clients', authMiddleware, async (req, res) => {
     try {
       // For testing, use a dummy agency ID
       const clientData = insertClientSchema.parse({
@@ -406,7 +407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  router.get('/api/clients/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.get('/api/clients/:id', authMiddleware, requireAgency, async (req, res) => {
     try {
       const { id } = req.params;
       const client = await storage.getClient(id);
@@ -420,7 +421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  router.put('/api/clients/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.put('/api/clients/:id', authMiddleware, requireAgency, async (req, res) => {
     try {
       const { id } = req.params;
       const updates = req.body;
@@ -432,7 +433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  router.delete('/api/clients/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.delete('/api/clients/:id', authMiddleware, requireAgency, async (req, res) => {
     try {
       const { id } = req.params;
       await storage.deleteClient(id);
@@ -443,8 +444,247 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Leads routes
+  router.get('/api/leads', authMiddleware, async (req, res) => {
+    try {
+      const user = req.user!;
+      const agencyId = user.agencyId || "407ab060-c765-4347-8233-0e7311a7adde"; // Fallback to test agency
+      const leads = await storage.getLeadsByAgency(agencyId);
+      res.json(leads);
+    } catch (error) {
+      console.error('Error fetching leads:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת לידים' });
+    }
+  });
+
+  router.post('/api/leads', authMiddleware, async (req, res) => {
+    try {
+      const user = req.user!;
+      const agencyId = user.agencyId || "407ab060-c765-4347-8233-0e7311a7adde";
+      const leadData = insertLeadSchema.parse({
+        ...req.body,
+        agencyId: agencyId
+      });
+      const lead = await storage.createLead(leadData);
+      res.json(lead);
+    } catch (error) {
+      console.error('Error creating lead:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת ליד' });
+    }
+  });
+
+  router.get('/api/leads/:id', authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const lead = await storage.getLead(id);
+      if (!lead) {
+        return res.status(404).json({ message: 'ליד לא נמצא' });
+      }
+      res.json(lead);
+    } catch (error) {
+      console.error('Error fetching lead:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת ליד' });
+    }
+  });
+
+  router.put('/api/leads/:id', authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const lead = await storage.updateLead(id, updates);
+      res.json(lead);
+    } catch (error) {
+      console.error('Error updating lead:', error);
+      res.status(500).json({ message: 'שגיאה בעדכון ליד' });
+    }
+  });
+
+  router.delete('/api/leads/:id', authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteLead(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting lead:', error);
+      res.status(500).json({ message: 'שגיאה במחיקת ליד' });
+    }
+  });
+
+  // Projects routes
+  router.get('/api/projects', authMiddleware, async (req, res) => {
+    try {
+      const user = req.user!;
+      const agencyId = user.agencyId || "407ab060-c765-4347-8233-0e7311a7adde";
+      const projects = await storage.getProjectsByAgency(agencyId);
+      res.json(projects);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת פרויקטים' });
+    }
+  });
+
+  router.post('/api/projects', authMiddleware, async (req, res) => {
+    try {
+      const user = req.user!;
+      const agencyId = user.agencyId || "407ab060-c765-4347-8233-0e7311a7adde";
+      const projectData = insertProjectSchema.parse({
+        ...req.body,
+        agencyId: agencyId
+      });
+      const project = await storage.createProject(projectData);
+      res.json(project);
+    } catch (error) {
+      console.error('Error creating project:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת פרויקט' });
+    }
+  });
+
+  router.get('/api/projects/:id', authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const project = await storage.getProject(id);
+      if (!project) {
+        return res.status(404).json({ message: 'פרויקט לא נמצא' });
+      }
+      res.json(project);
+    } catch (error) {
+      console.error('Error fetching project:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת פרויקט' });
+    }
+  });
+
+  router.put('/api/projects/:id', authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const project = await storage.updateProject(id, updates);
+      res.json(project);
+    } catch (error) {
+      console.error('Error updating project:', error);
+      res.status(500).json({ message: 'שגיאה בעדכון פרויקט' });
+    }
+  });
+
+  router.delete('/api/projects/:id', authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteProject(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      res.status(500).json({ message: 'שגיאה במחיקת פרויקט' });
+    }
+  });
+
+  // Tasks routes
+  router.get('/api/tasks', authMiddleware, async (req, res) => {
+    try {
+      const user = req.user!;
+      const agencyId = user.agencyId || "407ab060-c765-4347-8233-0e7311a7adde";
+      const tasks = await storage.getTasksByAgency(agencyId);
+      res.json(tasks);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת משימות' });
+    }
+  });
+
+  router.post('/api/tasks', authMiddleware, async (req, res) => {
+    try {
+      const user = req.user!;
+      const agencyId = user.agencyId || "407ab060-c765-4347-8233-0e7311a7adde";
+      const taskData = insertTaskSchema.parse({
+        ...req.body,
+        agencyId: agencyId
+      });
+      const task = await storage.createTask(taskData);
+      res.json(task);
+    } catch (error) {
+      console.error('Error creating task:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת משימה' });
+    }
+  });
+
+  router.get('/api/tasks/:id', authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const task = await storage.getTask(id);
+      if (!task) {
+        return res.status(404).json({ message: 'משימה לא נמצאה' });
+      }
+      res.json(task);
+    } catch (error) {
+      console.error('Error fetching task:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת משימה' });
+    }
+  });
+
+  router.put('/api/tasks/:id', authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const task = await storage.updateTask(id, updates);
+      res.json(task);
+    } catch (error) {
+      console.error('Error updating task:', error);
+      res.status(500).json({ message: 'שגיאה בעדכון משימה' });
+    }
+  });
+
+  router.delete('/api/tasks/:id', authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteTask(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      res.status(500).json({ message: 'שגיאה במחיקת משימה' });
+    }
+  });
+
+  // Dashboard stats routes
+  router.get('/api/dashboard/stats', authMiddleware, async (req, res) => {
+    try {
+      const user = req.user!;
+      const agencyId = user.agencyId || "407ab060-c765-4347-8233-0e7311a7adde";
+      
+      // Get counts for dashboard
+      const leads = await storage.getLeadsByAgency(agencyId);
+      const clients = await storage.getClientsByAgency(agencyId);
+      const projects = await storage.getProjectsByAgency(agencyId);
+      const tasks = await storage.getTasksByAgency(agencyId);
+
+      const stats = {
+        leads: leads.length,
+        clients: clients.length,
+        projects: projects.length,
+        tasks: tasks.length,
+        activeTasks: tasks.filter(t => t.status !== 'completed').length,
+        completedTasks: tasks.filter(t => t.status === 'completed').length,
+        activeProjects: projects.filter(p => p.status !== 'completed').length
+      };
+
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת נתוני דשבורד' });
+    }
+  });
+
+  // Activity log route
+  router.get('/api/dashboard/activity', authMiddleware, async (req, res) => {
+    try {
+      const user = req.user!;
+      const activities = await storage.getActivityLogByUser(user.id, 20);
+      res.json(activities);
+    } catch (error) {
+      console.error('Error fetching activity log:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת יומן פעילות' });
+    }
+  });
+
   // Users routes
-  router.get('/api/users', requireAuth, requireUserWithAgency, async (req, res) => {
+  router.get('/api/users', authMiddleware, requireAgency, async (req, res) => {
     try {
       const user = req.user!;
       const users = await storage.getUsersByAgency(user.agencyId!);

@@ -109,13 +109,13 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
           className="fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={onToggle}
         />
-        <div className="fixed inset-0 bg-white z-50 flex flex-col">
+        <div className="fixed inset-0 bg-white z-50 flex flex-col" dir="rtl">
           {/* כותרת */}
           <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-lg font-bold">תפריט ניווט</h2>
             <Button variant="ghost" size="sm" onClick={onToggle}>
               <X className="h-5 w-5" />
             </Button>
+            <h2 className="text-lg font-bold">תפריט ניווט</h2>
           </div>
 
           {/* תוכן התפריט */}
@@ -134,12 +134,13 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
                         variant={hasActiveChild ? "secondary" : "ghost"}
                         className="w-full justify-between h-12 text-base"
                         onClick={() => toggleGroup(item.name)}
+                        dir="rtl"
                       >
                         <div className="flex items-center gap-3">
                           <Icon className="h-5 w-5" />
                           <span>{item.name}</span>
                         </div>
-                        {isGroupOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        {isGroupOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                       </Button>
 
                       {isGroupOpen && (
@@ -154,8 +155,9 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
                                   variant={isActive ? "secondary" : "ghost"}
                                   className="w-full justify-start h-10"
                                   onClick={onToggle}
+                                  dir="rtl"
                                 >
-                                  <SubIcon className="h-4 w-4 mr-2" />
+                                  <SubIcon className="h-4 w-4 ml-2" />
                                   {subItem.name}
                                 </Button>
                               </Link>
@@ -174,6 +176,7 @@ export default function Sidebar({ isOpen, onToggle, isMobile, isCollapsed = fals
                         variant={isActive ? "secondary" : "ghost"}
                         className="w-full justify-start h-12 text-base"
                         onClick={onToggle}
+                        dir="rtl"
                       >
                         <Icon className="h-5 w-5 ml-3" />
                         {item.name}
