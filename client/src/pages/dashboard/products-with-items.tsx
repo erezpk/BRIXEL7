@@ -117,7 +117,7 @@ export default function ProductsWithItemsPage() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/items'] });
       itemForm.reset();
-      setShowItemForm(false);
+      setShowItemForm(false); // Close form after successful creation
     },
     onError: () => {
       toast({
@@ -141,6 +141,7 @@ export default function ProductsWithItemsPage() {
       queryClient.invalidateQueries({ queryKey: ['/api/items'] });
       setEditingItem(null);
       itemForm.reset();
+      setShowItemForm(false); // Close form after successful update
     },
     onError: () => {
       toast({
@@ -313,13 +314,25 @@ export default function ProductsWithItemsPage() {
         <TabsContent value="items" className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">פריטים בסיסיים</h2>
-            <Button onClick={() => setShowItemForm(true)} disabled={showItemForm}>
-              <Plus className="h-4 w-4 ml-2" />
-              הוסף פריט חדש
+            <Button 
+              onClick={() => setShowItemForm(!showItemForm)} 
+              variant={showItemForm ? "outline" : "default"}
+            >
+              {showItemForm ? (
+                <>
+                  <X className="h-4 w-4 ml-2" />
+                  ביטול הוספה
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 ml-2" />
+                  הוסף פריט חדש
+                </>
+              )}
             </Button>
           </div>
 
-          {/* Add Item Form */}
+          {/* Add Item Form - Only show when showItemForm is true */}
           {showItemForm && (
             <Card>
               <CardHeader>
@@ -531,7 +544,7 @@ export default function ProductsWithItemsPage() {
                   צור מוצר חדש
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>יצירת מוצר חדש מפריטים קיימים</DialogTitle>
                 </DialogHeader>
@@ -594,12 +607,12 @@ export default function ProductsWithItemsPage() {
                           אין פריטים זמינים. יש ליצור פריטים תחילה בלשונית "ניהול פריטים"
                         </div>
                       ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-64 overflow-y-auto">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto border rounded-lg p-3">
                           {items.map((item: any) => (
-                            <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
-                              <div>
-                                <h4 className="font-medium">{item.name}</h4>
-                                <p className="text-sm text-muted-foreground">₪{item.price} / {item.unit}</p>
+                            <div key={item.id} className="flex items-center justify-between p-2 border rounded-md bg-white">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-sm truncate">{item.name}</h4>
+                                <p className="text-xs text-muted-foreground">₪{item.price}</p>
                                 <Badge variant="secondary" className="text-xs">{item.category}</Badge>
                               </div>
                               <Button
@@ -607,6 +620,7 @@ export default function ProductsWithItemsPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => addItemToProduct(item.id)}
+                                className="ml-2 flex-shrink-0"
                               >
                                 הוסף
                               </Button>
@@ -617,9 +631,9 @@ export default function ProductsWithItemsPage() {
 
                       {/* Selected Items */}
                       {selectedItems.length > 0 && (
-                        <div className="space-y-4">
-                          <h4 className="font-medium">פריטים נבחרים:</h4>
-                          <div className="space-y-2">
+                        <div className="space-y-3">
+                          <h4 className="font-medium text-sm">פריטים נבחרים:</h4>
+                          <div className="space-y-2 max-h-32 overflow-y-auto">
                             {selectedItems.map((selectedItem) => {
                               const item = items.find(i => i.id === selectedItem.itemId);
                               if (!item) return null;
