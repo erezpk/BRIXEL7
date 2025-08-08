@@ -76,26 +76,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   router.get('/api/auth/me', async (req: any, res) => {
     try {
-      // Check if user is authenticated through session
-      if (!req.isAuthenticated() && !req.session?.user) {
-        return res.status(401).json({ message: 'Unauthorized' });
+      // console.log('Auth check - Session:', !!req.session?.user, 'Replit:', !!req.user, 'isAuthenticated:', req.isAuthenticated?.());
+      
+      // Check traditional session first
+      if (req.session?.user?.id) {
+        const user = await storage.getUser(req.session.user.id);
+        if (user) {
+          // console.log('Found user via session:', user.email);
+          return res.json({ user });
+        }
       }
       
-      // Get user info from either OAuth or traditional login
+      // Check Replit Auth
+      if (req.isAuthenticated?.() && req.user?.id) {
+        const user = await storage.getUser(req.user.id);
+        if (user) {
+          // console.log('Found user via Replit:', user.email);
+          return res.json({ user });
+        }
+      }
+      
+      // Check claims-based auth
       const userClaims = req.user?.claims || req.session?.user?.claims;
-      const userId = req.user?.id || userClaims?.sub || req.session?.user?.id;
-      
-      if (!userId) {
-        return res.status(401).json({ message: 'Unauthorized' });
+      if (userClaims?.sub) {
+        const user = await storage.getUser(userClaims.sub);
+        if (user) {
+          // console.log('Found user via claims:', user.email);
+          return res.json({ user });
+        }
       }
       
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(401).json({ message: 'User not found' });
-      }
-      
-      res.json({ user });
+      // console.log('No authenticated user found');
+      return res.status(401).json({ message: 'Unauthorized' });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(401).json({ message: "Unauthorized" });
@@ -121,28 +133,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'אימייל או סיסמה שגויים' });
       }
       
-      // Create session manually for traditional login
-      (req as any).user = {
-        claims: {
-          sub: user.id,
-          email: user.email,
-          first_name: user.firstName,
-          last_name: user.lastName,
-          profile_image_url: user.profileImageUrl
-        }
-      };
-      
-      // Save the session
+      // Save to session for traditional login
       (req.session as any).user = {
         id: user.id,
-        claims: {
-          sub: user.id,
-          email: user.email,
-          first_name: user.firstName,
-          last_name: user.lastName,
-          profile_image_url: user.profileImageUrl
-        }
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        agencyId: user.agencyId
       };
+      
+      // Also set req.user for compatibility
+      (req as any).user = {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        agencyId: user.agencyId
+      };
+      
+      // Save session
+      await new Promise((resolve, reject) => {
+        req.session.save((err: any) => {
+          if (err) reject(err);
+          else resolve(true);
+        });
+      });
+      
+      // console.log('Login successful for:', user.email);
       
       res.json({ 
         success: true, 
@@ -157,6 +174,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Login error:', error);
       res.status(500).json({ message: 'שגיאה בהתחברות' });
+    }
+  });
+
+  // Logout endpoint
+  router.post('/api/auth/logout', async (req: any, res) => {
+    try {
+      // Clear session
+      if (req.session?.user) {
+        req.session.user = null;
+      }
+      
+      // Clear req.user
+      req.user = null;
+      
+      // Destroy session
+      req.session.destroy((err: any) => {
+        if (err) {
+          console.error('Session destroy error:', err);
+        }
+      });
+      
+      res.json({ success: true, message: 'התנתק בהצלחה' });
+    } catch (error) {
+      console.error('Logout error:', error);
+      res.status(500).json({ message: 'שגיאה בהתנתקות' });
     }
   });
 
