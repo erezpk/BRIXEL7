@@ -1306,6 +1306,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get individual lead by ID
+  router.get('/api/leads/:id', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const leadId = req.params.id;
+      const user = req.user!;
+
+      const lead = await storage.getLead(leadId);
+      
+      if (!lead) {
+        return res.status(404).json({ message: 'ליד לא נמצא' });
+      }
+
+      // Check if lead belongs to user's agency
+      if (lead.agencyId !== user.agencyId) {
+        return res.status(403).json({ message: 'אין הרשאה' });
+      }
+
+      res.json(lead);
+    } catch (error) {
+      console.error('Error fetching lead:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת הליד' });
+    }
+  });
+
   router.put('/api/leads/:id', requireAuth, requireUserWithAgency, async (req, res) => {
     try {
       const leadId = req.params.id;

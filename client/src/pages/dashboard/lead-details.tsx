@@ -61,10 +61,16 @@ export default function LeadDetails() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: lead, isLoading } = useQuery<Lead>({
+  const { data: lead, isLoading, error } = useQuery<Lead>({
     queryKey: ['/api/leads', leadId],
     enabled: !!leadId,
   });
+
+  // Debug logging
+  console.log('LeadDetails - leadId:', leadId);
+  console.log('LeadDetails - lead data:', lead);
+  console.log('LeadDetails - isLoading:', isLoading);
+  console.log('LeadDetails - error:', error);
 
   const { data: users = [] } = useQuery({
     queryKey: ['/api/users'],
@@ -103,6 +109,7 @@ export default function LeadDetails() {
     mutationFn: async (updatedLead: Partial<Lead>) => {
       const response = await fetch(`/api/leads/${leadId}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -143,6 +150,7 @@ export default function LeadDetails() {
 
       const response = await fetch(`/api/leads/${leadId}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -194,8 +202,16 @@ export default function LeadDetails() {
     return <div className="p-6">טוען...</div>;
   }
 
-  if (!lead) {
-    return <div className="p-6">ליד לא נמצא</div>;
+  if (!lead && !isLoading) {
+    return (
+      <div className="p-6">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">ליד לא נמצא</h2>
+          <p className="text-muted-foreground">Lead ID: {leadId}</p>
+          <p className="text-muted-foreground">Error: {error?.message || 'Unknown error'}</p>
+        </div>
+      </div>
+    );
   }
 
   return (

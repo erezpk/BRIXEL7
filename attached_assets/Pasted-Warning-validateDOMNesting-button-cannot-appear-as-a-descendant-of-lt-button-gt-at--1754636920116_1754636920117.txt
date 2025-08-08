@@ -1,0 +1,42 @@
+Warning: validateDOMNesting(...): <button> cannot appear as a descendant of &lt;button&gt;.
+    at button
+    at https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-day-picker.js?v=9163fd7e:458:12
+    at div
+    at Navigation (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-day-picker.js?v=9163fd7e:472:12)
+    at CaptionNavigation (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-day-picker.js?v=9163fd7e:491:24)
+    at div
+    at Caption (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-day-picker.js?v=9163fd7e:514:12)
+    at div
+    at Month (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-day-picker.js?v=9163fd7e:1454:19)
+    at div
+    at Months (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-day-picker.js?v=9163fd7e:1483:12)
+    at div
+    at Root (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-day-picker.js?v=9163fd7e:1488:25)
+    at FocusProvider (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-day-picker.js?v=9163fd7e:1009:20)
+    at ModifiersProvider (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-day-picker.js?v=9163fd7e:822:19)
+    at SelectRangeProvider (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-day-picker.js?v=9163fd7e:657:31)
+    at SelectMultipleProvider (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-day-picker.js?v=9163fd7e:562:34)
+    at SelectSingleProvider (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-day-picker.js?v=9163fd7e:1089:32)
+    at NavigationProvider (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-day-picker.js?v=9163fd7e:402:19)
+    at DayPickerProvider (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-day-picker.js?v=9163fd7e:235:28)
+    at RootProvider (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-day-picker.js?v=9163fd7e:1529:24)
+    at DayPicker
+    at Calendar (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/src/components/ui/calendar.tsx:22:3)
+    at button
+    at _c (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/src/components/ui/button.tsx:47:11)
+    at https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=9163fd7e:79:13
+    at https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=9163fd7e:56:13
+    at https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AXMZZQ2X.js?v=9163fd7e:42:13
+    at https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=9163fd7e:90:13
+    at Provider (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=9163fd7e:38:15)
+    at Dialog (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=9163fd7e:55:5)
+    at MeetingScheduler (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/src/components/meeting-scheduler.tsx:33:36)
+    at div
+    at div
+    at _c3 (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/src/components/ui/card.tsx:45:12)
+    at div
+    at _c (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/src/components/ui/card.tsx:20:11)
+    at div
+    at ContactMeetings (https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/src/components/contact-meetings.tsx:25:35)
+    at div
+    at…
