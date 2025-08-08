@@ -66,11 +66,7 @@ export default function LeadDetails() {
     enabled: !!leadId,
   });
 
-  // Debug logging
-  console.log('LeadDetails - leadId:', leadId);
-  console.log('LeadDetails - lead data:', lead);
-  console.log('LeadDetails - isLoading:', isLoading);
-  console.log('LeadDetails - error:', error);
+  // Debug logging removed - lead fetching working correctly
 
   const { data: users = [] } = useQuery({
     queryKey: ['/api/users'],

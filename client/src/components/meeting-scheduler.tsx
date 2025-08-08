@@ -171,15 +171,16 @@ export function MeetingScheduler({ contactType, contactId, contactName, trigger 
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" size="sm">
-            <Calendar className="h-4 w-4 ml-2" />
+            <CalendarIcon className="h-4 w-4 ml-2" />
             קבע פגישה
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[75vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[75vh] overflow-y-auto" aria-describedby="meeting-dialog-description">
         <DialogHeader>
           <DialogTitle className="text-right">קבע פגישה עם {contactName}</DialogTitle>
         </DialogHeader>
+        <div id="meeting-dialog-description" className="sr-only">טופס לקביעת פגישה חדשה עם הליד או הלקוח</div>
         
         <div className="space-y-4">
           {/* Title */}
@@ -199,13 +200,15 @@ export function MeetingScheduler({ contactType, contactId, contactName, trigger 
             <Label>תאריך *</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-right font-normal"
+                <div
+                  className="flex h-10 w-full cursor-pointer items-center justify-start rounded-md border border-input bg-background px-3 py-2 text-sm text-right font-normal ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  tabIndex={0}
+                  role="button"
+                  aria-label="בחר תאריך"
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {date ? format(date, "PPP", { locale: he }) : "בחר תאריך"}
-                </Button>
+                </div>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
                 <Calendar
