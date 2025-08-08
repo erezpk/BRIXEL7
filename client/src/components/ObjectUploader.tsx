@@ -70,6 +70,7 @@ export function ObjectUploader({
     })
       .use(AwsS3, {
         shouldUseMultipart: false,
+        endpoint: '/api/upload', // Set a proper endpoint
         getUploadParameters: onGetUploadParameters,
       })
       .on("complete", (result) => {
