@@ -30,11 +30,11 @@ import Team from "@/pages/dashboard/team";
 import Reports from "@/pages/dashboard/reports";
 import EmailSettings from "@/pages/dashboard/email-settings";
 import ClientDashboard from "@/pages/client-portal/client-dashboard";
+// Note: Removed client-dashboard-new.tsx as it was redundant
 import Profile from "@/pages/dashboard/profile";
 import Settings from "@/pages/dashboard/settings";
 import EmailSetup from "@/pages/dashboard/email-setup";
-// Removed client templates - was confusing for users
-import Assets from "@/pages/dashboard/assets";
+// Removed unused pages for cleaner navigation
 import Financial from "@/pages/dashboard/financial";
 import ProductsPage from "@/pages/dashboard/products";
 import NewQuotePage from "@/pages/dashboard/sales/quotes/new";
@@ -263,21 +263,9 @@ export default function App() {
             </ProtectedRoute>
           </Route>
 
-          <Route path="/dashboard/client-templates">
-            <ProtectedRoute>
-              <DashboardLayout>
-                <NotFound />
-              </DashboardLayout>
-            </ProtectedRoute>
-          </Route>
+          {/* Removed client-templates page - streamlined navigation */}
 
-          <Route path="/dashboard/assets">
-            <ProtectedRoute>
-              <DashboardLayout>
-                <Assets />
-              </DashboardLayout>
-            </ProtectedRoute>
-          </Route>
+          {/* Removed assets page - was not needed for the main workflow */}
 
           {/* Sales Routes */}
           <Route path="/dashboard/sales/quotes">

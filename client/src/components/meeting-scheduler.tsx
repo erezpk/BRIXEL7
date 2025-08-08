@@ -39,7 +39,7 @@ export function MeetingScheduler({ contactType, contactId, contactName, trigger 
       // Check if user is connected to Google Calendar
       try {
         // Create Google Calendar event using real API
-        const eventResponse = await apiRequest("POST", "/api/calendar/events", {
+        const eventResponse = await apiRequest("/api/calendar/events", "POST", {
           title: meetingData.title,
           description: `פגישה עם ${contactName}\n\n${meetingData.description || ''}\n\nמיקום: ${meetingData.location || 'לא צוין'}`,
           startTime: meetingData.startTime,
@@ -50,7 +50,7 @@ export function MeetingScheduler({ contactType, contactId, contactName, trigger 
         });
 
         // Also create a communication record for tracking
-        await apiRequest("POST", "/api/communications", {
+        await apiRequest("/api/communications", "POST", {
           type: "meeting",
           contactType,
           contactId,
@@ -176,7 +176,7 @@ export function MeetingScheduler({ contactType, contactId, contactName, trigger 
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg max-h-[75vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-right">קבע פגישה עם {contactName}</DialogTitle>
         </DialogHeader>

@@ -56,34 +56,24 @@ export default function ClientCard({
   };
 
   return (
-    <Card className="card-hover bg-white border-0 shadow-lg rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300" data-testid={`client-card-${client.id}`}>
-      {/* Header Section with gradient background */}
-      <div className="bg-gradient-to-l from-blue-50 to-indigo-50 p-6 border-b border-gray-100">
+    <Card className="group bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md hover:border-blue-300 transition-all duration-200" data-testid={`client-card-${client.id}`}>
+      {/* Header Section */}
+      <div className="p-4 border-b border-gray-100">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <User className="h-6 w-6 text-blue-600" />
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <User className="h-5 w-5 text-blue-600" />
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 font-rubik" data-testid="client-name">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 truncate" data-testid="client-name">
                   {client.name}
                 </h3>
-                <div className="flex items-center gap-2">
-                  {client.email && (
-                    <span className="text-sm text-gray-600">{client.email}</span>
-                  )}
-                  <Badge className={`${getStatusColor(client.status)} text-xs font-medium`} data-testid="client-status">
-                    {getStatusText(client.status)}
-                  </Badge>
-                </div>
+                <Badge className={`${getStatusColor(client.status)} text-xs`} data-testid="client-status">
+                  {getStatusText(client.status)}
+                </Badge>
               </div>
             </div>
-            {client.industry && (
-              <p className="text-sm text-gray-600" data-testid="client-industry">
-                תחום: {client.industry}
-              </p>
-            )}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -130,40 +120,48 @@ export default function ClientCard({
       </div>
 
       {/* Contact Details */}
-      <CardContent className="p-6">
-        <div className="space-y-2 mb-4">
-          {client.contactName && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">איש קשר:</span>
-              <span className="text-gray-900" data-testid="client-contact">
-                {client.contactName}
-              </span>
-            </div>
-          )}
+      <CardContent className="p-4">
+        <div className="space-y-3">
           {client.email && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">אימייל:</span>
-              <span className="text-gray-900" data-testid="client-email">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-16 text-gray-500 text-xs">אימייל:</span>
+              <span className="text-gray-800 truncate" data-testid="client-email">
                 {client.email}
               </span>
             </div>
           )}
           {client.phone && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">טלפון:</span>
-              <span className="text-gray-900" data-testid="client-phone">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-16 text-gray-500 text-xs">טלפון:</span>
+              <span className="text-gray-800" data-testid="client-phone">
                 {client.phone}
+              </span>
+            </div>
+          )}
+          {client.industry && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-16 text-gray-500 text-xs">תחום:</span>
+              <span className="text-gray-800" data-testid="client-industry">
+                {client.industry}
+              </span>
+            </div>
+          )}
+          {client.contactName && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-16 text-gray-500 text-xs">איש קשר:</span>
+              <span className="text-gray-800" data-testid="client-contact">
+                {client.contactName}
               </span>
             </div>
           )}
         </div>
 
-        <div className="flex space-x-reverse space-x-2">
+        <div className="mt-4 pt-3 border-t border-gray-100">
           <Button 
             variant="outline" 
             size="sm" 
             onClick={() => onView(client)}
-            className="flex-1"
+            className="w-full h-8 text-xs"
             data-testid="client-view-details"
           >
             צפה בפרטים

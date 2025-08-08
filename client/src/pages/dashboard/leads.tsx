@@ -297,7 +297,7 @@ export default function Leads() {
                 ליד חדש
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingLead ? "ערוך ליד" : "ליד חדש"}</DialogTitle>
               </DialogHeader>
@@ -519,7 +519,7 @@ export default function Leads() {
 
       {/* Content */}
       {viewMode === 'kanban' ? (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 h-[calc(100vh-400px)] overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 min-h-[calc(100vh-350px)] overflow-hidden">
           {statusOptions.map(status => (
             <Card key={status.value} className="flex flex-col">
               <CardHeader className="pb-3">
@@ -531,9 +531,9 @@ export default function Leads() {
                   <Badge variant="secondary">{groupedByStatus[status.value]?.length || 0}</Badge>
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto space-y-2">
+              <CardContent className="flex-1 overflow-y-auto space-y-3 max-h-[calc(100vh-450px)]">
                 {groupedByStatus[status.value]?.map((lead: Lead) => (
-                  <Card key={lead.id} className="p-3 hover:shadow-md transition-shadow cursor-pointer">
+                  <Card key={lead.id} className="p-4 hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-gray-200 hover:border-l-blue-500">
                     <div className="space-y-2">
                       <div className="flex items-start justify-between">
                         <h4 className="font-medium text-sm">{lead.name}</h4>

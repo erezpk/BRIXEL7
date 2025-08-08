@@ -26,7 +26,8 @@ import {
   Mail,
   CreditCard,
   Calendar,
-  MessageCircle
+  MessageCircle,
+  User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -58,37 +59,30 @@ const navigation = [
     ]
   },
   { 
-    name: "מכירות", 
+    name: "מכירות ופיננסים", 
     icon: BarChart3, 
     subItems: [
       { name: "הצעות מחיר", href: "/dashboard/sales/quotes", icon: FileText },
-      { name: "הצעת מחיר חדשה", href: "/dashboard/sales/quotes/new", icon: Plus },
       { name: "ניהול מוצרים", href: "/dashboard/products", icon: Package },
+      { name: "תשלומים", href: "/dashboard/payments", icon: CreditCard },
     ]
   },
-  { 
-    name: "ניהול פיננסי", 
-    icon: FileText, 
-    subItems: [
-      { name: "מסמכים", href: "/dashboard/financial/documents", icon: FileText },
-      { name: "עסקאות", href: "/dashboard/financial/transactions", icon: BarChart3 },
-      { name: "חשבוניות", href: "/dashboard/financial/invoices", icon: FileText },
-    ]
-  },
-
-  { name: "תשלומים", href: "/dashboard/payments", icon: CreditCard },
-  { name: "יומן", href: "/dashboard/calendar", icon: Calendar },
+  { name: "יומן ופגישות", href: "/dashboard/calendar", icon: Calendar },
   { name: "תקשורת", href: "/dashboard/communications", icon: MessageCircle },
-  { name: "צוות", href: "/dashboard/team", icon: UserCheck },
-  { name: "דוחות", href: "/dashboard/reports", icon: BarChart3 },
+  { 
+    name: "ניהול סוכנות", 
+    icon: Building2, 
+    subItems: [
+      { name: "צוות", href: "/dashboard/team", icon: UserCheck },
+      { name: "דוחות", href: "/dashboard/reports", icon: BarChart3 },
+    ]
+  },
   { 
     name: "הגדרות", 
     icon: Settings, 
     subItems: [
-      { name: "הגדרות סוכנות", href: "/dashboard/settings/agency", icon: Building2 },
-      { name: "הגדרות PDF", href: "/dashboard/settings/pdf", icon: FileText },
-      { name: "הגדרות כלליות", href: "/dashboard/settings", icon: Settings },
-      { name: "פרופיל", href: "/dashboard/profile", icon: Users },
+      { name: "פרופיל אישי", href: "/dashboard/profile", icon: User },
+      { name: "הגדרות סוכנות", href: "/dashboard/settings", icon: Settings },
       { name: "הגדרות אימייל", href: "/dashboard/email-setup", icon: Mail },
     ]
   },
