@@ -71,8 +71,9 @@ export default function Settings() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="team">ניהול צוות</TabsTrigger>
+          <TabsTrigger value="agency">הגדרות סוכנות</TabsTrigger>
           <TabsTrigger value="notifications">התראות</TabsTrigger>
         </TabsList>
 
@@ -123,6 +124,36 @@ export default function Settings() {
                   </p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="agency" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building className="h-5 w-5" />
+                הגדרות סוכנות וטמפלטים
+              </CardTitle>
+              <CardDescription>
+                נהל את פרטי הסוכנות, לוגו וטמפלטים להצעות מחיר
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
+                <Building className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">עמוד הגדרות סוכנות וטמפלטים</h3>
+                <p className="text-muted-foreground mb-4">
+                  עדכן פרטי סוכנות, העלה לוגו, ערוך טמפלטים להצעות מחיר ועוד
+                </p>
+                <Button 
+                  onClick={() => setLocation('/dashboard/agency-templates')}
+                  className="flex items-center gap-2"
+                >
+                  <Building className="h-4 w-4" />
+                  פתח הגדרות סוכנות וטמפלטים
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

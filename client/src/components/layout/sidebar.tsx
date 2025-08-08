@@ -73,6 +73,7 @@ const navigation = [
     name: "ניהול סוכנות", 
     icon: Building2, 
     subItems: [
+      { name: "הגדרות סוכנות וטמפלטים", href: "/dashboard/agency-templates", icon: FileText },
       { name: "צוות", href: "/dashboard/team", icon: UserCheck },
       { name: "דוחות", href: "/dashboard/reports", icon: BarChart3 },
     ]
