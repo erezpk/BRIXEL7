@@ -360,138 +360,164 @@ export default function LeadDetails() {
 
       {/* Edit Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto p-6" aria-describedby="edit-lead-description">
           <DialogHeader>
-            <DialogTitle>עריכת ליד</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-right mb-2">עריכת ליד</DialogTitle>
           </DialogHeader>
+          <div id="edit-lead-description" className="sr-only">טופס לעריכת פרטי הליד</div>
           
-          <div className="grid grid-cols-2 gap-4 py-4">
+          <div className="space-y-6">
+            {/* Basic Information Section */}
             <div>
-              <Label htmlFor="name">שם *</Label>
-              <Input
-                id="name"
-                value={leadForm.name}
-                onChange={(e) => setLeadForm({...leadForm, name: e.target.value})}
-                placeholder="שם מלא"
-              />
+              <h3 className="text-lg font-semibold text-right mb-4 border-b pb-2">פרטים בסיסיים</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-base font-medium">שם מלא *</Label>
+                  <Input
+                    id="name"
+                    value={leadForm.name}
+                    onChange={(e) => setLeadForm({...leadForm, name: e.target.value})}
+                    placeholder="הכנס שם מלא"
+                    className="text-right h-11"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-base font-medium">כתובת אימייל</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={leadForm.email}
+                    onChange={(e) => setLeadForm({...leadForm, email: e.target.value})}
+                    placeholder="example@mail.com"
+                    className="text-right h-11"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-base font-medium">מספר טלפון</Label>
+                  <Input
+                    id="phone"
+                    value={leadForm.phone}
+                    onChange={(e) => setLeadForm({...leadForm, phone: e.target.value})}
+                    placeholder="05X-XXX-XXXX"
+                    className="text-right h-11"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="value" className="text-base font-medium">ערך פוטנציאלי (₪)</Label>
+                  <Input
+                    id="value"
+                    type="number"
+                    value={leadForm.value}
+                    onChange={(e) => setLeadForm({...leadForm, value: Number(e.target.value)})}
+                    placeholder="0"
+                    className="text-right h-11"
+                  />
+                </div>
+              </div>
             </div>
 
+            {/* Lead Management Section */}
             <div>
-              <Label htmlFor="email">אימייל</Label>
-              <Input
-                id="email"
-                type="email"
-                value={leadForm.email}
-                onChange={(e) => setLeadForm({...leadForm, email: e.target.value})}
-                placeholder="example@mail.com"
-              />
+              <h3 className="text-lg font-semibold text-right mb-4 border-b pb-2">ניהול ליד</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="source" className="text-base font-medium">מקור הליד</Label>
+                  <Select value={leadForm.source} onValueChange={(value) => setLeadForm({...leadForm, source: value})}>
+                    <SelectTrigger className="h-11">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sourceOptions.map(source => (
+                        <SelectItem key={source.value} value={source.value}>
+                          {source.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="status" className="text-base font-medium">סטטוס</Label>
+                  <Select value={leadForm.status} onValueChange={(value) => setLeadForm({...leadForm, status: value})}>
+                    <SelectTrigger className="h-11">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map(status => (
+                        <SelectItem key={status.value} value={status.value}>
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2 h-2 rounded-full ${status.color}`}></span>
+                            {status.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="priority" className="text-base font-medium">עדיפות</Label>
+                  <Select value={leadForm.priority} onValueChange={(value) => setLeadForm({...leadForm, priority: value})}>
+                    <SelectTrigger className="h-11">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {priorityOptions.map(priority => (
+                        <SelectItem key={priority.value} value={priority.value}>
+                          <span className={priority.color}>{priority.label}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="assignedTo" className="text-base font-medium">משויך ל</Label>
+                  <Select value={leadForm.assignedTo} onValueChange={(value) => setLeadForm({...leadForm, assignedTo: value})}>
+                    <SelectTrigger className="h-11">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">לא משויך</SelectItem>
+                      {(users as any[]).map((user: any) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.firstName} {user.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
 
+            {/* Notes Section */}
             <div>
-              <Label htmlFor="phone">טלפון</Label>
-              <Input
-                id="phone"
-                value={leadForm.phone}
-                onChange={(e) => setLeadForm({...leadForm, phone: e.target.value})}
-                placeholder="05X-XXX-XXXX"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="source">מקור</Label>
-              <Select value={leadForm.source} onValueChange={(value) => setLeadForm({...leadForm, source: value})}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {sourceOptions.map(source => (
-                    <SelectItem key={source.value} value={source.value}>
-                      {source.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="status">סטטוס</Label>
-              <Select value={leadForm.status} onValueChange={(value) => setLeadForm({...leadForm, status: value})}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map(status => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="priority">עדיפות</Label>
-              <Select value={leadForm.priority} onValueChange={(value) => setLeadForm({...leadForm, priority: value})}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {priorityOptions.map(priority => (
-                    <SelectItem key={priority.value} value={priority.value}>
-                      {priority.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="value">ערך פוטנציאלי (₪)</Label>
-              <Input
-                id="value"
-                type="number"
-                value={leadForm.value}
-                onChange={(e) => setLeadForm({...leadForm, value: Number(e.target.value)})}
-                placeholder="0"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="assignedTo">משויך ל</Label>
-              <Select value={leadForm.assignedTo} onValueChange={(value) => setLeadForm({...leadForm, assignedTo: value})}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">לא משויך</SelectItem>
-                  {(users as any[]).map((user: any) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.firstName} {user.lastName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <h3 className="text-lg font-semibold text-right mb-4 border-b pb-2">הערות</h3>
+              <div className="space-y-2">
+                <Label htmlFor="notes" className="text-base font-medium">הערות נוספות</Label>
+                <Textarea
+                  id="notes"
+                  value={leadForm.notes}
+                  onChange={(e) => setLeadForm({...leadForm, notes: e.target.value})}
+                  placeholder="הכנס הערות נוספות על הליד..."
+                  rows={4}
+                  className="text-right resize-none"
+                />
+              </div>
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="notes">הערות</Label>
-            <Textarea
-              id="notes"
-              value={leadForm.notes}
-              onChange={(e) => setLeadForm({...leadForm, notes: e.target.value})}
-              placeholder="הערות נוספות..."
-              rows={3}
-            />
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditModal(false)}>
+          <DialogFooter className="gap-3 pt-6 border-t">
+            <Button variant="outline" onClick={() => setShowEditModal(false)} className="px-6">
               ביטול
             </Button>
             <Button
               onClick={() => updateLeadMutation.mutate(leadForm)}
               disabled={updateLeadMutation.isPending}
+              className="px-6"
             >
               <Save className="h-4 w-4 ml-2" />
               {updateLeadMutation.isPending ? "שומר..." : "שמור שינויים"}
