@@ -364,18 +364,34 @@ export class DatabaseStorage implements IStorage {
 
   // (IMPORTANT) these user operations are mandatory for Replit Auth.
   async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await this.db
-      .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
+    // First try to find existing user by email or id
+    let existingUser = null;
+    if (userData.email) {
+      [existingUser] = await this.db.select().from(users).where(eq(users.email, userData.email));
+    }
+    if (!existingUser && userData.id) {
+      [existingUser] = await this.db.select().from(users).where(eq(users.id, userData.id));
+    }
+
+    if (existingUser) {
+      // Update existing user
+      const [user] = await this.db
+        .update(users)
+        .set({
           ...userData,
           updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return user;
+        })
+        .where(eq(users.id, existingUser.id))
+        .returning();
+      return user;
+    } else {
+      // Create new user
+      const [user] = await this.db
+        .insert(users)
+        .values(userData)
+        .returning();
+      return user;
+    }
   }
 
   async getClient(id: string): Promise<Client | undefined> {
