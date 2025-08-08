@@ -111,7 +111,7 @@ export default function App() {
           <Route path="/signup" component={Signup} />
           <Route path="/setup-agency" component={SetupAgency} />
           <Route path="/forgot-password" component={ForgotPassword} />
-          <Route path="/reset-password" component={ResetPassword} />
+          <Route path="/auth/reset-password" component={ResetPassword} />
 
           {/* DASHBOARD */}
           {/* Updated dashboard route to render different dashboards based on user role */}

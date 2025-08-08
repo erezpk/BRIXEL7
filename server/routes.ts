@@ -76,11 +76,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   router.get('/api/auth/me', async (req: any, res) => {
     try {
-      if (!req.user?.claims) {
+      // Check both req.user (from replit auth) and req.session.user (from traditional login)
+      const userClaims = req.user?.claims || req.session?.user?.claims;
+      
+      if (!userClaims) {
         return res.status(401).json({ message: 'Unauthorized' });
       }
       
-      const userId = req.user.claims.sub;
+      const userId = userClaims.sub;
       const user = await storage.getUser(userId);
       
       if (!user) {
@@ -115,6 +118,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create session manually for traditional login
       (req as any).user = {
+        claims: {
+          sub: user.id,
+          email: user.email,
+          first_name: user.firstName,
+          last_name: user.lastName,
+          profile_image_url: user.profileImageUrl
+        }
+      };
+      
+      // Save the session
+      req.session.user = {
         claims: {
           sub: user.id,
           email: user.email,
@@ -160,7 +174,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createPasswordResetToken(user.id, resetToken);
       
       // Send email
-      const resetUrl = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`;
+      const resetUrl = `${req.protocol}://${req.get('host')}/auth/reset-password?token=${resetToken}`;
       const emailSent = await emailService.sendEmail({
         to: email,
         subject: 'איפוס סיסמה - AgencyCRM',
@@ -189,7 +203,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Remove duplicate auth routes - they are now in router
+  // Password reset completion
+  router.post('/api/auth/reset-password', async (req, res) => {
+    try {
+      const { token, password } = req.body;
+      
+      if (!token || !password) {
+        return res.status(400).json({ message: 'טוקן וסיסמה נדרשים' });
+      }
+      
+      if (password.length < 6) {
+        return res.status(400).json({ message: 'הסיסמה חייבת להכיל לפחות 6 תווים' });
+      }
+      
+      // Validate token
+      const userId = await storage.validatePasswordResetToken(token);
+      if (!userId) {
+        return res.status(400).json({ message: 'טוקן לא תקין או פג תוקף' });
+      }
+      
+      // Hash new password
+      const hashedPassword = await storage.hashPassword(password);
+      
+      // Update password
+      await storage.updateUserPassword(userId, hashedPassword);
+      
+      // Mark token as used
+      await storage.markPasswordResetTokenAsUsed(token);
+      
+      res.json({ message: 'הסיסמה שונתה בהצלחה' });
+    } catch (error) {
+      console.error('Password reset completion error:', error);
+      res.status(500).json({ message: 'שגיאה בשינוי הסיסמה' });
+    }
+  });
 
   // Google OAuth routes
   router.get('/api/auth/google', (req, res) => {

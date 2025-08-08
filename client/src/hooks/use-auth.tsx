@@ -51,11 +51,21 @@ export function useAuth() {
   const loginMutation = useMutation({
     mutationFn: async (data: LoginData) => {
       try {
-        const response = await apiRequest('/api/auth/login', 'POST', data);
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify(data),
+        });
         
-        // apiRequest already handles error responses, so if we get here, it's successful
-        const result = await response.json();
-        return result;
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Login failed');
+        }
+        
+        return await response.json();
       } catch (error: any) {
         // Handle specific error messages from the server
         if (error.message && error.message.includes('401')) {
