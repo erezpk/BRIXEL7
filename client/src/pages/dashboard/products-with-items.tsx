@@ -58,7 +58,7 @@ export default function ProductsWithItemsPage() {
   const [activeTab, setActiveTab] = useState("items");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
-  const [showItemForm, setShowItemForm] = useState(false);
+  
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -117,7 +117,7 @@ export default function ProductsWithItemsPage() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/items'] });
       itemForm.reset();
-      setShowItemForm(false); // Close form after successful creation
+      setIsDialogOpen(false); // Close dialog after successful creation
     },
     onError: () => {
       toast({
@@ -141,7 +141,7 @@ export default function ProductsWithItemsPage() {
       queryClient.invalidateQueries({ queryKey: ['/api/items'] });
       setEditingItem(null);
       itemForm.reset();
-      setShowItemForm(false); // Close form after successful update
+      setIsDialogOpen(false); // Close dialog after successful update
     },
     onError: () => {
       toast({
@@ -236,13 +236,13 @@ export default function ProductsWithItemsPage() {
       unit: item.unit || "יחידה",
       isActive: item.isActive,
     });
-    setShowItemForm(true);
+    setIsDialogOpen(true);
   };
 
   const cancelEditingItem = () => {
     setEditingItem(null);
     itemForm.reset();
-    setShowItemForm(false);
+    setIsDialogOpen(false);
   };
 
   const handleDeleteItem = (id: string) => {
@@ -314,39 +314,21 @@ export default function ProductsWithItemsPage() {
         <TabsContent value="items" className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">פריטים בסיסיים</h2>
-            <Button 
-              onClick={() => setShowItemForm(!showItemForm)} 
-              variant={showItemForm ? "outline" : "default"}
-            >
-              {showItemForm ? (
-                <>
-                  <X className="h-4 w-4 ml-2" />
-                  ביטול הוספה
-                </>
-              ) : (
-                <>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
                   <Plus className="h-4 w-4 ml-2" />
                   הוסף פריט חדש
-                </>
-              )}
-            </Button>
-          </div>
-
-          {/* Add Item Form - Only show when showItemForm is true */}
-          {showItemForm && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5" />
                     {editingItem ? "עריכת פריט" : "הוספת פריט חדש"}
-                  </span>
-                  <Button variant="ghost" size="sm" onClick={cancelEditingItem}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+                  </DialogTitle>
+                </DialogHeader>
+                
                 <Form {...itemForm}>
                   <form onSubmit={itemForm.handleSubmit(onItemSubmit)} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -421,15 +403,19 @@ export default function ProductsWithItemsPage() {
                         {editingItem ? "עדכן פריט" : "הוסף פריט"}
                       </Button>
                       
-                      <Button type="button" variant="outline" onClick={cancelEditingItem}>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => setIsDialogOpen(false)}
+                      >
                         ביטול
                       </Button>
                     </div>
                   </form>
                 </Form>
-              </CardContent>
-            </Card>
-          )}
+              </DialogContent>
+            </Dialog>
+          </div>
 
           {/* Items List */}
           <Card>
