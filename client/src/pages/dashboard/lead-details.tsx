@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -83,7 +83,7 @@ export default function LeadDetails() {
   });
 
   // Set form data when lead loads
-  useState(() => {
+  useEffect(() => {
     if (lead) {
       setLeadForm({
         name: lead.name,
@@ -97,7 +97,7 @@ export default function LeadDetails() {
         assignedTo: lead.assignedTo || "unassigned",
       });
     }
-  });
+  }, [lead]);
 
   const updateLeadMutation = useMutation({
     mutationFn: async (updatedLead: Partial<Lead>) => {

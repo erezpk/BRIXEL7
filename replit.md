@@ -6,6 +6,15 @@ AgencyCRM is a comprehensive SaaS CRM system for digital marketing agencies, web
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (January 2025)
+- Enhanced sidebar navigation with grouped sections for better organization
+- Improved client cards with cleaner, more organized visual design
+- Fixed lead card navigation - clicking on lead cards now opens lead details page
+- Removed irrelevant pages (assets, client-templates) for streamlined navigation
+- Enhanced meeting scheduler popup height for better usability
+- Fixed technical issues with lead-details page useEffect implementation
+- Ensured full CRUD functionality for leads with edit/delete options in Kanban view
+
 ## System Architecture
 
 ### Frontend Architecture

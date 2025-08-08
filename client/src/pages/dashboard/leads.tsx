@@ -533,13 +533,22 @@ export default function Leads() {
               </CardHeader>
               <CardContent className="flex-1 overflow-y-auto space-y-3 max-h-[calc(100vh-450px)]">
                 {groupedByStatus[status.value]?.map((lead: Lead) => (
-                  <Card key={lead.id} className="p-4 hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-gray-200 hover:border-l-blue-500">
+                  <Card 
+                    key={lead.id} 
+                    className="p-4 hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-gray-200 hover:border-l-blue-500"
+                    onClick={() => window.location.href = `/dashboard/leads/${lead.id}`}
+                  >
                     <div className="space-y-2">
                       <div className="flex items-start justify-between">
                         <h4 className="font-medium text-sm">{lead.name}</h4>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <MoreHorizontal className="h-3 w-3" />
                             </Button>
                           </DropdownMenuTrigger>
