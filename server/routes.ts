@@ -110,9 +110,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('Google Client ID available:', !!process.env.GOOGLE_CLIENT_ID);
   console.log('Google Client Secret available:', !!process.env.GOOGLE_CLIENT_SECRET);
   
-  // Use production URL for Google OAuth consistency
-  // This prevents issues with changing development URLs
-  const callbackURL = 'https://brixel-7.replit.app/api/auth/google/callback';
+  // Use current development URL for Google OAuth
+  const callbackURL = 'https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/api/auth/google/callback';
   
   console.log('Environment:', process.env.NODE_ENV || 'development');
   console.log('Google OAuth Callback URL:', callbackURL);

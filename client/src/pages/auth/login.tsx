@@ -68,17 +68,8 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     try {
-      await googleLoginMutation.mutateAsync();
-      
-      toast({
-        title: "התחברות הצליחה",
-        description: "ברוכים הבאים למערכת",
-      });
-      
-      // Google OAuth will reload the page automatically after success
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      // Redirect directly to Google OAuth - no need for mutation
+      window.location.href = '/api/auth/google';
     } catch (error: any) {
       toast({
         title: "שגיאה בהתחברות עם Google",
