@@ -167,7 +167,19 @@ export function FloatingChatButton() {
       const updatedMessages = [...existingMessages, guestMessage];
       localStorage.setItem('guest-chat-messages', JSON.stringify(updatedMessages));
 
-      // Auto-reply after a short delay (simulating support response)
+      // Send email to app builder
+      fetch('/api/support/guest-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guestName: guestInfo.name,
+          guestEmail: guestInfo.email,
+          message: newMessage.trim(),
+          timestamp: new Date().toISOString()
+        })
+      }).catch(console.error);
+
+      // Auto-reply after a short delay
       setTimeout(() => {
         const autoReply = {
           id: 'support-' + Date.now(),
@@ -267,8 +279,8 @@ export function FloatingChatButton() {
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-24 left-6 z-40 w-80 h-96">
-          <Card className="w-full h-full shadow-xl">
+        <div className="fixed bottom-24 left-6 z-40 w-96 h-[500px]">
+          <Card className="w-full h-full shadow-xl bg-white border-gray-200">
             <CardHeader className="p-4 border-b">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-right">

@@ -1485,41 +1485,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Leads routes
+  // Leads routes - Get leads for specific client
   router.get('/api/client/leads/:clientId', requireAuth, async (req, res) => {
     try {
-      // Mock data for now - replace with actual database query
-      const mockLeads = [
-        {
-          id: '1',
-          name: 'דני כהן',
-          email: 'danny@example.com',
-          phone: '054-1234567',
-          source: 'google',
-          status: 'new',
-          value: 15000,
-          notes: 'מעוניין באתר אינטרנט',
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: '2',
-          name: 'שרה לוי',
-          email: 'sara@example.com',
-          phone: '052-9876543',
-          source: 'facebook',
-          status: 'contacted',
-          value: 25000,
-          notes: 'פגישה קבועה לשבוע הבא',
-          createdAt: new Date().toISOString()
-        }
-      ];
-      res.json(mockLeads);
+      const clientId = req.params.clientId;
+      const user = req.user!;
+      
+      // Get client to verify it belongs to user's agency
+      const client = await storage.getClient(clientId);
+      if (!client || client.agencyId !== user.agencyId) {
+        return res.status(403).json({ message: 'אין הרשאה לגשת ללידים של לקוח זה' });
+      }
+      
+      // Get leads specific to this client
+      const leads = await storage.getLeadsByClient(clientId);
+      res.json(leads);
     } catch (error) {
+      console.error('Error fetching client leads:', error);
       res.status(500).json({ message: 'שגיאה בטעינת לידים' });
     }
   });
 
-  // New Lead Management Routes
+  // New Lead Management Routes - Create lead for client portal
   router.post('/api/client/leads', requireAuth, async (req, res) => {
     try {
       const user = req.user!;
@@ -1536,20 +1523,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'כתובת אימייל לא תקינה' });
       }
 
-      // Create new lead (simulated)
-      const newLead = {
-        id: Math.random().toString(36).substr(2, 9),
+      // For client portal - determine which client is adding the lead
+      let clientId = leadData.clientId || user.id; // If user is client, use their ID
+      
+      // If user is not a client, check if clientId is provided
+      if (user.role !== 'client' && !leadData.clientId) {
+        return res.status(400).json({ message: 'קוד לקוח נדרש' });
+      }
+
+      // Create new lead in database
+      const newLeadData = {
         name: leadData.name.trim(),
         email: leadData.email.trim(),
         phone: leadData.phone || '',
-        source: leadData.source || 'manual',
+        source: leadData.source || 'client_portal',
         status: leadData.status || 'new',
+        priority: leadData.priority || 'medium',
         value: Number(leadData.value) || 0,
         notes: leadData.notes || '',
-        clientId: user.id,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        clientId: clientId,
+        agencyId: user.agencyId!,
+        assignedTo: null
       };
+
+      const newLead = await storage.createLead(newLeadData);
+
+      // Log activity
+      await storage.logActivity({
+        agencyId: user.agencyId!,
+        userId: user.id,
+        action: 'created',
+        entityType: 'lead',
+        entityId: newLead.id,
+        details: { 
+          leadName: newLead.name,
+          source: 'client_portal',
+          clientId: clientId
+        },
+      });
 
       res.json(newLead);
     } catch (error) {
@@ -1575,19 +1586,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'כתובת אימייל לא תקינה' });
       }
 
-      // Update lead (simulated)
-      const updatedLead = {
-        id: leadId,
+      // Check if lead exists and belongs to user's agency
+      const existingLead = await storage.getLead(leadId);
+      if (!existingLead || existingLead.agencyId !== user.agencyId) {
+        return res.status(403).json({ message: 'אין הרשאה לעדכן ליד זה' });
+      }
+
+      // Update lead in database
+      const updateData = {
         name: leadData.name.trim(),
         email: leadData.email.trim(),
         phone: leadData.phone || '',
-        source: leadData.source || 'manual',
+        source: leadData.source || 'client_portal',
         status: leadData.status || 'new',
+        priority: leadData.priority || 'medium',
         value: Number(leadData.value) || 0,
-        notes: leadData.notes || '',
-        clientId: user.id,
-        updatedAt: new Date().toISOString()
+        notes: leadData.notes || ''
       };
+
+      const updatedLead = await storage.updateLead(leadId, updateData);
+
+      // Log activity
+      await storage.logActivity({
+        agencyId: user.agencyId!,
+        userId: user.id,
+        action: 'updated',
+        entityType: 'lead',
+        entityId: leadId,
+        details: { leadName: updatedLead.name },
+      });
 
       res.json(updatedLead);
     } catch (error) {
@@ -1598,9 +1625,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   router.delete('/api/client/leads/:id', requireAuth, async (req, res) => {
     try {
+      const user = req.user!;
       const leadId = req.params.id;
 
-      // Delete lead (simulated)
+      // Check if lead exists and belongs to user's agency
+      const existingLead = await storage.getLead(leadId);
+      if (!existingLead || existingLead.agencyId !== user.agencyId) {
+        return res.status(403).json({ message: 'אין הרשאה למחוק ליד זה' });
+      }
+
+      await storage.deleteLead(leadId);
+
+      // Log activity
+      await storage.logActivity({
+        agencyId: user.agencyId!,
+        userId: user.id,
+        action: 'deleted',
+        entityType: 'lead',
+        entityId: leadId,
+        details: { leadName: existingLead.name },
+      });
+
       res.json({ message: 'הליד נמחק בהצלחה', leadId });
     } catch (error) {
       console.error('Error deleting lead:', error);
@@ -1611,35 +1656,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   router.get('/api/client/clients/:clientId', requireAuth, async (req, res) => {
     try {
-      // Mock data for now - replace with actual database query
-      const mockClients = [
-        {
-          id: '1',
-          name: 'חברת הטכנולוגיה בע"מ',
-          contactName: 'יוסי כהן',
-          email: 'yossi@techcompany.com',
-          phone: '03-1234567',
-          industry: 'טכנולוגיה',
-          status: 'active',
-          totalValue: 150000,
-          projectsCount: 3,
-          lastContact: new Date().toISOString()
-        },
-        {
-          id: '2',
-          name: 'סטודיו עיצוב',
-          contactName: 'מיכל לוי',
-          email: 'michal@design.com',
-          phone: '054-9876543',
-          industry: 'עיצוב',
-          status: 'active',
-          totalValue: 85000,
-          projectsCount: 2,
-          lastContact: new Date().toISOString()
-        }
-      ];
-      res.json(mockClients);
+      const clientId = req.params.clientId;
+      const user = req.user!;
+      
+      // Get clients for the user's agency
+      const clients = await storage.getClientsByAgency(user.agencyId!);
+      
+      // Filter to specific client if needed, or return all for agency
+      const result = clientId && clientId !== 'all' 
+        ? clients.filter(c => c.id === clientId)
+        : clients;
+      
+      res.json(result);
     } catch (error) {
+      console.error('Error fetching clients:', error);
       res.status(500).json({ message: 'שגיאה בטעינת לקוחות' });
     }
   });
@@ -3521,6 +3551,37 @@ ${quote.notes || ''}
   } catch (error) {
     console.warn('Communications routes not available:', error);
   }
+
+  // Guest support message endpoint
+  router.post('/api/support/guest-message', async (req, res) => {
+    try {
+      const { guestName, guestEmail, message, timestamp } = req.body;
+      
+      // Send email to app builder
+      const emailService = app.get('emailService');
+      if (emailService) {
+        await emailService.sendEmail({
+          to: 'techpikado@gmail.com', // Replace with your email
+          subject: `הודעת תמיכה חדשה מ-${guestName}`,
+          html: `
+            <h2>הודעת תמיכה חדשה</h2>
+            <p><strong>שם:</strong> ${guestName}</p>
+            <p><strong>מייל:</strong> ${guestEmail || 'לא צוין'}</p>
+            <p><strong>זמן:</strong> ${new Date(timestamp).toLocaleString('he-IL')}</p>
+            <p><strong>הודעה:</strong></p>
+            <p>${message}</p>
+            <hr>
+            <p>נשלח מאפליקציית AgencyCRM</p>
+          `
+        });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error sending guest message:', error);
+      res.status(500).json({ message: 'שגיאה בשליחת הודעה' });
+    }
+  });
 
   // Chat Routes
   router.get('/api/chat/conversations', requireAuth, requireUserWithAgency, async (req, res) => {

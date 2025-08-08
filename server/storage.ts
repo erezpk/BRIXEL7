@@ -98,6 +98,7 @@ export interface IStorage {
     clientId?: string;
   }): Promise<Lead[]>;
   getLeadsByClient(clientId: string): Promise<Lead[]>;
+  getLeadsByClient(clientId: string): Promise<Lead[]>;
   createLead(lead: InsertLead): Promise<Lead>;
   updateLead(id: string, lead: Partial<InsertLead>): Promise<Lead>;
   deleteLead(id: string): Promise<void>;
