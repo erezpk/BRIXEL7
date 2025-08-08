@@ -89,12 +89,7 @@ export default function NewTaskModal({ isOpen, onClose, editingTask }: NewTaskMo
 
   const createTaskMutation = useMutation({
     mutationFn: async (data: Omit<InsertTask, 'agencyId' | 'createdBy'>) => {
-      const response = await apiRequest({
-        method: 'POST',
-        url: '/api/tasks',
-        body: data
-      });
-      return response.json();
+      return apiRequest('/api/tasks', 'POST', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });

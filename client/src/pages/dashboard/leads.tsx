@@ -589,7 +589,7 @@ export default function Leads() {
                       {...provided.droppableProps}
                       ref={provided.innerRef}
                       className={cn(
-                        "flex-1 overflow-y-auto space-y-3 max-h-[calc(100vh-450px)]",
+                        "flex-1 space-y-3 h-[500px] overflow-y-auto",
                         snapshot.isDraggingOver && "bg-blue-50 dark:bg-blue-900/20"
                       )}
                     >
