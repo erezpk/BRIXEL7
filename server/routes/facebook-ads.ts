@@ -21,7 +21,9 @@ router.get("/oauth", requireAuth, (req, res) => {
     `&redirect_uri=${encodeURIComponent(redirectUri)}` +
     `&scope=${permissions}` +
     `&response_type=code` +
-    `&state=${req.user?.id}`; // Use user ID as state for security
+    `&state=${req.user?.id}` +
+    `&display=popup` +
+    `&auth_type=rerequest`; // Use user ID as state for security
 
   res.redirect(facebookAuthUrl);
 });

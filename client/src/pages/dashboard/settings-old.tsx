@@ -463,6 +463,7 @@ export default function Settings() {
               >
                 <Facebook className="h-4 w-4 me-2" />
                 חיבור מהיר עם פייסבוק
+                <span className="text-xs text-blue-600 ms-1">(Powered by Brixel7)</span>
               </Button>
 
               <Dialog open={isFacebookDialogOpen} onOpenChange={setIsFacebookDialogOpen}>
