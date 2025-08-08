@@ -82,7 +82,7 @@ export async function setupAuth(app: Express) {
       const claims = tokens.claims();
       const dbUser = await upsertUser(claims);
       updateUserSession(dbUser, tokens);
-      verified(null, dbUser);
+      verified(null, dbUser as any);
     } catch (error) {
       console.error('Authentication error:', error);
       verified(error, null);

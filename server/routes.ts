@@ -76,14 +76,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   router.get('/api/auth/me', async (req: any, res) => {
     try {
-      // Check both req.user (from replit auth) and req.session.user (from traditional login)
-      const userClaims = req.user?.claims || req.session?.user?.claims;
-      
-      if (!userClaims) {
+      // Check if user is authenticated through session
+      if (!req.isAuthenticated() && !req.session?.user) {
         return res.status(401).json({ message: 'Unauthorized' });
       }
       
-      const userId = userClaims.sub;
+      // Get user info from either OAuth or traditional login
+      const userClaims = req.user?.claims || req.session?.user?.claims;
+      const userId = req.user?.id || userClaims?.sub || req.session?.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      
       const user = await storage.getUser(userId);
       
       if (!user) {
@@ -128,7 +133,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       // Save the session
-      req.session.user = {
+      (req.session as any).user = {
+        id: user.id,
         claims: {
           sub: user.id,
           email: user.email,
@@ -292,15 +298,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let user = await storage.getUserByEmail(googleUser.email);
       
       if (!user) {
-        // Create new user
-        user = await storage.createUser({
+        // Create new user without password (OAuth user)
+        user = await storage.upsertUser({
+          id: crypto.randomUUID(),
           email: googleUser.email,
           fullName: googleUser.name,
           firstName: googleUser.given_name,
           lastName: googleUser.family_name,
-          profileImageUrl: googleUser.picture,
-          role: 'agency_admin',
-          agencyId: "407ab060-c765-4347-8233-0e7311a7adde" // Default agency for now
+          profileImageUrl: googleUser.picture
         });
       }
       
