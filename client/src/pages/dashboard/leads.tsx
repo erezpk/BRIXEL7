@@ -610,7 +610,7 @@ export default function Leads() {
           ))}
         </div>
       ) : (
-        <Card>
+        <Card className="mb-8">
           <Table>
             <TableHeader>
               <TableRow>
