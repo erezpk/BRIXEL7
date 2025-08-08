@@ -1417,13 +1417,19 @@ export class DatabaseStorage implements IStorage {
 
   async getChatConversationsByAgency(agencyId: string): Promise<ChatConversation[]> {
     return this.db.select().from(chatConversations)
-      .where(eq(chatConversations.agencyId, agencyId))
+      .where(and(
+        eq(chatConversations.agencyId, agencyId),
+        eq(chatConversations.isActive, true)
+      ))
       .orderBy(desc(chatConversations.lastMessageAt));
   }
 
   async getChatConversationsByUser(userId: string): Promise<ChatConversation[]> {
     return this.db.select().from(chatConversations)
-      .where(sql`${chatConversations.participants} @> ${JSON.stringify([userId])}`)
+      .where(and(
+        sql`${chatConversations.participants} @> ${JSON.stringify([userId])}`,
+        eq(chatConversations.isActive, true)
+      ))
       .orderBy(desc(chatConversations.lastMessageAt));
   }
 
