@@ -604,7 +604,10 @@ export default function Leads() {
                                 "p-4 hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-gray-200 hover:border-l-blue-500",
                                 snapshot.isDragging && "rotate-2 shadow-xl"
                               )}
-                              onClick={() => window.location.href = `/dashboard/leads/${lead.id}`}
+                              onClick={() => {
+                                console.log('Navigating to lead:', lead.id);
+                                window.location.href = `/dashboard/leads/${lead.id}`;
+                              }}
                             >
                     <div className="space-y-2">
                       <div className="flex items-start justify-between">
@@ -621,7 +624,10 @@ export default function Leads() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => window.location.href = `/dashboard/leads/${lead.id}`}>
+                            <DropdownMenuItem onClick={() => {
+                              console.log('Navigating to lead via dropdown:', lead.id);
+                              window.location.href = `/dashboard/leads/${lead.id}`;
+                            }}>
                               <Eye className="h-4 w-4 ml-2" />
                               פרטי ליד
                             </DropdownMenuItem>
@@ -741,7 +747,10 @@ export default function Leads() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => window.location.href = `/dashboard/leads/${lead.id}`}>
+                        <DropdownMenuItem onClick={() => {
+                          console.log('Navigating to lead via table dropdown:', lead.id);
+                          window.location.href = `/dashboard/leads/${lead.id}`;
+                        }}>
                           <Eye className="h-4 w-4 ml-2" />
                           פרטי ליד
                         </DropdownMenuItem>

@@ -434,9 +434,6 @@ export default function App() {
           {/* Public Subscription Landing */}
           <Route path="/subscription" component={SubscriptionLanding} />
 
-          {/* Original leads route */}
-          <Route path="/leads" component={() => <Leads />} />
-          <Route path="/dashboard/leads" component={() => <Leads />} />
           <Route component={NotFound} />
         </Switch>
       </TooltipProvider>
