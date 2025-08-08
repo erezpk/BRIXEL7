@@ -191,15 +191,29 @@ export default function Login() {
               </div>
             </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleGoogleLogin}
-              className="w-full"
-            >
-              <FcGoogle className="mr-2 h-4 w-4" />
-              התחבר עם Replit
-            </Button>
+            <div className="space-y-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => window.location.href = '/api/auth/google'}
+                className="w-full"
+              >
+                <FcGoogle className="mr-2 h-4 w-4" />
+                התחבר עם Google
+              </Button>
+              
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleGoogleLogin}
+                className="w-full"
+              >
+                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0c6.627 0 12 5.373 12 12 0 6.627-5.373 12-12 12s-12-5.373-12-12c0-6.627 5.373-12 12-12zm0 2c-5.514 0-10 4.486-10 10s4.486 10 10 10 10-4.486 10-10-4.486-10-10-10zm1 18h-2v-8.804l-2.428 2.428-1.415-1.414 4.843-4.843 4.843 4.843-1.415 1.414-2.428-2.428v8.804z"/>
+                </svg>
+                התחבר עם Replit
+              </Button>
+            </div>
           </form>
           
           <div className="mt-6 text-center">

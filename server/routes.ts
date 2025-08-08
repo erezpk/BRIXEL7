@@ -62,8 +62,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Auth routes for both systems
+  router.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
@@ -74,13 +74,204 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/auth/me', isAuthenticated, async (req: any, res) => {
+  router.get('/api/auth/me', async (req: any, res) => {
     try {
-      const user = req.user;
-      res.json({ user: user.claims });
+      if (!req.user?.claims) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: 'User not found' });
+      }
+      
+      res.json({ user });
     } catch (error) {
-      console.error("Error in auth/me:", error);
-      res.status(500).json({ message: "Failed to get user info" });
+      console.error("Error fetching user:", error);
+      res.status(401).json({ message: "Unauthorized" });
+    }
+  });
+
+  // Traditional login/signup (for password users)
+  router.post('/api/auth/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: 'אימייל וסיסמה נדרשים' });
+      }
+      
+      const user = await storage.getUserByEmail(email);
+      if (!user || !user.password) {
+        return res.status(401).json({ message: 'אימייל או סיסמה שגויים' });
+      }
+      
+      const isValidPassword = await storage.validatePassword(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: 'אימייל או סיסמה שגויים' });
+      }
+      
+      // Create session manually for traditional login
+      (req as any).user = {
+        claims: {
+          sub: user.id,
+          email: user.email,
+          first_name: user.firstName,
+          last_name: user.lastName,
+          profile_image_url: user.profileImageUrl
+        }
+      };
+      
+      res.json({ 
+        success: true, 
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          agencyId: user.agencyId
+        }
+      });
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({ message: 'שגיאה בהתחברות' });
+    }
+  });
+
+  // Password reset request
+  router.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: 'אימייל נדרש' });
+      }
+      
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        // Don't reveal if user exists or not
+        return res.json({ message: 'אם האימייל קיים, נשלח לינק לאיפוס סיסמה' });
+      }
+      
+      // Generate reset token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      await storage.createPasswordResetToken(user.id, resetToken);
+      
+      // Send email
+      const resetUrl = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`;
+      const emailSent = await emailService.sendEmail({
+        to: email,
+        subject: 'איפוס סיסמה - AgencyCRM',
+        html: `
+          <div dir="rtl" style="font-family: Arial, sans-serif;">
+            <h2>איפוס סיסמה</h2>
+            <p>קיבלנו בקשה לאיפוס סיסמה עבור החשבון שלך.</p>
+            <p>אם ביקשת את איפוס הסיסמה, לחץ על הקישור הבא:</p>
+            <a href="${resetUrl}" style="background: #0066cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0;">
+              איפוס סיסמה
+            </a>
+            <p>הקישור תקף ל-24 שעות.</p>
+            <p>אם לא ביקשת איפוס סיסמה, התעלם מהודעה זו.</p>
+          </div>
+        `
+      });
+      
+      if (emailSent) {
+        res.json({ message: 'אם האימייל קיים, נשלח לינק לאיפוס סיסמה' });
+      } else {
+        res.status(500).json({ message: 'שגיאה בשליחת האימייל' });
+      }
+    } catch (error) {
+      console.error('Password reset error:', error);
+      res.status(500).json({ message: 'שגיאה בבקשת איפוס סיסמה' });
+    }
+  });
+
+  // Remove duplicate auth routes - they are now in router
+
+  // Google OAuth routes
+  router.get('/api/auth/google', (req, res) => {
+    const authUrl = `https://accounts.google.com/oauth2v2/auth?` +
+      `client_id=${process.env.GOOGLE_CLIENT_ID}&` +
+      `redirect_uri=${encodeURIComponent(process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/auth/google/callback')}&` +
+      `scope=${encodeURIComponent('openid email profile')}&` +
+      `response_type=code&` +
+      `access_type=offline`;
+    
+    res.redirect(authUrl);
+  });
+
+  router.get('/api/auth/google/callback', async (req, res) => {
+    try {
+      const { code } = req.query;
+      
+      if (!code) {
+        return res.redirect('/login?error=no_code');
+      }
+      
+      // Exchange code for tokens
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: process.env.GOOGLE_CLIENT_ID!,
+          client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+          code: code as string,
+          grant_type: 'authorization_code',
+          redirect_uri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/auth/google/callback',
+        }),
+      });
+      
+      const tokens = await tokenResponse.json();
+      
+      if (!tokens.access_token) {
+        return res.redirect('/login?error=token_error');
+      }
+      
+      // Get user info from Google
+      const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: {
+          Authorization: `Bearer ${tokens.access_token}`,
+        },
+      });
+      
+      const googleUser = await userResponse.json();
+      
+      // Find or create user
+      let user = await storage.getUserByEmail(googleUser.email);
+      
+      if (!user) {
+        // Create new user
+        user = await storage.createUser({
+          email: googleUser.email,
+          fullName: googleUser.name,
+          firstName: googleUser.given_name,
+          lastName: googleUser.family_name,
+          profileImageUrl: googleUser.picture,
+          role: 'agency_admin',
+          agencyId: "407ab060-c765-4347-8233-0e7311a7adde" // Default agency for now
+        });
+      }
+      
+      // Create session
+      (req as any).user = {
+        claims: {
+          sub: user.id,
+          email: user.email,
+          first_name: user.firstName,
+          last_name: user.lastName,
+          profile_image_url: user.profileImageUrl
+        }
+      };
+      
+      res.redirect('/');
+    } catch (error) {
+      console.error('Google OAuth callback error:', error);
+      res.redirect('/login?error=callback_error');
     }
   });
 
@@ -170,7 +361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Mount the router to the app
+  // Mount the router to the app - auth routes must come first
   app.use('/', router);
   app.use("/api/subscriptions", subscriptionsRouter);
   app.use("/api/ads/facebook", facebookAdsRouter);
