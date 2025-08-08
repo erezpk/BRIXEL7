@@ -1,0 +1,44 @@
+
+I am trying to add an in-app chat system with a floating button on the left that appears across all dashboards for Agency Admins, Team Members, and Clients. It must support real-time messaging, strict role permissions, an Agency-level ChatGPT assistant, and a client support bot. Please:
+
+Research my codebase and identify the best integration points for a global floating chat widget
+
+Design the chat architecture: real-time transport, data model, multi-tenant isolation, and routing per customer account
+
+Implement a floating chat button that opens a panel available on all dashboards for the three roles
+
+Build 1-to-1 conversations with threads, attachments, read receipts, typing indicators, online presence, and notifications
+
+Enforce permissions: Agency Admin can chat with everyone, Team Members can chat only with clients assigned to them and relevant teammates, Clients can chat only with their assigned team and the Agency Admin, cross-tenant access is blocked
+
+Add Agency Admin only ChatGPT assistant that can answer using the agency’s data with safe retrieval Augmented Generation and guardrails
+
+Add a client support bot that greets clients, attempts self-serve help, and offers choices: Talk to Agent or Technical Support, with smart routing
+
+Create an Agency Settings tab to configure chat branding, bot tone and rules, allowed and forbidden topics, canned replies, and knowledge upload per agency
+
+Ensure security: tenant isolation, audit logs, PII protection, role checks on every API, rate limits, and encryption at rest and in transit
+
+Provide tests and instrumentation: unit, integration, and E2E tests, plus basic analytics events
+
+Deliverables:
+
+Instructions.md with setup, env vars, and deployment steps
+
+Architecture.md with diagrams of flows, data model, and permission matrix
+
+API spec for chat endpoints and WebSocket events
+
+Frontend components and styles for the floating widget and chat panel
+
+Seed scripts and Postman collection for local testing
+
+
+
+
+
+
+
+
+
+Ask ChatGPT

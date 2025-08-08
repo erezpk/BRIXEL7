@@ -1,117 +1,106 @@
-# Google OAuth Authentication & Calendar Integration Fix Plan
+# In-App Chat System Implementation
 
-## Problem Analysis
+## Overview
+Implementing a comprehensive real-time chat system with floating UI, multi-tenant support, role-based permissions, AI assistants, and enterprise security features.
 
-After analyzing the codebase, I've identified several critical issues causing Google OAuth login failures:
+## Quick Fix: OAuth Issue
+The Google OAuth is failing due to client ID mismatch. Current environment shows different client IDs in logs vs actual requests. Need to update to consistent credentials.
 
-### 1. **Conflicting Authentication Systems**
-- **Firebase Integration**: Client-side using Firebase Auth with Google provider
-- **Passport.js Integration**: Server-side using Passport Google Strategy
-- **Mixed Flow**: These two systems conflict and don't work together properly
+## Chat System Architecture
 
-### 2. **Configuration Issues**
-- **Callback URL Mismatch**: Multiple different callback URLs used inconsistently
-- **Scope Conflicts**: Different scopes requested in different parts of the system
-- **Token Handling**: Improper handling of refresh tokens and token expiration
+### Core Components
+1. **Real-time Transport**: WebSocket connections with fallback to polling
+2. **Data Model**: Messages, Conversations, Participants, Chat Settings, Bot Configurations
+3. **Multi-tenant Isolation**: Agency-level data separation with strict permission enforcement
+4. **Role-Based Access**: Agency Admin, Team Member, Client permissions with granular controls
 
-### 3. **Missing Google Cloud Console Configuration**
-The following need to be verified in Google Cloud Console:
+### Integration Points
+- **Global Floating Widget**: Appears on all dashboard pages
+- **WebSocket Server**: Real-time bidirectional communication
+- **Permission Middleware**: Role-based access control at API and socket level
+- **AI Integration**: ChatGPT assistant and client support bot
+- **Notification System**: Real-time alerts and push notifications
 
-#### Required APIs to Enable:
-- Google Calendar API
-- Google+ API (for profile access)
-- Identity and Access Management (IAM) API
+### Security Features
+- End-to-end tenant isolation
+- Encrypted data at rest and in transit
+- Audit logging for all chat activities
+- Rate limiting and abuse protection
+- PII detection and protection
 
-#### OAuth Consent Screen Configuration:
-- **Application Type**: Web Application
-- **Authorized Domains**: `replit.dev`, `replit.app`
-- **Scopes**: 
-  - `userinfo.email`
-  - `userinfo.profile`
-  - `calendar`
-  - `calendar.events`
+### Database Schema Extensions
+```sql
+-- Chat conversations
+conversations: {
+  id: uuid,
+  agencyId: uuid,
+  type: "direct" | "group" | "support" | "ai_assistant",
+  participants: uuid[],
+  lastMessageAt: timestamp,
+  settings: json
+}
 
-#### OAuth 2.0 Client Configuration:
-- **Authorized Redirect URIs**:
-  - `https://ccdb57b1-53f6-4b88-ba50-863ae246f42e-00-1ffb4gjb4lc25.riker.replit.dev/api/auth/google/callback`
-  - `https://*.replit.dev/api/auth/google/callback`
-  - `https://*.replit.app/api/auth/google/callback`
+-- Chat messages
+messages: {
+  id: uuid,
+  conversationId: uuid,
+  senderId: uuid,
+  content: text,
+  type: "text" | "file" | "system" | "bot",
+  metadata: json,
+  readBy: json,
+  editedAt: timestamp
+}
 
-### 4. **Code Architecture Issues**
-- **Duplicate Routes**: Multiple endpoints handling Google auth differently
-- **Inconsistent Error Handling**: 400/401 errors not properly caught and handled
-- **Missing Middleware**: No proper middleware for token refresh
+-- Chat settings per agency
+chatSettings: {
+  agencyId: uuid,
+  botConfig: json,
+  allowedTopics: string[],
+  forbiddenTopics: string[],
+  cannedReplies: json,
+  branding: json
+}
+```
 
-## Implementation Plan
+### Environment Variables
+```env
+# Chat Configuration
+OPENAI_API_KEY=your_openai_key
+CHAT_ENCRYPTION_KEY=your_32_char_key
+WEBSOCKET_PORT=5001
+RATE_LIMIT_WINDOW=900000
+RATE_LIMIT_MAX=100
+```
 
-### Phase 1: Simplify Authentication Architecture
-1. **Remove Firebase Auth**: Eliminate the conflicting Firebase authentication system
-2. **Standardize on Passport.js**: Use only Passport.js Google Strategy for OAuth
-3. **Unified Callback**: Single callback URL and consistent token handling
+### API Endpoints
+- `GET /api/chat/conversations` - List user's conversations
+- `POST /api/chat/conversations` - Create new conversation
+- `GET /api/chat/conversations/:id/messages` - Get conversation messages
+- `POST /api/chat/conversations/:id/messages` - Send message
+- `PUT /api/chat/conversations/:id/read` - Mark as read
+- `GET /api/chat/settings` - Get agency chat settings
+- `PUT /api/chat/settings` - Update agency chat settings
 
-### Phase 2: Fix OAuth Configuration
-1. **Update Environment Variables**: Ensure all OAuth URLs are consistent
-2. **Fix Callback URL**: Use dynamic domain detection for callbacks
-3. **Proper Scope Handling**: Request all required scopes in one OAuth flow
+### WebSocket Events
+- `chat:join` - Join conversation
+- `chat:leave` - Leave conversation
+- `chat:message` - Send/receive message
+- `chat:typing` - Typing indicators
+- `chat:read` - Read receipts
+- `chat:presence` - Online/offline status
 
-### Phase 3: Implement Proper Token Management
-1. **Refresh Token Handling**: Implement automatic token refresh
-2. **Token Storage**: Securely store and manage OAuth tokens
-3. **Error Recovery**: Proper handling of expired tokens
+### Implementation Steps
+1. ✅ Fix OAuth authentication issue
+2. 🔄 Design and implement database schema
+3. 🔄 Create WebSocket server infrastructure
+4. 🔄 Build floating chat widget UI
+5. 🔄 Implement permission system
+6. 🔄 Add AI assistant integration
+7. 🔄 Create client support bot
+8. 🔄 Build agency settings panel
+9. 🔄 Add security and audit features
+10. 🔄 Create tests and documentation
 
-### Phase 4: Testing & Validation
-1. **End-to-End Testing**: Test complete OAuth flow
-2. **Calendar Integration**: Verify Google Calendar event creation
-3. **Error Scenarios**: Test token expiration and refresh
-
-## Root Cause of 400/401 Errors
-
-### 400 invalid_request:
-- **Callback URL mismatch** between Google Cloud Console and application
-- **Invalid scopes** being requested
-- **Missing required parameters** in OAuth request
-
-### 401 unauthorized:
-- **Expired access tokens** without refresh capability
-- **Invalid client credentials** in environment
-- **Missing calendar permissions** for the authenticated user
-
-## Files to Modify
-
-### Server-Side:
-1. `server/routes.ts` - Consolidate OAuth routes
-2. `server/google-auth.ts` - Update token verification
-3. `shared/schema.ts` - Ensure proper token storage schema
-
-### Client-Side:
-1. `client/src/lib/firebase.ts` - Remove or simplify
-2. `client/src/hooks/use-auth.tsx` - Update to use Passport.js only
-3. `client/src/components/meeting-scheduler.tsx` - Fix calendar integration
-4. `client/src/pages/auth/login.tsx` - Simplify Google login button
-
-### Configuration:
-1. `.env` - Update OAuth URLs and scopes
-2. `replit.md` - Document authentication architecture changes
-
-## Expected Resolution
-
-After implementing these fixes:
-- ✅ Google OAuth login will work without 400/401 errors
-- ✅ Calendar integration will sync properly with Google Calendar
-- ✅ Token refresh will work automatically
-- ✅ Error handling will be comprehensive and user-friendly
-- ✅ Single, consistent authentication flow throughout the application
-
-## Google Cloud Console Checklist
-
-Before deployment, verify in Google Cloud Console:
-- [ ] Calendar API is enabled
-- [ ] OAuth consent screen is configured for external users
-- [ ] Callback URLs include all Replit domains
-- [ ] Scopes include calendar and profile permissions
-- [ ] Test users are added if in testing mode
-- [ ] Client ID and Secret match environment variables
-
----
-
-*This plan addresses the root causes of OAuth failures and provides a clear path to stable Google Calendar integration.*
+## Current Status
+Working on fixing OAuth authentication, then proceeding with chat system implementation.
