@@ -47,31 +47,14 @@ const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope('email');
 googleProvider.addScope('profile');
 
-// Google Sign-In function
+// Google Sign-In function - redirect to Passport.js OAuth flow
 export const signInWithGoogle = async (): Promise<any> => {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
-    const user = result.user;
+    // Redirect directly to the server-side Google OAuth endpoint
+    window.location.href = '/api/auth/google';
     
-    // Get the ID token
-    const idToken = await user.getIdToken();
-    
-    // Send the ID token to your backend
-    const response = await fetch('/api/auth/google', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({ idToken }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Backend authentication failed');
-    }
-
-    const userData = await response.json();
-    return userData;
+    // Return a promise that resolves (this won't be reached due to redirect)
+    return Promise.resolve();
   } catch (error) {
     console.error('Google sign-in error:', error);
     throw error;

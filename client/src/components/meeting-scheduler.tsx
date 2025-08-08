@@ -106,18 +106,21 @@ export function MeetingScheduler({ contactType, contactId, contactName, trigger 
   // Google Calendar connection handler
   const handleGoogleCalendarConnect = async () => {
     try {
-      const response = await fetch('/api/google/calendar/connect');
-      const data = await response.json();
+      // Check if user is already authenticated with Google
+      const authResponse = await fetch('/api/auth/me', { credentials: 'include' });
+      const authData = await authResponse.json();
       
-      if (data.authUrl) {
-        // Open Google authorization in new window
-        window.open(data.authUrl, 'google-auth', 'width=500,height=600');
-        
-        toast({
-          title: "מחבר ליומן Google",
-          description: "חלון חדש נפתח - אשר את הגישה ליומן Google שלך",
-        });
+      if (!authData.user?.googleCalendarConnected) {
+        // Redirect to Google OAuth for calendar permissions
+        window.location.href = '/api/auth/google';
+        return;
       }
+      
+      // If already connected, just show success
+      toast({
+        title: "יומן Google מחובר",
+        description: "אתה כבר מחובר ליומן Google",
+      });
     } catch (error) {
       console.error('Google Calendar connection error:', error);
       toast({

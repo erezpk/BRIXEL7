@@ -111,11 +111,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('Google Client ID available:', !!process.env.GOOGLE_CLIENT_ID);
   console.log('Google Client Secret available:', !!process.env.GOOGLE_CLIENT_SECRET);
   
-  // Google OAuth callback URL - try to use current domain if available
-  const currentDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
-  const callbackURL = currentDomain 
-    ? `https://${currentDomain}/api/auth/google/callback`
-    : 'https://brixel-7.replit.app/api/auth/google/callback';
+  // Google OAuth callback URL - use dynamic domain detection
+  const getCallbackURL = (req?: any) => {
+    if (req) {
+      const host = req.get('host');
+      const protocol = req.get('x-forwarded-proto') || 'https';
+      return `${protocol}://${host}/api/auth/google/callback`;
+    }
+    
+    // Fallback to environment domain
+    const currentDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
+    return currentDomain 
+      ? `https://${currentDomain}/api/auth/google/callback`
+      : 'https://brixel-7.replit.app/api/auth/google/callback';
+  };
+  
+  const callbackURL = getCallbackURL();
   
   console.log('Environment:', process.env.NODE_ENV || 'development');
   console.log('Available domains:', process.env.REPLIT_DOMAINS || 'none');
@@ -126,7 +137,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     passport.use(new GoogleStrategy({
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: callbackURL
+      callbackURL: callbackURL,
+      scope: [
+        'profile', 
+        'email', 
+        'https://www.googleapis.com/auth/calendar',
+        'https://www.googleapis.com/auth/calendar.events'
+      ]
     }, async (accessToken, refreshToken, profile, done) => {
       try {
         console.log('Google OAuth profile received:', {
@@ -153,10 +170,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 access_token: accessToken,
                 refresh_token: refreshToken,
                 token_type: 'Bearer',
-                expiry_date: Date.now() + 3600000 // 1 hour from now
+                expiry_date: Date.now() + 3600000, // 1 hour from now
+                scope: 'profile email https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events'
               },
               googleCalendarConnected: true
             });
+            console.log('Google Calendar tokens updated for user:', user.email);
           }
           return done(null, { ...user, isExistingUser: true });
         } else {
@@ -170,7 +189,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               access_token: accessToken,
               refresh_token: refreshToken,
               token_type: 'Bearer',
-              expiry_date: Date.now() + 3600000
+              expiry_date: Date.now() + 3600000,
+              scope: 'profile email https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events'
             } : undefined,
             isNewUser: true,
             tempGoogleData: {
@@ -328,9 +348,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Google OAuth routes
-  router.get('/api/auth/google', passport.authenticate('google', {
-    scope: ['profile', 'email', 'https://www.googleapis.com/auth/calendar']
-  }));
+  router.get('/api/auth/google', (req, res, next) => {
+    // Update callback URL dynamically for this request
+    const strategy = passport._strategy('google');
+    if (strategy) {
+      strategy._callbackURL = getCallbackURL(req);
+    }
+    
+    passport.authenticate('google', {
+      scope: [
+        'profile', 
+        'email', 
+        'https://www.googleapis.com/auth/calendar',
+        'https://www.googleapis.com/auth/calendar.events'
+      ],
+      accessType: 'offline',
+      prompt: 'consent'
+    })(req, res, next);
+  });
 
   router.get('/api/auth/google/callback', 
     (req, res, next) => {
@@ -563,17 +598,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Google Calendar permissions (using existing auth)
+  // Google Calendar permissions (redirect to OAuth for calendar access)
   router.post('/api/auth/google-calendar-permissions', requireAuth, async (req, res) => {
     try {
       const user = req.user!;
       
-      // Since user is already authenticated with Google, just mark calendar as connected
-      await storage.updateUser(user.id, {
-        googleCalendarConnected: true,
-      });
+      // Check if user already has Google Calendar tokens
+      const userData = await storage.getUserById(user.id);
+      if (userData?.googleCalendarTokens?.access_token) {
+        await storage.updateUser(user.id, {
+          googleCalendarConnected: true,
+        });
+        return res.json({ success: true, message: 'Calendar permissions already granted' });
+      }
 
-      res.json({ success: true, message: 'Calendar permissions granted' });
+      // If no tokens, redirect to Google OAuth
+      res.json({ 
+        success: false, 
+        redirectUrl: '/api/auth/google',
+        message: 'Google authentication required for calendar access' 
+      });
     } catch (error) {
       console.error('Google Calendar permissions error:', error);
       res.status(500).json({ error: 'Failed to grant permissions' });
@@ -3306,21 +3350,20 @@ ${quote.notes || ''}
         return res.status(401).json({ message: 'לא מחובר' });
       }
 
-      const oauth2Client = new google.auth.OAuth2(
-        process.env.GOOGLE_CLIENT_ID,
-        process.env.GOOGLE_CLIENT_SECRET,
-        `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/api/google/calendar/callback`
-      );
+      // Check if user already has tokens
+      const userData = await storage.getUserById(user.id);
+      if (userData?.googleCalendarTokens?.access_token) {
+        return res.json({ 
+          authUrl: null, 
+          connected: true,
+          message: 'Already connected to Google Calendar' 
+        });
+      }
 
-      const authUrl = oauth2Client.generateAuthUrl({
-        access_type: 'offline',
-        scope: [
-          'https://www.googleapis.com/auth/calendar',
-          'https://www.googleapis.com/auth/calendar.events'
-        ],
-        state: user.id,
-        prompt: 'consent'
-      });
+      // If not connected, redirect to main OAuth flow
+      const host = req.get('host');
+      const protocol = req.get('x-forwarded-proto') || 'https';
+      const authUrl = `${protocol}://${host}/api/auth/google`;
 
       res.json({ authUrl });
     } catch (error) {
