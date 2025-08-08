@@ -11,6 +11,7 @@ import express from "express"; // Import express to use its Router
 import { emailService } from "./email-service.js"; // Import from email-service.ts
 import crypto from 'crypto'; // Import crypto for token generation
 import { ObjectStorageService, ObjectNotFoundError } from './objectStorage';
+import { ObjectPermission } from './objectAcl';
 import { generateQuotePDF } from './pdf-generator';
 import { google } from 'googleapis';
 // Removed Firebase/Google auth library import - using simple OAuth now

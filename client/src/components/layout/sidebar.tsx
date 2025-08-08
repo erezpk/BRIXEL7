@@ -83,7 +83,8 @@ const navigation = [
     icon: Settings, 
     subItems: [
       { name: "פרופיל אישי", href: "/dashboard/profile", icon: User },
-      { name: "הגדרות סוכנות", href: "/dashboard/settings", icon: Settings },
+      { name: "הגדרות מערכת", href: "/dashboard/unified-settings", icon: Settings },
+      { name: "ניהול פריטים", href: "/dashboard/items-management", icon: Package },
       { name: "הגדרות אימייל", href: "/dashboard/email-setup", icon: Mail },
     ]
   },

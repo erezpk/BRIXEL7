@@ -59,6 +59,8 @@ import SubscriptionLanding from "@/pages/subscription/landing";
 import CalendarPage from "@/pages/dashboard/calendar";
 import CommunicationsPage from "@/pages/dashboard/communications";
 import ReportsPage from "@/pages/dashboard/reports";
+import UnifiedSettings from "@/pages/dashboard/unified-settings";
+import ItemsManagement from "@/pages/dashboard/items-management";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -350,6 +352,22 @@ export default function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <ReportsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          <Route path="/dashboard/unified-settings">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <UnifiedSettings />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          <Route path="/dashboard/items-management">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ItemsManagement />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>

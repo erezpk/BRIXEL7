@@ -158,6 +158,7 @@ export const quotes = pgTable("quotes", {
   agencyId: uuid("agency_id").notNull().references(() => agencies.id),
   clientId: uuid("client_id").notNull(), // can reference clients.id or leads.id
   clientType: text("client_type").default("client").notNull(), // 'client' or 'lead'
+  contractTemplateId: uuid("contract_template_id").references(() => contractTemplates.id),
   quoteNumber: text("quote_number").notNull().unique(),
   title: text("title").notNull(),
   description: text("description"),
@@ -195,6 +196,22 @@ export const quotes = pgTable("quotes", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Contract Templates
+export const contractTemplates = pgTable("contract_templates", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type", { enum: ['service_agreement', 'work_contract', 'nda', 'terms_of_service', 'consulting', 'maintenance', 'other'] }).default('service_agreement'),
+  fileUrl: text("file_url"), // PDF file URL in object storage
+  fileName: text("file_name"),
+  fileSize: integer("file_size"),
+  isActive: boolean("is_active").default(true),
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Contracts
 export const contracts = pgTable("contracts", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -202,6 +219,7 @@ export const contracts = pgTable("contracts", {
   clientId: uuid("client_id").notNull().references(() => clients.id),
   projectId: uuid("project_id").references(() => projects.id),
   quoteId: uuid("quote_id").references(() => quotes.id),
+  templateId: uuid("template_id").references(() => contractTemplates.id),
   contractNumber: text("contract_number").notNull().unique(),
   title: text("title").notNull(),
   status: text("status").default("draft").notNull(), // draft, sent, signed, active, completed, cancelled
@@ -576,6 +594,7 @@ export const agenciesRelations = relations(agencies, ({ many }) => ({
   payments: many(payments),
   templates: many(agencyTemplates),
   clientCardTemplates: many(clientCardTemplates),
+  contractTemplates: many(contractTemplates),
   activityLog: many(activityLog),
 }));
 

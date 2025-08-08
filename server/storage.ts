@@ -230,6 +230,13 @@ export interface IStorage {
   // Communications
   createCommunication(communication: InsertCommunication): Promise<Communication>;
   getCommunicationsByAgency(agencyId: string, filters?: { contactType?: string; contactId?: string }): Promise<Communication[]>;
+
+  // Contract Templates
+  getContractTemplatesByAgency(agencyId: string): Promise<any[]>;
+  createContractTemplate(template: any): Promise<any>;
+  updateContractTemplate(id: string, template: any): Promise<any>;
+  deleteContractTemplate(id: string): Promise<void>;
+  toggleContractTemplateDefault(id: string, isDefault: boolean): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1313,6 +1320,63 @@ export class DatabaseStorage implements IStorage {
       .from(communications)
       .where(and(...conditions))
       .orderBy(desc(communications.createdAt));
+  }
+
+  // Contract Templates
+  async getContractTemplatesByAgency(agencyId: string): Promise<any[]> {
+    const results = await this.db
+      .select()
+      .from(contractTemplates)
+      .where(eq(contractTemplates.agencyId, agencyId))
+      .orderBy(desc(contractTemplates.isDefault), desc(contractTemplates.createdAt));
+    return results;
+  }
+
+  async createContractTemplate(template: any): Promise<any> {
+    const [contractTemplate] = await this.db
+      .insert(contractTemplates)
+      .values(template)
+      .returning();
+    return contractTemplate;
+  }
+
+  async updateContractTemplate(id: string, template: any): Promise<any> {
+    const updateData = { ...template, updatedAt: new Date() };
+    const [contractTemplate] = await this.db
+      .update(contractTemplates)
+      .set(updateData)
+      .where(eq(contractTemplates.id, id))
+      .returning();
+    return contractTemplate;
+  }
+
+  async deleteContractTemplate(id: string): Promise<void> {
+    await this.db.delete(contractTemplates).where(eq(contractTemplates.id, id));
+  }
+
+  async toggleContractTemplateDefault(id: string, isDefault: boolean): Promise<any> {
+    if (isDefault) {
+      // First, remove default status from all other templates in this agency
+      const template = await this.db
+        .select()
+        .from(contractTemplates)
+        .where(eq(contractTemplates.id, id))
+        .limit(1);
+      
+      if (template.length > 0) {
+        await this.db
+          .update(contractTemplates)
+          .set({ isDefault: false })
+          .where(eq(contractTemplates.agencyId, template[0].agencyId));
+      }
+    }
+
+    const [contractTemplate] = await this.db
+      .update(contractTemplates)
+      .set({ isDefault, updatedAt: new Date() })
+      .where(eq(contractTemplates.id, id))
+      .returning();
+    return contractTemplate;
   }
 }
 

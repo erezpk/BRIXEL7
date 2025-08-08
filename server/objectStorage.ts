@@ -1,37 +1,13 @@
 import { Storage, File } from "@google-cloud/storage";
 import { Response } from "express";
 import { randomUUID } from "crypto";
-// Simplified ACL without separate file
-export enum ObjectPermission {
-  READ = "read",
-  WRITE = "write",
-}
-
-export interface ObjectAclPolicy {
-  owner: string;
-  visibility: "public" | "private";
-}
-
-// Simple ACL check - public objects readable by all, private only by owner
-export async function canAccessObject({
-  userId,
-  objectFile,
-  requestedPermission,
-}: {
-  userId?: string;
-  objectFile: File;
-  requestedPermission: ObjectPermission;
-}): Promise<boolean> {
-  return true; // Simplified for now
-}
-
-export async function getObjectAclPolicy(objectFile: File): Promise<ObjectAclPolicy | null> {
-  return null; // Simplified for now
-}
-
-export async function setObjectAclPolicy(objectFile: File, aclPolicy: ObjectAclPolicy): Promise<void> {
-  // Simplified for now
-}
+import {
+  ObjectAclPolicy,
+  ObjectPermission,
+  canAccessObject,
+  getObjectAclPolicy,
+  setObjectAclPolicy,
+} from "./objectAcl";
 
 const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
 
