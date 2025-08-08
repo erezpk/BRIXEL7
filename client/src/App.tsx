@@ -61,6 +61,7 @@ import CommunicationsPage from "@/pages/dashboard/communications";
 import ReportsPage from "@/pages/dashboard/reports";
 import UnifiedSettings from "@/pages/dashboard/unified-settings";
 import ItemsManagement from "@/pages/dashboard/items-management";
+import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -436,6 +437,10 @@ export default function App() {
 
           <Route component={NotFound} />
         </Switch>
+        
+        {/* Floating Chat Button - appears on all protected routes */}
+        <FloatingChatButton />
+        
       </TooltipProvider>
     </QueryClientProvider>
   );

@@ -562,6 +562,126 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Chat Conversations
+export const chatConversations = pgTable("chat_conversations", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  type: text("type").notNull(), // direct, group, support, ai_assistant
+  title: text("title"),
+  participants: json("participants").$type<string[]>().notNull().default([]),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  lastMessageAt: timestamp("last_message_at"),
+  isActive: boolean("is_active").default(true).notNull(),
+  settings: json("settings").$type<{
+    allowFileUploads?: boolean;
+    notificationsEnabled?: boolean;
+    retentionDays?: number;
+  }>().default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Chat Messages
+export const chatMessages = pgTable("chat_messages", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: uuid("conversation_id").notNull().references(() => chatConversations.id),
+  senderId: uuid("sender_id").references(() => users.id),
+  content: text("content").notNull(),
+  type: text("type").notNull(), // text, file, system, bot, ai_response
+  metadata: json("metadata").$type<{
+    fileUrl?: string;
+    fileName?: string;
+    fileSize?: number;
+    replyTo?: string;
+    aiModel?: string;
+    processingTime?: number;
+  }>().default({}),
+  readBy: json("read_by").$type<Record<string, string>>().default({}), // userId -> timestamp
+  isEdited: boolean("is_edited").default(false),
+  isDeleted: boolean("is_deleted").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  editedAt: timestamp("edited_at"),
+});
+
+// Chat Settings per Agency
+export const chatSettings = pgTable("chat_settings", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id).unique(),
+  botConfig: json("bot_config").$type<{
+    enabled: boolean;
+    name: string;
+    avatar?: string;
+    welcomeMessage: string;
+    tone: "professional" | "friendly" | "casual";
+    autoRespond: boolean;
+    workingHours?: {
+      enabled: boolean;
+      timezone: string;
+      schedule: Record<string, { start: string; end: string; }>;
+    };
+  }>().default({
+    enabled: true,
+    name: "עוזר הסוכנות",
+    welcomeMessage: "שלום! איך אוכל לעזור לכם היום?",
+    tone: "professional",
+    autoRespond: true
+  }),
+  allowedTopics: json("allowed_topics").$type<string[]>().default([]),
+  forbiddenTopics: json("forbidden_topics").$type<string[]>().default([]),
+  cannedReplies: json("canned_replies").$type<Array<{
+    id: string;
+    title: string;
+    content: string;
+    category: string;
+  }>>().default([]),
+  branding: json("branding").$type<{
+    primaryColor?: string;
+    chatTitle?: string;
+    logoUrl?: string;
+    customCss?: string;
+  }>().default({}),
+  aiAssistantConfig: json("ai_assistant_config").$type<{
+    enabled: boolean;
+    model: string;
+    temperature: number;
+    maxTokens: number;
+    systemPrompt: string;
+    ragEnabled: boolean;
+  }>().default({
+    enabled: true,
+    model: "gpt-4",
+    temperature: 0.7,
+    maxTokens: 1000,
+    systemPrompt: "אתה עוזר וירטואלי של סוכנות דיגיטלית. עזור ללקוחות באופן מקצועי ובעברית.",
+    ragEnabled: true
+  }),
+  rateLimits: json("rate_limits").$type<{
+    messagesPerMinute: number;
+    messagesPerHour: number;
+    fileUploadsPerHour: number;
+  }>().default({
+    messagesPerMinute: 20,
+    messagesPerHour: 100,
+    fileUploadsPerHour: 10
+  }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Chat Audit Log
+export const chatAuditLog = pgTable("chat_audit_log", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  agencyId: uuid("agency_id").notNull().references(() => agencies.id),
+  userId: uuid("user_id").references(() => users.id),
+  conversationId: uuid("conversation_id").references(() => chatConversations.id),
+  messageId: uuid("message_id").references(() => chatMessages.id),
+  action: text("action").notNull(), // send, read, edit, delete, join, leave
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  metadata: json("metadata").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Custom field interface for client card builder
 export interface ClientCardField {
   id: string;
@@ -1095,6 +1215,29 @@ export const insertFormSubmissionSchema = createInsertSchema(formSubmissions).om
   createdAt: true,
 });
 
+// Chat schemas
+export const insertChatConversationSchema = createInsertSchema(chatConversations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertChatSettingsSchema = createInsertSchema(chatSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertChatAuditLogSchema = createInsertSchema(chatAuditLog).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type Agency = typeof agencies.$inferSelect;
 export type InsertAgency = z.infer<typeof insertAgencySchema>;
@@ -1177,3 +1320,16 @@ export type InsertLeadCollectionForm = z.infer<typeof insertLeadCollectionFormSc
 
 export type FormSubmission = typeof formSubmissions.$inferSelect;
 export type InsertFormSubmission = z.infer<typeof insertFormSubmissionSchema>;
+
+// Chat types
+export type ChatConversation = typeof chatConversations.$inferSelect;
+export type InsertChatConversation = z.infer<typeof insertChatConversationSchema>;
+
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+
+export type ChatSettings = typeof chatSettings.$inferSelect;
+export type InsertChatSettings = z.infer<typeof insertChatSettingsSchema>;
+
+export type ChatAuditLog = typeof chatAuditLog.$inferSelect;
+export type InsertChatAuditLog = z.infer<typeof insertChatAuditLogSchema>;

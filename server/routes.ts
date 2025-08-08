@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { setupWebSocketServer } from "./websocket";
+import { insertChatConversationSchema, insertChatMessageSchema, insertChatSettingsSchema } from "@shared/schema";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
@@ -3520,9 +3522,105 @@ ${quote.notes || ''}
     console.warn('Communications routes not available:', error);
   }
 
+  // Chat Routes
+  router.get('/api/chat/conversations', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const conversations = await storage.getChatConversationsByUser(user.id);
+      res.json(conversations);
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת שיחות' });
+    }
+  });
+
+  router.post('/api/chat/conversations', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const conversationData = insertChatConversationSchema.parse({
+        ...req.body,
+        agencyId: user.agencyId!,
+        createdBy: user.id,
+        participants: [user.id] // Start with current user
+      });
+      const conversation = await storage.createChatConversation(conversationData);
+      res.json(conversation);
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת שיחה' });
+    }
+  });
+
+  router.get('/api/chat/conversations/:id/messages', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const messages = await storage.getChatMessages(id, limit);
+      res.json(messages);
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת הודעות' });
+    }
+  });
+
+  router.post('/api/chat/messages', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const messageData = insertChatMessageSchema.parse({
+        ...req.body,
+        senderId: user.id,
+        agencyId: user.agencyId!
+      });
+      const message = await storage.createChatMessage(messageData);
+      res.json(message);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      res.status(500).json({ message: 'שגיאה בשליחת הודעה' });
+    }
+  });
+
+  router.get('/api/chat/settings', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const settings = await storage.getChatSettings(user.agencyId!);
+      res.json(settings || { aiEnabled: false, allowFileSharing: true });
+    } catch (error) {
+      console.error('Error loading chat settings:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת הגדרות צ\'אט' });
+    }
+  });
+
+  router.put('/api/chat/settings', requireAuth, requireUserWithAgency, async (req, res) => {
+    try {
+      const user = req.user!;
+      const settingsData = insertChatSettingsSchema.parse({
+        ...req.body,
+        agencyId: user.agencyId!
+      });
+      
+      const existingSettings = await storage.getChatSettings(user.agencyId!);
+      let settings;
+      
+      if (existingSettings) {
+        settings = await storage.updateChatSettings(user.agencyId!, settingsData);
+      } else {
+        settings = await storage.createChatSettings(settingsData);
+      }
+      
+      res.json(settings);
+    } catch (error) {
+      console.error('Error updating chat settings:', error);
+      res.status(500).json({ message: 'שגיאה בעדכון הגדרות צ\'אט' });
+    }
+  });
+
   // Mount the router to the app
   app.use('/', router);
 
   const httpServer = createServer(app);
+  
+  // Setup WebSocket server
+  setupWebSocketServer(httpServer, storage);
+  
   return httpServer;
 }

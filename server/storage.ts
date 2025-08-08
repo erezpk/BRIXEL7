@@ -3,6 +3,7 @@ import {
   clientSettings, products, quotes, contracts, invoices, payments,
   paymentSettings, clientPaymentMethods, retainers, retainerTransactions, oneTimePayments,
   leadCollectionForms, formSubmissions, calendarEvents, communications,
+  chatConversations, chatMessages, chatSettings, chatAuditLog,
   type Agency, type InsertAgency,
   type User, type InsertUser,
   type Client, type InsertClient,
@@ -21,6 +22,10 @@ import {
   type FormSubmission, type InsertFormSubmission,
   type CalendarEvent, type InsertCalendarEvent,
   type Communication, type InsertCommunication,
+  type ChatConversation, type InsertChatConversation,
+  type ChatMessage, type InsertChatMessage,
+  type ChatSettings, type InsertChatSettings,
+  type ChatAuditLog, type InsertChatAuditLog,
   type Project, type InsertProject,
   type Task, type InsertTask,
   type Lead, type InsertLead,
@@ -237,6 +242,31 @@ export interface IStorage {
   updateContractTemplate(id: string, template: any): Promise<any>;
   deleteContractTemplate(id: string): Promise<void>;
   toggleContractTemplateDefault(id: string, isDefault: boolean): Promise<any>;
+
+  // Chat Conversations
+  getChatConversation(id: string): Promise<ChatConversation | undefined>;
+  getChatConversationsByAgency(agencyId: string): Promise<ChatConversation[]>;
+  getChatConversationsByUser(userId: string): Promise<ChatConversation[]>;
+  createChatConversation(conversation: InsertChatConversation): Promise<ChatConversation>;
+  updateChatConversation(id: string, conversation: Partial<InsertChatConversation>): Promise<ChatConversation>;
+  deleteChatConversation(id: string): Promise<void>;
+
+  // Chat Messages
+  getChatMessage(id: string): Promise<ChatMessage | undefined>;
+  getChatMessages(conversationId: string, limit?: number): Promise<ChatMessage[]>;
+  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  updateChatMessage(id: string, message: Partial<InsertChatMessage>): Promise<ChatMessage>;
+  deleteChatMessage(id: string): Promise<void>;
+  markMessageAsRead(messageId: string, userId: string): Promise<void>;
+
+  // Chat Settings
+  getChatSettings(agencyId: string): Promise<ChatSettings | undefined>;
+  createChatSettings(settings: InsertChatSettings): Promise<ChatSettings>;
+  updateChatSettings(agencyId: string, settings: Partial<InsertChatSettings>): Promise<ChatSettings>;
+
+  // Chat Audit Log
+  createChatAuditLog(log: InsertChatAuditLog): Promise<ChatAuditLog>;
+  getChatAuditLogs(agencyId: string, filters?: { conversationId?: string; userId?: string }): Promise<ChatAuditLog[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1377,6 +1407,139 @@ export class DatabaseStorage implements IStorage {
       .where(eq(contractTemplates.id, id))
       .returning();
     return contractTemplate;
+  }
+
+  // Chat Conversations
+  async getChatConversation(id: string): Promise<ChatConversation | undefined> {
+    const [conversation] = await this.db.select().from(chatConversations).where(eq(chatConversations.id, id));
+    return conversation || undefined;
+  }
+
+  async getChatConversationsByAgency(agencyId: string): Promise<ChatConversation[]> {
+    return this.db.select().from(chatConversations)
+      .where(eq(chatConversations.agencyId, agencyId))
+      .orderBy(desc(chatConversations.lastMessageAt));
+  }
+
+  async getChatConversationsByUser(userId: string): Promise<ChatConversation[]> {
+    return this.db.select().from(chatConversations)
+      .where(sql`${chatConversations.participants} @> ${JSON.stringify([userId])}`)
+      .orderBy(desc(chatConversations.lastMessageAt));
+  }
+
+  async createChatConversation(conversation: InsertChatConversation): Promise<ChatConversation> {
+    const [newConversation] = await this.db
+      .insert(chatConversations)
+      .values(conversation)
+      .returning();
+    return newConversation;
+  }
+
+  async updateChatConversation(id: string, conversation: Partial<InsertChatConversation>): Promise<ChatConversation> {
+    const [updatedConversation] = await this.db
+      .update(chatConversations)
+      .set({ ...conversation, updatedAt: new Date() })
+      .where(eq(chatConversations.id, id))
+      .returning();
+    return updatedConversation;
+  }
+
+  async deleteChatConversation(id: string): Promise<void> {
+    await this.db.delete(chatConversations).where(eq(chatConversations.id, id));
+  }
+
+  // Chat Messages
+  async getChatMessage(id: string): Promise<ChatMessage | undefined> {
+    const [message] = await this.db.select().from(chatMessages).where(eq(chatMessages.id, id));
+    return message || undefined;
+  }
+
+  async getChatMessages(conversationId: string, limit = 50): Promise<ChatMessage[]> {
+    return this.db.select().from(chatMessages)
+      .where(and(eq(chatMessages.conversationId, conversationId), eq(chatMessages.isDeleted, false)))
+      .orderBy(desc(chatMessages.createdAt))
+      .limit(limit);
+  }
+
+  async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
+    const [newMessage] = await this.db
+      .insert(chatMessages)
+      .values(message)
+      .returning();
+    return newMessage;
+  }
+
+  async updateChatMessage(id: string, message: Partial<InsertChatMessage>): Promise<ChatMessage> {
+    const [updatedMessage] = await this.db
+      .update(chatMessages)
+      .set({ ...message, editedAt: new Date() })
+      .where(eq(chatMessages.id, id))
+      .returning();
+    return updatedMessage;
+  }
+
+  async deleteChatMessage(id: string): Promise<void> {
+    await this.db
+      .update(chatMessages)
+      .set({ isDeleted: true })
+      .where(eq(chatMessages.id, id));
+  }
+
+  async markMessageAsRead(messageId: string, userId: string): Promise<void> {
+    const message = await this.getChatMessage(messageId);
+    if (message) {
+      const readBy = { ...message.readBy, [userId]: new Date().toISOString() };
+      await this.db
+        .update(chatMessages)
+        .set({ readBy })
+        .where(eq(chatMessages.id, messageId));
+    }
+  }
+
+  // Chat Settings
+  async getChatSettings(agencyId: string): Promise<ChatSettings | undefined> {
+    const [settings] = await this.db.select().from(chatSettings).where(eq(chatSettings.agencyId, agencyId));
+    return settings || undefined;
+  }
+
+  async createChatSettings(settings: InsertChatSettings): Promise<ChatSettings> {
+    const [newSettings] = await this.db
+      .insert(chatSettings)
+      .values(settings)
+      .returning();
+    return newSettings;
+  }
+
+  async updateChatSettings(agencyId: string, settings: Partial<InsertChatSettings>): Promise<ChatSettings> {
+    const [updatedSettings] = await this.db
+      .update(chatSettings)
+      .set({ ...settings, updatedAt: new Date() })
+      .where(eq(chatSettings.agencyId, agencyId))
+      .returning();
+    return updatedSettings;
+  }
+
+  // Chat Audit Log
+  async createChatAuditLog(log: InsertChatAuditLog): Promise<ChatAuditLog> {
+    const [newLog] = await this.db
+      .insert(chatAuditLog)
+      .values(log)
+      .returning();
+    return newLog;
+  }
+
+  async getChatAuditLogs(agencyId: string, filters?: { conversationId?: string; userId?: string }): Promise<ChatAuditLog[]> {
+    let query = this.db.select().from(chatAuditLog).where(eq(chatAuditLog.agencyId, agencyId));
+    
+    if (filters?.conversationId) {
+      query = query.where(eq(chatAuditLog.conversationId, filters.conversationId));
+    }
+    
+    if (filters?.userId) {
+      query = query.where(eq(chatAuditLog.userId, filters.userId));
+    }
+    
+    return query.orderBy(desc(chatAuditLog.createdAt));
   }
 }
 
