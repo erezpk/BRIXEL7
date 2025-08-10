@@ -1,0 +1,48 @@
+Prompt for Replit – CRM + Client & Team Portal (Fireberry-style)
+	1.	General Requirements
+	•	Develop a full Hebrew (RTL) CRM system — all elements must follow right-to-left structure: text first, then icon (or other element).
+	•	Maintain the existing system — do not delete or overwrite current code unless a fix is needed.
+	•	New features must integrate seamlessly with the current system, including the Client Portal and Team Portal.
+	•	Google Login (OAuth) must be fully implemented using the provided API keys, and tested for all user types.
+	2.	Features
+	•	Lead & Client Management:
+	•	Add clients and leads manually or via integrations.
+	•	Assign leads to existing clients.
+	•	Show all activities, communications, and purchases in one view.
+	•	Financial Management:
+	•	Real-time cash flow dashboard.
+	•	Income/expense tracking per client or product.
+	•	Ability to add payments and receipts.
+	•	Product & Service Management:
+	•	Add products and services.
+	•	Set fixed or variable pricing.
+	•	Auto-generate predefined task templates per product/service sold.
+	•	Send Quotes with Digital Signature:
+	•	Create and send quotes from within the system.
+	•	Email quotes directly to the client.
+	•	Allow clients to sign digitally within the document.
+	•	Save signed quotes automatically in the client profile.
+	•	Client & Team Portal Permissions:
+	•	Clients see only relevant info (projects, documents, quotes).
+	•	Teams see only their assigned tasks, leads, and clients.
+	•	Role-based permissions: Admin, Agency, Team, Client.
+	3.	Chat System Fix
+	•	There is an existing chat system in the project — do not rebuild from scratch.
+	•	Fix and optimize the existing chat to ensure:
+	•	Real-time message delivery.
+	•	Proper Hebrew RTL text alignment.
+	•	Smooth mobile and desktop experience.
+	•	No duplicate messages or lost messages.
+	4.	Integrations
+	•	Test all new and existing modules for compatibility.
+	•	Ensure Google OAuth works for all roles.
+	•	Maintain secure API communication (HTTPS, authentication).
+	5.	Testing & Quality Assurance
+	•	Verify every feature in development before pushing to production.
+	•	Check all UI in full RTL alignment (text right-aligned, icons after text).
+	•	Role-based access testing — users should only see what they are allowed to see.
+	•	Maintain high performance and fast response times.
+	6.	UI/UX
+	•	Modern, clean card-based and table-based interface.
+	•	Use readable Hebrew fonts (Assistant / Alef / Heebo).
+	•	Navigation menu should be clear and RTL-friendly with quick links to Dashboard, Leads, Clients, Finance, Quotes, Products, Settings.

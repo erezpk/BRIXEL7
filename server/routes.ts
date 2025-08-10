@@ -683,6 +683,209 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Products routes  
+  router.get('/api/products', authMiddleware, async (req, res) => {
+    try {
+      const user = req.user!;
+      const agencyId = user.agencyId || "407ab060-c765-4347-8233-0e7311a7adde";
+      const products = await storage.getProductsByAgency(agencyId);
+      res.json(products);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת מוצרים' });
+    }
+  });
+
+  router.post('/api/products', authMiddleware, async (req, res) => {
+    try {
+      const user = req.user!;
+      const agencyId = user.agencyId || "407ab060-c765-4347-8233-0e7311a7adde";
+      const productData = insertProductSchema.parse({
+        ...req.body,
+        agencyId: agencyId,
+        createdBy: user.id
+      });
+      const product = await storage.createProduct(productData);
+      res.json(product);
+    } catch (error) {
+      console.error('Error creating product:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת מוצר' });
+    }
+  });
+
+  router.get('/api/products/:id', authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const product = await storage.getProduct(id);
+      if (!product) {
+        return res.status(404).json({ message: 'מוצר לא נמצא' });
+      }
+      res.json(product);
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת מוצר' });
+    }
+  });
+
+  router.put('/api/products/:id', authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const product = await storage.updateProduct(id, updates);
+      res.json(product);
+    } catch (error) {
+      console.error('Error updating product:', error);
+      res.status(500).json({ message: 'שגיאה בעדכון מוצר' });
+    }
+  });
+
+  router.delete('/api/products/:id', authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteProduct(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      res.status(500).json({ message: 'שגיאה במחיקת מוצר' });
+    }
+  });
+
+  // Quotes routes
+  router.get('/api/quotes', authMiddleware, async (req, res) => {
+    try {
+      const user = req.user!;
+      const agencyId = user.agencyId || "407ab060-c765-4347-8233-0e7311a7adde";
+      const quotes = await storage.getQuotesByAgency(agencyId);
+      res.json(quotes);
+    } catch (error) {
+      console.error('Error fetching quotes:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת הצעות מחיר' });
+    }
+  });
+
+  router.post('/api/quotes', authMiddleware, async (req, res) => {
+    try {
+      const user = req.user!;
+      const agencyId = user.agencyId || "407ab060-c765-4347-8233-0e7311a7adde";
+      const quoteData = insertQuoteSchema.parse({
+        ...req.body,
+        agencyId: agencyId,
+        createdBy: user.id,
+        quoteNumber: `QT-${Date.now()}`
+      });
+      const quote = await storage.createQuote(quoteData);
+      res.json(quote);
+    } catch (error) {
+      console.error('Error creating quote:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת הצעת מחיר' });
+    }
+  });
+
+  router.get('/api/quotes/:id', authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const quote = await storage.getQuote(id);
+      if (!quote) {
+        return res.status(404).json({ message: 'הצעת מחיר לא נמצאה' });
+      }
+      res.json(quote);
+    } catch (error) {
+      console.error('Error fetching quote:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת הצעת מחיר' });
+    }
+  });
+
+  router.put('/api/quotes/:id', authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const quote = await storage.updateQuote(id, updates);
+      res.json(quote);
+    } catch (error) {
+      console.error('Error updating quote:', error);
+      res.status(500).json({ message: 'שגיאה בעדכון הצעת מחיר' });
+    }
+  });
+
+  router.delete('/api/quotes/:id', authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteQuote(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting quote:', error);
+      res.status(500).json({ message: 'שגיאה במחיקת הצעת מחיר' });
+    }
+  });
+
+  // Digital signature for quotes
+  router.post('/api/quotes/:id/sign', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { signature, ipAddress, userAgent } = req.body;
+      
+      const signatureData = {
+        signature,
+        ipAddress: ipAddress || req.ip,
+        userAgent: userAgent || req.get('User-Agent'),
+        timestamp: new Date().toISOString()
+      };
+
+      const quote = await storage.updateQuote(id, {
+        signedAt: new Date(),
+        signatureData,
+        status: 'approved'
+      });
+
+      res.json({ success: true, quote });
+    } catch (error) {
+      console.error('Error signing quote:', error);
+      res.status(500).json({ message: 'שגיאה בחתימת הצעת המחיר' });
+    }
+  });
+
+  // Financial dashboard routes
+  router.get('/api/finance/dashboard', authMiddleware, async (req, res) => {
+    try {
+      const user = req.user!;
+      const agencyId = user.agencyId || "407ab060-c765-4347-8233-0e7311a7adde";
+      
+      // Get all financial data
+      const quotes = await storage.getQuotesByAgency(agencyId);
+      const invoices = await storage.getInvoicesByAgency(agencyId);
+      const payments = await storage.getPaymentsByAgency(agencyId);
+
+      // Calculate stats
+      const totalRevenue = payments.reduce((sum, payment) => sum + payment.amount, 0);
+      const pendingQuotes = quotes.filter(q => q.status === 'sent').length;
+      const approvedQuotes = quotes.filter(q => q.status === 'approved').length;
+      const totalQuoteValue = quotes.reduce((sum, quote) => sum + quote.totalAmount, 0);
+      const unpaidInvoices = invoices.filter(i => i.status !== 'paid');
+      const totalUnpaid = unpaidInvoices.reduce((sum, invoice) => sum + (invoice.totalAmount - invoice.paidAmount), 0);
+
+      const dashboard = {
+        totalRevenue,
+        pendingQuotes,
+        approvedQuotes,
+        totalQuoteValue,
+        unpaidInvoicesCount: unpaidInvoices.length,
+        totalUnpaid,
+        recentPayments: payments.slice(-10),
+        recentQuotes: quotes.slice(-10),
+        cashFlow: {
+          income: totalRevenue,
+          expenses: 0, // TODO: Add expenses tracking
+          balance: totalRevenue
+        }
+      };
+
+      res.json(dashboard);
+    } catch (error) {
+      console.error('Error fetching finance dashboard:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת דשבורד פיננסי' });
+    }
+  });
+
   // Users routes
   router.get('/api/users', authMiddleware, requireAgency, async (req, res) => {
     try {

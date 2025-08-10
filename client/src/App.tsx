@@ -62,6 +62,10 @@ import ReportsPage from "@/pages/dashboard/reports";
 import UnifiedSettings from "@/pages/dashboard/unified-settings";
 import ItemsManagement from "@/pages/dashboard/items-management";
 import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
+// New financial pages
+import ProductsPageNew from "@/pages/dashboard/products";
+import QuotesPageNew from "@/pages/dashboard/quotes";
+import FinancePage from "@/pages/dashboard/finance";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -291,6 +295,29 @@ export default function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <QuoteDetailPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+
+          {/* New Financial Pages */}
+          <Route path="/dashboard/finance">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <FinancePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/dashboard/products">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ProductsPageNew />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/dashboard/quotes">
+            <ProtectedRoute>
+              <DashboardLayout>
+                <QuotesPageNew />
               </DashboardLayout>
             </ProtectedRoute>
           </Route>

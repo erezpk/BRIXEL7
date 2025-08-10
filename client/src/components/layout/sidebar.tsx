@@ -62,8 +62,9 @@ const navigation = [
     name: "מכירות ופיננסים", 
     icon: BarChart3, 
     subItems: [
-      { name: "הצעות מחיר", href: "/dashboard/sales/quotes", icon: FileText },
-      { name: "ניהול פריטים ומוצרים", href: "/dashboard/products", icon: Package },
+      { name: "דשבורד פיננסי", href: "/dashboard/finance", icon: DollarSign },
+      { name: "מוצרים ושירותים", href: "/dashboard/products", icon: Package },
+      { name: "הצעות מחיר", href: "/dashboard/quotes", icon: FileText },
       { name: "תשלומים", href: "/dashboard/payments", icon: CreditCard },
     ]
   },
