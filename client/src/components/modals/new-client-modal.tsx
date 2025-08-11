@@ -31,11 +31,7 @@ export default function NewClientModal({ isOpen, onClose }: NewClientModalProps)
 
   const createClientMutation = useMutation({
     mutationFn: async (data: Omit<InsertClient, 'agencyId'>) => {
-      const response = await apiRequest({
-        method: 'POST',
-        url: '/api/clients',
-        body: data
-      });
+      const response = await apiRequest('/api/clients', 'POST', data);
       return response.json();
     },
     onSuccess: () => {

@@ -66,6 +66,7 @@ const navigation = [
       { name: "דשבורד פיננסי", href: "/dashboard/finance", icon: DollarSign },
       { name: "מוצרים ושירותים", href: "/dashboard/products", icon: Package },
       { name: "הצעות מחיר", href: "/dashboard/quotes", icon: FileText },
+      { name: "מסמכים", href: "/dashboard/documents", icon: FileText },
       { name: "תשלומים", href: "/dashboard/payments", icon: CreditCard },
     ]
   },

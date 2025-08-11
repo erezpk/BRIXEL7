@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupWebSocketServer } from "./websocket";
 import { insertChatConversationSchema, insertChatMessageSchema, insertChatSettingsSchema } from "@shared/schema";
-import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema, insertClientCardTemplateSchema, insertClientSettingsSchema, insertProductSchema, insertQuoteSchema, insertContractSchema, insertInvoiceSchema, insertPaymentSchema } from "@shared/schema";
+import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema, insertClientCardTemplateSchema, insertClientSettingsSchema, insertProductSchema, insertQuoteSchema, insertContractSchema, insertInvoiceSchema, insertPaymentSchema, insertLeadSchema } from "@shared/schema";
 import { z } from "zod";
 import express from "express";
 import { emailService } from "./email-service.js";
@@ -60,54 +60,19 @@ function requireUserWithAgency(req: any, res: any, next: any) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
-
-  // Auth routes for both systems
-  router.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
-
+  // Traditional session-only auth - no Replit/Google auth
+  
+  // Simple auth check endpoint
   router.get('/api/auth/me', async (req: any, res) => {
     try {
-      // console.log('Auth check - Session:', !!req.session?.user, 'Replit:', !!req.user, 'isAuthenticated:', req.isAuthenticated?.());
-      
-      // Check traditional session first
+      // Only check traditional session
       if (req.session?.user?.id) {
         const user = await storage.getUser(req.session.user.id);
         if (user) {
-          // console.log('Found user via session:', user.email);
           return res.json({ user });
         }
       }
       
-      // Check Replit Auth
-      if (req.isAuthenticated?.() && req.user?.id) {
-        const user = await storage.getUser(req.user.id);
-        if (user) {
-          // console.log('Found user via Replit:', user.email);
-          return res.json({ user });
-        }
-      }
-      
-      // Check claims-based auth
-      const userClaims = req.user?.claims || req.session?.user?.claims;
-      if (userClaims?.sub) {
-        const user = await storage.getUser(userClaims.sub);
-        if (user) {
-          // console.log('Found user via claims:', user.email);
-          return res.json({ user });
-        }
-      }
-      
-      // console.log('No authenticated user found');
       return res.status(401).json({ message: 'Unauthorized' });
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -382,22 +347,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Client routes
-  router.get('/api/clients', authMiddleware, async (req, res) => {
+  router.get('/api/clients', authMiddleware, async (req: any, res) => {
     try {
-      // For now, return empty array since we're transitioning auth
-      res.json([]);
+      const agencyId = req.user?.agencyId;
+      if (!agencyId) {
+        return res.status(400).json({ message: 'לא נמצא מזהה סוכנות' });
+      }
+
+      const clients = await storage.getClientsByAgency(agencyId);
+      res.json(clients);
     } catch (error) {
       console.error('Error fetching clients:', error);
       res.status(500).json({ message: 'שגיאה בטעינת לקוחות' });
     }
   });
 
-  router.post('/api/clients', authMiddleware, async (req, res) => {
+  router.post('/api/clients', authMiddleware, async (req: any, res) => {
     try {
-      // For testing, use a dummy agency ID
+      const agencyId = req.user?.agencyId;
+      if (!agencyId) {
+        return res.status(400).json({ message: 'לא נמצא מזהה סוכנות' });
+      }
+
       const clientData = insertClientSchema.parse({
         ...req.body,
-        agencyId: "407ab060-c765-4347-8233-0e7311a7adde" // Use existing agency ID
+        agencyId: agencyId
       });
       const client = await storage.createClient(clientData);
       res.json(client);
@@ -886,6 +860,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Products routes
+  router.get('/api/products', authMiddleware, async (req: any, res) => {
+    try {
+      const agencyId = req.user?.agencyId;
+      if (!agencyId) {
+        return res.status(400).json({ message: 'לא נמצא מזהה סוכנות' });
+      }
+
+      const products = await storage.getProductsByAgency(agencyId);
+      res.json(products);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      res.status(500).json({ message: 'שגיאה בטעינת מוצרים' });
+    }
+  });
+
+  router.post('/api/products', authMiddleware, async (req: any, res) => {
+    try {
+      const agencyId = req.user?.agencyId;
+      if (!agencyId) {
+        return res.status(400).json({ message: 'לא נמצא מזהה סוכנות' });
+      }
+
+      const productData = insertProductSchema.parse({
+        ...req.body,
+        agencyId: agencyId,
+        createdBy: req.user.id
+      });
+      const product = await storage.createProduct(productData);
+      res.json(product);
+    } catch (error) {
+      console.error('Error creating product:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת מוצר' });
+    }
+  });
+
+  router.put('/api/products/:id', authMiddleware, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const product = await storage.updateProduct(id, updates);
+      res.json(product);
+    } catch (error) {
+      console.error('Error updating product:', error);
+      res.status(500).json({ message: 'שגיאה בעדכון מוצר' });
+    }
+  });
+
+  router.delete('/api/products/:id', authMiddleware, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteProduct(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      res.status(500).json({ message: 'שגיאה במחיקת מוצר' });
+    }
+  });
+
   // Users routes
   router.get('/api/users', authMiddleware, requireAgency, async (req, res) => {
     try {
@@ -895,6 +928,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching users:', error);
       res.status(500).json({ message: 'שגיאה בטעינת משתמשים' });
+    }
+  });
+
+  // Signup endpoint
+  router.post('/api/auth/signup', async (req, res) => {
+    try {
+      const { email, password, fullName, agencyName, industry } = req.body;
+      
+      if (!email || !password || !fullName || !agencyName) {
+        return res.status(400).json({ message: 'כל השדות נדרשים' });
+      }
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: 'משתמש עם אימייל זה כבר קיים' });
+      }
+      
+      // Create agency first
+      const agency = await storage.createAgency({
+        name: agencyName,
+        slug: agencyName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+        industry: industry || ''
+      });
+      
+      // Hash password and create user
+      const hashedPassword = await storage.hashPassword(password);
+      const user = await storage.createUser({
+        email,
+        password: hashedPassword,
+        fullName,
+        role: 'agency_admin',
+        agencyId: agency.id
+      });
+      
+      // Create session
+      (req.session as any).user = {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        agencyId: user.agencyId
+      };
+      
+      res.json({ 
+        success: true, 
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          agencyId: user.agencyId
+        }
+      });
+    } catch (error) {
+      console.error('Signup error:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת החשבון' });
     }
   });
 
