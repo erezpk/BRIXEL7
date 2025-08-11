@@ -6,7 +6,18 @@ AgencyCRM is a comprehensive SaaS CRM system for digital marketing agencies, web
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (January 2025)
+## Recent Changes (August 2025)
+
+### Project Migration to Replit (August 11, 2025)
+- Successfully migrated Hebrew CRM system from Replit Agent to Replit environment
+- Fixed database schema compatibility issues (user ID types now consistent as UUID)
+- Created and configured PostgreSQL database with complete schema
+- Resolved authentication system and session management
+- Verified server is running properly on port 5000 with WebSocket support
+- Test user creation and authentication working correctly
+- Application now fully functional in Replit environment
+
+## Previous Changes (January 2025)
 - Enhanced sidebar navigation with grouped sections for better organization
 - Improved client cards with cleaner, more organized visual design
 - Fixed lead card navigation - clicking on lead cards now opens lead details page
