@@ -6,6 +6,7 @@ import { insertChatConversationSchema, insertChatMessageSchema, insertChatSettin
 import { insertUserSchema, insertAgencySchema, insertClientSchema, insertProjectSchema, insertTaskSchema, insertTaskCommentSchema, insertDigitalAssetSchema, insertClientCardTemplateSchema, insertClientSettingsSchema, insertProductSchema, insertQuoteSchema, insertContractSchema, insertInvoiceSchema, insertPaymentSchema, insertLeadSchema } from "@shared/schema";
 import { z } from "zod";
 import express from "express";
+import session from "express-session";
 import { emailService } from "./email-service.js";
 import crypto from 'crypto';
 import { ObjectStorageService, ObjectNotFoundError } from './objectStorage';
@@ -60,6 +61,18 @@ function requireUserWithAgency(req: any, res: any, next: any) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Configure session middleware with simple in-memory store for now
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'fallback-secret-key-' + Math.random().toString(36),
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false,
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+  }));
+  
   // Traditional session-only auth - no Replit/Google auth
   
   // Simple auth check endpoint
@@ -89,12 +102,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'אימייל וסיסמה נדרשים' });
       }
       
+      console.log('Attempting login for email:', email);
       const user = await storage.getUserByEmail(email);
+      console.log('User found:', !!user);
+      console.log('User has password:', !!user?.password);
       if (!user || !user.password) {
         return res.status(401).json({ message: 'אימייל או סיסמה שגויים' });
       }
       
+      console.log('Validating password for:', user.email);
+      console.log('Password hash exists:', !!user.password);
       const isValidPassword = await storage.validatePassword(password, user.password);
+      console.log('Password valid:', isValidPassword);
       if (!isValidPassword) {
         return res.status(401).json({ message: 'אימייל או סיסמה שגויים' });
       }
@@ -946,10 +965,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'משתמש עם אימייל זה כבר קיים' });
       }
       
-      // Create agency first
+      // Create agency first with unique slug
+      const baseSlug = agencyName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const uniqueSlug = `${baseSlug}-${Date.now()}`;
       const agency = await storage.createAgency({
         name: agencyName,
-        slug: agencyName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+        slug: uniqueSlug,
         industry: industry || ''
       });
       
@@ -964,13 +985,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Create session
-      (req.session as any).user = {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        role: user.role,
-        agencyId: user.agencyId
-      };
+      if (req.session) {
+        (req.session as any).user = {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          agencyId: user.agencyId
+        };
+        
+        // Save session
+        await new Promise((resolve, reject) => {
+          req.session.save((err: any) => {
+            if (err) reject(err);
+            else resolve(true);
+          });
+        });
+      }
       
       res.json({ 
         success: true, 
