@@ -1,4 +1,40 @@
-import type { Express } from "express";
+router.post('/api/auth/login', async (req, res) => {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+        return res.status(400).json({ message: 'אימייל וסיסמה נדרשים' });
+    }
+
+    const user = await storage.getUserByEmail(email);
+    if (!user) {
+        return res.status(401).json({ message: 'אימייל לא נמצא' });
+    }
+
+    const isValidPassword = await storage.validatePassword(password, user.password);
+    if (!isValidPassword) {
+        return res.status(401).json({ message: 'אימייל או סיסמה שגויים' });
+    }
+
+    // התחברות מוצלחת
+    req.session.user = { id: user.id, email: user.email };
+    res.json({ success: true, user });
+});const handleSubmit = async (event) => {
+    event.preventDefault();
+    const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email, password: formData.password }),
+    });
+    const data = await response.json();
+    if (data.success) {
+        // התחברות מוצלחת
+    } else {
+        console.error(data.message);
+        // הצג שגיאה למשתמש
+    }
+};import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupWebSocketServer } from "./websocket";

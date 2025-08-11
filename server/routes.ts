@@ -1,4 +1,49 @@
-import type { Express } from "express";
+const handleSubmit = async (event) => {
+  event.preventDefault();
+  const response = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email: formData.email, password: formData.password }),
+  });
+  const data = await response.json();
+  if (data.success) {
+    // התחבר בהצלחה
+  } else {
+    // הצג שגיאה למשתמש
+    console.error(data.message);
+  }
+};router.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({ message: 'אימייל נדרש' });
+        }
+        
+        const user = await storage.getUserByEmail(email);
+        if (!user) {
+            return res.json({ message: 'אם האימייל קיים, נשלח לינק לאיפוס סיסמה' });
+        }
+        
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        await storage.createPasswordResetToken(user.id, resetToken);
+        
+        const resetUrl = `${req.protocol}://${req.get('host')}/auth/reset-password?token=${resetToken}`;
+        
+        const emailSent = await emailService.sendPasswordReset(email, resetToken);
+        
+        if (emailSent) {
+            res.json({ message: 'קישור איפוס סיסמה נשלח לאימייל שלך' });
+        } else {
+            res.status(500).json({ message: 'שגיאה בשליחת האימייל' });
+        }
+    } catch (error) {
+        console.error('Password reset error:', error);
+        res.status(500).json({ message: 'שגיאה בבקשת איפוס סיסמה' });
+    }
+});import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupWebSocketServer } from "./websocket";
